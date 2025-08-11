@@ -7,114 +7,212 @@
         /* 现代化的UI样式 */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            max-width: 800px;
+            max-width: 1000px;
             margin: 2rem auto;
             padding: 0 1rem;
-            background-color: #f8f9fa;
+            background-color: #f5f5f7;
             color: #333;
+            min-height: 100vh;
         }
         .container {
             background: white;
-            padding: 2rem;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 2.5rem;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 
+                       0 8px 24px rgba(0, 0, 0, 0.04);
         }
         h2 {
-            color: #2c3e50;
-            margin-bottom: 1.5rem;
+            color: #1d1d1f;
+            margin-bottom: 2rem;
             text-align: center;
+            font-weight: 500;
+        }
+        .section {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        .section h3 {
+            color: #1d1d1f;
+            font-size: 1.1rem;
+            margin: 0 0 1.5rem 0;
+            font-weight: 500;
+        }
+        .input-groups-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
         }
         .input-group {
-            margin-bottom: 1rem;
+            margin-bottom: 0;
+            position: relative;
+            display: flex;
+            flex-direction: column;
         }
         label {
             display: block;
-            margin-bottom: 0.5rem;
-            color: #495057;
-            font-weight: 500;
+            margin-bottom: 0.35rem;
+            color: #1d1d1f;
+            font-weight: 400;
+            font-size: 0.9rem;
+        }
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
         }
         input {
             width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #ced4da;
-            border-radius: 5px;
-            font-size: 1rem;
-            transition: border-color 0.15s ease-in-out;
+            padding: 0.5rem;
+            border: 1px solid #d2d2d7;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            background-color: #fafafa;
+            margin-right: 8px;
         }
         input:focus {
-            border-color: #80bdff;
-            outline: 0;
-            box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
-        }
-        .radio-group {
-            display: flex;
-            gap: 1rem;
-        }
-        .radio-label {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            cursor: pointer;
-        }
-        .radio-label input[type="radio"] {
-            width: auto;
-            margin: 0;
-            cursor: pointer;
+            border-color: #0066cc;
+            outline: none;
+            background-color: #ffffff;
+            box-shadow: 0 0 0 3px rgba(0,102,204,0.15);
         }
         .field-hint {
-            font-size: 0.85rem;
-            color: #6c757d;
+            font-size: 0.8rem;
+            color: #86868b;
             margin-top: 0.25rem;
+            line-height: 1.2;
         }
         button {
-            width: 100%;
-            padding: 1rem;
-            background-color: #007bff;
+            width: auto;
+            padding: 0.75rem 1.5rem;
+            background-color: #0066cc;
             color: white;
             border: none;
-            border-radius: 5px;
-            font-size: 1rem;
+            border-radius: 6px;
+            font-size: 0.95rem;
             cursor: pointer;
-            transition: background-color 0.15s ease-in-out;
+            transition: all 0.2s ease;
+            margin: 1.5rem auto;
+            display: block;
         }
         button:hover {
-            background-color: #0056b3;
+            background-color: #0077ed;
         }
         .result {
-            margin-top: 1.5rem;
-            padding: 1rem;
-            background-color: #e9ecef;
-            border-radius: 5px;
-            font-size: 1.1rem;
+            margin-top: 2rem;
+            font-size: 1rem;
         }
-        .result b {
-            color: #28a745;
+        .final-price {
+            text-align: center;
+            background: #f5f5f7;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+        .final-price .price-label {
+            font-size: 1.2rem;
+            color: #1d1d1f;
+            margin-bottom: 1rem;
+        }
+        .final-price .price-value {
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: #0066cc;
+        }
+        .calculation-process {
+            margin-top: 2rem;
+            background: #ffffff;
+        }
+        .result .section {
+            margin-bottom: 1.5rem;
+        }
+        .result .section h3 {
+            color: #1d1d1f;
+            font-size: 1rem;
+            margin: 0 0 1rem 0;
+            font-weight: 500;
+        }
+        .result ul {
+            margin: 0.5rem 0;
+            padding-left: 1.25rem;
+            list-style-type: none;
+        }
+        .result ul li {
+            margin: 0.4rem 0;
+            position: relative;
+        }
+        .result ul li:before {
+            content: "•";
+            color: #86868b;
+            position: absolute;
+            left: -1rem;
         }
         .result ul ul {
-            margin-top: 0.5rem;
-            margin-bottom: 0.5rem;
-            padding-left: 1.5rem;
-            font-size: 0.95em;
-            color: #666;
+            margin: 0.35rem 0 0.35rem 0.5rem;
+            color: #515154;
+        }
+        .result ul ul li:before {
+            content: "◦";
         }
         .error {
-            color: #dc3545;
+            color: #ff3b30;
             padding: 1rem;
-            background-color: #f8d7da;
-            border-radius: 5px;
+            background-color: #fff2f2;
+            border-radius: 6px;
             margin-top: 1rem;
+            font-size: 0.95rem;
         }
         .description {
-            margin-top: 1rem;
+            margin-top: 1.5rem;
             font-size: 0.9rem;
-            color: #6c757d;
+            color: #86868b;
+            padding: 1rem;
+            background-color: #f5f5f7;
+            border-radius: 6px;
         }
         .calculation-note {
-            font-size: 0.9rem;
-            color: #495057;
+            font-size: 0.85rem;
+            color: #515154;
             margin-top: 1rem;
-            border-top: 1px solid #dee2e6;
+            border-top: 1px solid #d2d2d7;
             padding-top: 1rem;
+        }
+        .save-button {
+            background: none;
+            color: #0066cc;
+            border: none;
+            padding: 0.25rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: color 0.2s ease;
+            width: auto;
+            margin: 0;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .save-button:hover {
+            color: #0077ed;
+            background: none;
+        }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 0.6rem 1.2rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            z-index: 1000;
+            transition: opacity 0.3s ease;
+        }
+        .toast-hide {
+            opacity: 0;
         }
     </style>
 </head>
@@ -122,55 +220,107 @@
     <div class="container">
         <h2>电商合理售价计算器</h2>
         
-        <div class="input-group">
-            <label>进货价（不含税）:</label>
-            <input type="number" id="costPrice" value="100" step="0.01">
-        </div>
+                    <div class="section">
+                <h3>进货成本</h3>
+                <div class="input-groups-container">
+                    <div class="input-group">
+                        <label>进货价（不含税）:</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="costPrice" value="100" step="0.01">
+                            <button class="save-button" onclick="saveInputs()">保存</button>
+                        </div>
+                    </div>
 
-        <div class="input-group">
-            <label>开票费率（%）:</label>
-            <input type="number" id="inputTaxRate" value="6" step="0.1">
-            <div class="field-hint">供应商收取的开票费用比例</div>
-        </div>
+                    <div class="input-group">
+                        <label>开票费率（%）:</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="inputTaxRate" value="6" step="0.1">
+                            <button class="save-button" onclick="saveInputs()">保存</button>
+                        </div>
+                        <div class="field-hint">供应商收取的开票费用比例</div>
+                    </div>
 
-        <div class="input-group">
-            <label>销项税率（%）:</label>
-            <input type="number" id="outputTaxRate" value="13" step="0.1">
-            <div class="field-hint">销售时的增值税税率，用于计算可抵扣金额</div>
-        </div>
+                    <div class="input-group">
+                        <label>商品税率（%）:</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="outputTaxRate" value="13" step="0.1">
+                            <button class="save-button" onclick="saveInputs()">保存</button>
+                        </div>
+                        <div class="field-hint">增值税税率（如服装类13%），用于计算进项税抵扣</div>
+                    </div>
+                </div>
+            </div>
 
-        <div class="input-group">
-            <label>平台抽佣比例（%）:</label>
-            <input type="number" id="platformRate" value="5" step="0.1">
-            <div class="field-hint">基于最终售价（含税）计算的平台佣金比例</div>
-        </div>
+            <div class="section">
+                <h3>销售成本</h3>
+                <div class="input-groups-container">
+                    <div class="input-group">
+                        <label>平台抽佣比例（%）:</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="platformRate" value="5.5" step="0.1">
+                            <button class="save-button" onclick="saveInputs()">保存</button>
+                        </div>
+                        <div class="field-hint">基于最终售价（含税）计算的平台佣金比例</div>
+                    </div>
 
-        <div class="input-group">
-            <label>物流费（元）:</label>
-            <input type="number" id="shippingCost" value="8" step="0.01">
-        </div>
+                    <div class="input-group">
+                        <label>物流费（元）:</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="shippingCost" value="5" step="0.01">
+                            <button class="save-button" onclick="saveInputs()">保存</button>
+                        </div>
+                    </div>
 
-        <div class="input-group">
-            <label>付费占比（%）:</label>
-            <input type="number" id="adRate" value="30" step="0.1">
-            <div class="field-hint">广告费占最终售价的比例，可开具6%专票用于抵扣</div>
-        </div>
+                    <div class="input-group">
+                        <label>付费占比（%）:</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="adRate" value="30" step="0.1">
+                            <button class="save-button" onclick="saveInputs()">保存</button>
+                        </div>
+                        <div class="field-hint">广告费占最终售价的比例，可开具6%专票用于抵扣</div>
+                    </div>
 
-        <div class="input-group">
-            <label>运费险（元）:</label>
-            <input type="number" id="shippingInsurance" value="1" step="0.01">
-            <div class="field-hint">每单运费险的预估成本</div>
-        </div>
+                    <div class="input-group">
+                        <label>运费险（元）:</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="shippingInsurance" value="1" step="0.01">
+                            <button class="save-button" onclick="saveInputs()">保存</button>
+                        </div>
+                        <div class="field-hint">每单运费险的预估成本</div>
+                    </div>
 
-        <div class="input-group">
-            <label>其他成本（元）:</label>
-            <input type="number" id="otherCost" value="2" step="0.01">
-        </div>
+                    <div class="input-group">
+                        <label>其他成本（元）:</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="otherCost" value="2" step="0.01">
+                            <button class="save-button" onclick="saveInputs()">保存</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-        <div class="input-group">
-            <label>目标利润率（%）:</label>
-            <input type="number" id="targetProfitRate" value="20" step="0.1">
-        </div>
+            <div class="section">
+                <h3>其他参数</h3>
+                <div class="input-groups-container">
+                    <div class="input-group">
+                        <label>退货率（%）:</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="returnRate" value="20" step="0.1">
+                            <button class="save-button" onclick="saveInputs()">保存</button>
+                        </div>
+                        <div class="field-hint">预计的退货率，影响实际利润计算</div>
+                    </div>
+
+                    <div class="input-group">
+                        <label>目标利润率（%）:</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="targetProfitRate" value="20" step="0.1">
+                            <button class="save-button" onclick="saveInputs()">保存</button>
+                        </div>
+                        <div class="field-hint">基于最终售价的目标利润率</div>
+                    </div>
+                </div>
+            </div>
 
         <button onclick="calculate()">计算合理售价</button>
 
@@ -189,6 +339,48 @@
     </div>
 
     <script>
+        // 保存所有输入值到localStorage
+        function saveInputs() {
+            const inputs = {
+                costPrice: document.getElementById("costPrice").value,
+                inputTaxRate: document.getElementById("inputTaxRate").value,
+                outputTaxRate: document.getElementById("outputTaxRate").value,
+                platformRate: document.getElementById("platformRate").value,
+                adRate: document.getElementById("adRate").value,
+                shippingInsurance: document.getElementById("shippingInsurance").value,
+                shippingCost: document.getElementById("shippingCost").value,
+                otherCost: document.getElementById("otherCost").value,
+                targetProfitRate: document.getElementById("targetProfitRate").value
+            };
+            localStorage.setItem('priceCalculatorInputs', JSON.stringify(inputs));
+            
+            // 显示保存成功提示
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = '已保存输入值';
+            document.body.appendChild(toast);
+            
+            // 2秒后移除提示
+            setTimeout(() => {
+                toast.classList.add('toast-hide');
+                setTimeout(() => document.body.removeChild(toast), 300);
+            }, 2000);
+        }
+
+        // 从localStorage加载保存的输入值
+        function loadSavedInputs() {
+            const saved = localStorage.getItem('priceCalculatorInputs');
+            if (saved) {
+                const inputs = JSON.parse(saved);
+                Object.entries(inputs).forEach(([id, value]) => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.value = value;
+                    }
+                });
+            }
+        }
+
         // 验证输入值的合法性
         function validateInput(value, min, max, name) {
             if (isNaN(value) || value < min || value > max) {
@@ -208,92 +400,235 @@
                 otherCost: validateInput(parseFloat(document.getElementById("otherCost").value), 0, 10000, "其他成本"),
                 adRate: validateInput(parseFloat(document.getElementById("adRate").value), 0, 100, "付费占比") / 100,
                 shippingInsurance: validateInput(parseFloat(document.getElementById("shippingInsurance").value), 0, 100, "运费险"),
+                returnRate: validateInput(parseFloat(document.getElementById("returnRate").value), 0, 100, "退货率") / 100,
                 targetProfitRate: validateInput(parseFloat(document.getElementById("targetProfitRate").value), 0, 100, "目标利润率") / 100
             };
         }
 
-        // 计算基础成本和税费
-        function calculateBaseCost(inputs, adCost) {
-            // 开票成本（供应商收取的开票费用）
-            const invoiceCost = inputs.costPrice * inputs.inputTaxRate;
-            
-            // 广告费可抵扣的进项税（6%）
-            const AD_TAX_RATE = 0.06;
-            const adTaxDeduction = adCost * AD_TAX_RATE;
-            
-            // 基础成本（产品成本 + 开票成本 + 物流 + 运费险 + 广告费 + 其他）
-            const baseCost = inputs.costPrice + invoiceCost + inputs.shippingCost + 
-                           inputs.shippingInsurance + adCost + inputs.otherCost;
-            
-            // 可抵扣进项税（产品进项税 + 广告费进项税）
-            const productTaxDeduction = inputs.costPrice * inputs.outputTaxRate;
-            const totalTaxDeduction = productTaxDeduction + adTaxDeduction;
-            
-            // 实际成本 = 基础成本 - 可抵扣税额
-            const effectiveCost = baseCost - totalTaxDeduction;
-            
+        // 计算进货成本和可抵扣税额
+        function calculatePurchaseCost(inputs) {
+            // 1. 进货成本计算
+            const purchasePrice = inputs.costPrice; // 进货价（不含税）
+            const invoiceCost = purchasePrice * inputs.inputTaxRate; // 开票成本（6%）
+            const totalPurchaseCost = purchasePrice + invoiceCost; // 总进货成本
+
+            // 2. 进项税额计算（可抵扣）
+            const purchaseVAT = purchasePrice * inputs.outputTaxRate; // 商品进项税额（13%）
+
             return {
-                baseCost,
+                purchasePrice,
                 invoiceCost,
-                adCost,
-                adTaxDeduction,
-                productTaxDeduction,
-                totalTaxDeduction,
-                effectiveCost
+                totalPurchaseCost,
+                purchaseVAT
             };
         }
 
-        // 计算净价和最终价格
-        function calculatePrices(effectiveCost, inputs) {
-            const adjustedProfitRate = inputs.targetProfitRate / (1 + inputs.outputTaxRate);
-            const netPrice = effectiveCost / (1 - inputs.platformRate - adjustedProfitRate);
-            const finalPrice = netPrice * (1 + inputs.outputTaxRate);
-            return { netPrice, finalPrice };
+        // 计算销售成本和税费
+        function calculateSalesCost(inputs, adCost, purchaseCost) {
+            // 1. 计算退货影响
+            const returnRate = inputs.returnRate;
+            const effectiveRate = 1 - returnRate;
+
+            // 2. 计算销售相关成本（考虑退货分摊）
+            const operationalCosts = {
+                shipping: inputs.shippingCost / effectiveRate,
+                insurance: inputs.shippingInsurance / effectiveRate,
+                advertising: adCost / effectiveRate,
+                other: inputs.otherCost / effectiveRate
+            };
+
+            // 3. 广告费进项税额（可抵扣）
+            const AD_VAT_RATE = 0.06;
+            const adVAT = (adCost / effectiveRate) * AD_VAT_RATE;
+
+            // 4. 总销售成本（不含平台佣金，因为佣金基于最终售价）
+            const totalOperationalCost = Object.values(operationalCosts).reduce((a, b) => a + b, 0);
+
+            // 5. 总可抵扣进项税
+            const totalVATDeduction = purchaseCost.purchaseVAT + adVAT;
+
+            return {
+                operationalCosts,
+                adVAT,
+                totalOperationalCost,
+                totalVATDeduction,
+                returnRate,
+                effectiveRate
+            };
         }
 
-        // 计算各项费用和利润
-        function calculateFees(prices, inputs) {
-            const { netPrice, finalPrice } = prices;
+        // 计算最终价格和相关费用
+        function calculatePrices(purchaseCost, salesCost, inputs) {
+            // 1. 计算基础成本（考虑退货）
+            const baseCost = (purchaseCost.totalPurchaseCost / salesCost.effectiveRate) + salesCost.totalOperationalCost;
+            
+            // 2. 计算不含税净价（考虑利润率和平台佣金）
+            const targetProfitRate = inputs.targetProfitRate;
+            const platformRate = inputs.platformRate;
+            const netPrice = baseCost / (1 - platformRate - targetProfitRate);
+            
+            // 3. 计算含税售价
+            const finalPrice = netPrice * (1 + inputs.outputTaxRate);
+            
+            // 4. 计算各项费用
+            const platformFee = finalPrice * platformRate;
+            const outputVAT = netPrice * inputs.outputTaxRate;
+            const profit = finalPrice * targetProfitRate;
+            
+            // 5. 计算实际税负
+            const actualVAT = outputVAT - salesCost.totalVATDeduction;
+
             return {
-                platformFee: finalPrice * inputs.platformRate, // 平台佣金统一按最终售价（含税）计算
-                outputTax: netPrice * inputs.outputTaxRate,
-                profit: finalPrice * inputs.targetProfitRate,
-                profitRate: (finalPrice * inputs.targetProfitRate / finalPrice * 100)
+                netPrice,
+                finalPrice,
+                platformFee,
+                outputVAT,
+                actualVAT,
+                profit,
+                profitRate: targetProfitRate * 100
             };
         }
 
         // 生成结果HTML
-        function generateResultHtml(costs, prices, fees, inputs) {
+        function generateResultHtml(purchaseCost, salesCost, priceInfo, inputs) {
+            const adCost = priceInfo.finalPrice * inputs.adRate;
+            
             return `
-                <p>建议含税售价：<b>${prices.finalPrice.toFixed(2)} 元</b></p>
-                <p>成本及利润明细：</p>
-                <ul>
-                    <li>产品成本（不含税）：${inputs.costPrice.toFixed(2)} 元</li>
-                    <li>开票费用：${costs.invoiceCost.toFixed(2)} 元</li>
-                    <li>广告费用：${costs.adCost.toFixed(2)} 元</li>
-                    <li>运费险：${inputs.shippingInsurance.toFixed(2)} 元</li>
-                    <li>物流费用：${inputs.shippingCost.toFixed(2)} 元</li>
-                    <li>其他成本：${inputs.otherCost.toFixed(2)} 元</li>
-                    <li>可抵扣税额：${costs.totalTaxDeduction.toFixed(2)} 元
-                        <ul>
-                            <li>产品进项税：${costs.productTaxDeduction.toFixed(2)} 元</li>
-                            <li>广告费进项税：${costs.adTaxDeduction.toFixed(2)} 元</li>
-                        </ul>
-                    </li>
-                    <li>实际成本（抵扣后）：${costs.effectiveCost.toFixed(2)} 元</li>
-                    <li>平台抽佣：${fees.platformFee.toFixed(2)} 元</li>
-                    <li>销项税额：${fees.outputTax.toFixed(2)} 元</li>
-                    <li>预期利润：${fees.profit.toFixed(2)} 元</li>
-                    <li>毛利率：${fees.profitRate.toFixed(2)}%</li>
-                </ul>
+                <div class="final-price">
+                    <div class="price-label">建议含税售价</div>
+                    <div class="price-value">¥ ${priceInfo.finalPrice.toFixed(2)}</div>
+                </div>
+
+                <div class="section calculation-process">
+                    <h3>售价计算过程</h3>
+                    <div class="field-hint">计算过程分为以下步骤（所有成本都已考虑退货率${(salesCost.returnRate*100).toFixed(0)}%的影响）：</div>
+                    <ul>
+                        <li>1. 基础成本计算：
+                            <ul>
+                                <li>进货相关：
+                                    <ul>
+                                        <li>进货成本：${purchaseCost.totalPurchaseCost.toFixed(2)}元</li>
+                                        <li>考虑退货分摊：${purchaseCost.totalPurchaseCost.toFixed(2)} ÷ ${(salesCost.effectiveRate*100).toFixed(0)}% = ${(purchaseCost.totalPurchaseCost/salesCost.effectiveRate).toFixed(2)}元</li>
+                                    </ul>
+                                </li>
+                                <li>运营相关（考虑退货分摊）：
+                                    <ul>
+                                        <li>物流费：${inputs.shippingCost.toFixed(2)} ÷ ${(salesCost.effectiveRate*100).toFixed(0)}% = ${salesCost.operationalCosts.shipping.toFixed(2)}元</li>
+                                        <li>运费险：${inputs.shippingInsurance.toFixed(2)} ÷ ${(salesCost.effectiveRate*100).toFixed(0)}% = ${salesCost.operationalCosts.insurance.toFixed(2)}元</li>
+                                        <li>广告费：${adCost.toFixed(2)} ÷ ${(salesCost.effectiveRate*100).toFixed(0)}% = ${salesCost.operationalCosts.advertising.toFixed(2)}元</li>
+                                        <li>其他成本：${inputs.otherCost.toFixed(2)} ÷ ${(salesCost.effectiveRate*100).toFixed(0)}% = ${salesCost.operationalCosts.other.toFixed(2)}元</li>
+                                        <li>运营成本合计：${salesCost.totalOperationalCost.toFixed(2)}元</li>
+                                    </ul>
+                                </li>
+                                <li>基础成本合计：${(purchaseCost.totalPurchaseCost/salesCost.effectiveRate + salesCost.totalOperationalCost).toFixed(2)}元</li>
+                            </ul>
+                        </li>
+                        <li>2. 计算不含税售价：
+                            <ul>
+                                <li>计算公式：基础成本 ÷ (1 - 平台费率 - 目标利润率)</li>
+                                <li>说明：由于平台抽佣（${(inputs.platformRate*100).toFixed(1)}%）和目标利润（${(inputs.targetProfitRate*100).toFixed(1)}%）都是基于最终售价计算的，所以需要做反向计算</li>
+                                <li>具体计算：${(purchaseCost.totalPurchaseCost/salesCost.effectiveRate + salesCost.totalOperationalCost).toFixed(2)} ÷ (1 - ${(inputs.platformRate*100).toFixed(1)}% - ${(inputs.targetProfitRate*100).toFixed(1)}%)</li>
+                                <li>= ${priceInfo.netPrice.toFixed(2)}元</li>
+                            </ul>
+                        </li>
+                        <li>3. 计算含税售价：
+                            <ul>
+                                <li>不含税售价 × (1 + 商品税率)</li>
+                                <li>${priceInfo.netPrice.toFixed(2)} × (1 + ${(inputs.outputTaxRate*100).toFixed(0)}%)</li>
+                                <li>= ${priceInfo.finalPrice.toFixed(2)}元</li>
+                            </ul>
+                        </li>
+                        <li>4. 广告费与售价迭代计算说明：
+                            <ul>
+                                <li>由于广告费（${(inputs.adRate*100).toFixed(0)}%）基于最终售价计算，而最终售价又依赖于广告费，所以需要迭代计算</li>
+                                <li>计算过程：
+                                    <ul>
+                                        <li>1) 假设初始售价为1000元</li>
+                                        <li>2) 计算广告费：1000 × ${(inputs.adRate*100).toFixed(0)}% = ${(1000 * inputs.adRate).toFixed(2)}元</li>
+                                        <li>3) 基于广告费重新计算售价</li>
+                                        <li>4) 重复步骤2-3直到新旧售价差异小于0.01元</li>
+                                    </ul>
+                                </li>
+                                <li>最终收敛到：${priceInfo.finalPrice.toFixed(2)}元</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+                <div class="section">
+                    <h3>进货成本</h3>
+                    <ul>
+                        <li>产品成本（不含税）：${purchaseCost.purchasePrice.toFixed(2)} 元</li>
+                        <li>开票费用（${(inputs.inputTaxRate*100).toFixed(0)}%）：${purchaseCost.invoiceCost.toFixed(2)} 元</li>
+                        <li>进项税额（${(inputs.outputTaxRate*100).toFixed(0)}%，可抵扣）：${purchaseCost.purchaseVAT.toFixed(2)} 元</li>
+                        <li>总进货成本：${purchaseCost.totalPurchaseCost.toFixed(2)} 元</li>
+                    </ul>
+                </div>
+
+                <div class="section">
+                    <h3>销售成本（考虑退货率${(salesCost.returnRate*100).toFixed(0)}%）</h3>
+                    <div class="field-hint">由于退货率${(salesCost.returnRate*100).toFixed(0)}%，意味着每100单中有${(salesCost.returnRate*100).toFixed(0)}单会退货，以下成本会由${(salesCost.effectiveRate*100).toFixed(0)}单成功销售的订单分摊承担</div>
+                    <ul>
+                        <li>广告费用：${salesCost.operationalCosts.advertising.toFixed(2)} 元
+                            <ul>
+                                <li>基础广告费（${(inputs.adRate*100).toFixed(0)}%）：${adCost.toFixed(2)} 元</li>
+                                <li>分摊后每单广告费：${adCost.toFixed(2)} ÷ ${(salesCost.effectiveRate*100).toFixed(0)}% = ${salesCost.operationalCosts.advertising.toFixed(2)} 元</li>
+                                <li>广告费进项税（6%，可抵扣）：${salesCost.adVAT.toFixed(2)} 元</li>
+                            </ul>
+                        </li>
+                        <li>物流费用：${inputs.shippingCost.toFixed(2)} ÷ ${(salesCost.effectiveRate*100).toFixed(0)}% = ${salesCost.operationalCosts.shipping.toFixed(2)} 元</li>
+                        <li>运费险：${inputs.shippingInsurance.toFixed(2)} ÷ ${(salesCost.effectiveRate*100).toFixed(0)}% = ${salesCost.operationalCosts.insurance.toFixed(2)} 元</li>
+                        <li>其他成本：${inputs.otherCost.toFixed(2)} ÷ ${(salesCost.effectiveRate*100).toFixed(0)}% = ${salesCost.operationalCosts.other.toFixed(2)} 元</li>
+                        <li>总运营成本：${salesCost.totalOperationalCost.toFixed(2)} 元</li>
+                    </ul>
+                </div>
+
+                <div class="section">
+                    <h3>税费分析</h3>
+                    <ul>
+                        <li>销项税额（应收）：${priceInfo.outputVAT.toFixed(2)} 元</li>
+                        <li>进项税额（可抵扣）：${salesCost.totalVATDeduction.toFixed(2)} 元
+                            <ul>
+                                <li>商品进项税：${purchaseCost.purchaseVAT.toFixed(2)} 元</li>
+                                <li>广告费进项税：${salesCost.adVAT.toFixed(2)} 元</li>
+                            </ul>
+                        </li>
+                        <li>实际应缴税额：${priceInfo.actualVAT.toFixed(2)} 元</li>
+                    </ul>
+                </div>
+
+                <div class="section">
+                    <h3>最终结果</h3>
+                    <ul>
+                        <li>不含税售价：${priceInfo.netPrice.toFixed(2)} 元</li>
+                        <li>含税售价：${priceInfo.finalPrice.toFixed(2)} 元</li>
+                        <li>平台佣金：
+                            <ul>
+                                <li>计算基数：含税售价 ${priceInfo.finalPrice.toFixed(2)} 元</li>
+                                <li>费率：${(inputs.platformRate*100).toFixed(1)}%</li>
+                                <li>佣金金额：${priceInfo.platformFee.toFixed(2)} 元</li>
+                            </ul>
+                        </li>
+                        <li>预期利润：${priceInfo.profit.toFixed(2)} 元（${priceInfo.profitRate.toFixed(1)}%）</li>
+                    </ul>
+                </div>
+
                 <p class="calculation-note">计算说明：</p>
                 <ul class="calculation-note">
-                    <li>开票费用 = 产品成本 × 开票费率(${(costs.invoiceCost/inputs.costPrice*100).toFixed(1)}%)</li>
-                    <li>广告费用 = 最终售价 × 付费占比(${(costs.adCost/prices.finalPrice*100).toFixed(1)}%)</li>
-                    <li>产品进项税 = 产品成本 × 销项税率(${(costs.productTaxDeduction/inputs.costPrice*100).toFixed(1)}%)</li>
+                    <li>进货成本 = 产品成本 + 开票费用</li>
+                    <li>商品进项税 = 产品成本 × 商品税率（${(inputs.outputTaxRate*100).toFixed(0)}%）</li>
+                    <li>广告费 = 最终售价 × 广告费率（${(inputs.adRate*100).toFixed(0)}%）</li>
                     <li>广告费进项税 = 广告费 × 6%</li>
-                    <li>平台佣金 = 最终售价 × 平台费率(${(fees.platformFee/prices.finalPrice*100).toFixed(1)}%)</li>
-                    <li>实际成本 = 总成本 - 可抵扣税额</li>
+                    <li>销项税额 = 不含税售价 × 商品税率</li>
+                    <li>实际应缴税额 = 销项税额 - 可抵扣进项税额</li>
+                    <li>平台佣金 = 含税售价 × 平台费率</li>
+                    <li>预期利润 = 含税售价 × 目标利润率</li>
+                    <li>退货率影响：
+                        <ul>
+                            <li>有效销售率 = 1 - 退货率</li>
+                            <li>分摊后成本 = 原始成本 ÷ 有效销售率</li>
+                            <li>例如：原成本5元，退货率20%，则分摊后成本 = 5 ÷ 80% = 6.25元</li>
+                        </ul>
+                    </li>
                 </ul>
             `;
         }
@@ -307,44 +642,44 @@
                 const inputs = getValidatedInputs();
                 
                 // 2. 验证利润率和平台费率的组合是否合法
-                const adjustedProfitRate = inputs.targetProfitRate / (1 + inputs.outputTaxRate);
-                if (inputs.platformRate + adjustedProfitRate >= 1) {
+                if (inputs.platformRate + inputs.targetProfitRate >= 1) {
                     throw new Error("平台抽佣比例与目标利润率的组合过高，无法计算有效售价");
                 }
 
-                // 3. 由于广告费基于最终售价，我们需要迭代计算
+                // 3. 计算进货成本和可抵扣进项税
+                const purchaseCost = calculatePurchaseCost(inputs);
+
+                // 4. 基于预估最终售价计算广告费
                 let prevFinalPrice = 0;
                 let finalPrice = 1000; // 初始估计值
                 let iteration = 0;
                 const MAX_ITERATIONS = 10;
                 const TOLERANCE = 0.01;
 
+                let priceInfo;
+                let salesCost;
+
                 while (Math.abs(finalPrice - prevFinalPrice) > TOLERANCE && iteration < MAX_ITERATIONS) {
                     prevFinalPrice = finalPrice;
-                    
-                    // 基于当前估计的最终价格计算广告费
                     const adCost = prevFinalPrice * inputs.adRate;
                     
-                    // 计算基础成本和税费
-                    const costs = calculateBaseCost(inputs, adCost);
+                    // 5. 计算销售成本和总可抵扣税额
+                    salesCost = calculateSalesCost(inputs, adCost, purchaseCost);
                     
-                    // 计算净价和最终价格
-                    const prices = calculatePrices(costs.effectiveCost, inputs);
-                    finalPrice = prices.finalPrice;
+                    // 6. 计算最终价格和各项费用
+                    priceInfo = calculatePrices(purchaseCost, salesCost, inputs);
+                    finalPrice = priceInfo.finalPrice;
                     
                     iteration++;
                 }
 
-                // 使用最终的广告费重新计算所有数值
+                // 7. 使用最终价格重新计算所有数值
                 const adCost = finalPrice * inputs.adRate;
-                const costs = calculateBaseCost(inputs, adCost);
-                const prices = calculatePrices(costs.effectiveCost, inputs);
-                
-                // 5. 计算各项费用和利润
-                const fees = calculateFees(prices, inputs);
+                salesCost = calculateSalesCost(inputs, adCost, purchaseCost);
+                priceInfo = calculatePrices(purchaseCost, salesCost, inputs);
 
                 // 6. 显示结果
-                document.getElementById("result").innerHTML = generateResultHtml(costs, prices, fees, inputs);
+                document.getElementById("result").innerHTML = generateResultHtml(purchaseCost, salesCost, priceInfo, inputs);
             } catch (error) {
                 // 显示错误信息
                 document.getElementById("result").innerHTML = `
@@ -353,8 +688,11 @@
             }
         }
 
-        // 页面加载完成后自动执行一次计算
-        window.onload = calculate;
+        // 页面加载完成后加载保存的值并计算
+        window.onload = function() {
+            loadSavedInputs();
+            calculate();
+        };
         
         // 为所有输入框添加实时计算功能
         document.querySelectorAll('input').forEach(input => {
