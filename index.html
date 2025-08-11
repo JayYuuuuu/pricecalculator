@@ -4,6 +4,41 @@
     <meta charset="UTF-8">
     <title>电商合理售价计算器</title>
     <style>
+        /* Tab切换样式 */
+        .tab-container {
+            margin-bottom: 2rem;
+        }
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid #d2d2d7;
+            padding-bottom: 0.5rem;
+        }
+        .tab {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            background: none;
+            border: none;
+            color: #666;
+        }
+        .tab:hover {
+            background: #f5f5f7;
+            color: #1d1d1f;
+        }
+        .tab.active {
+            background: #0066cc;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
         /* 现代化的UI样式 */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -550,7 +585,16 @@
     <div class="container">
         <h2>电商合理售价计算器</h2>
         
-                    <div class="section">
+        <div class="tab-container">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('price')">售价计算</button>
+                <button class="tab" onclick="switchTab('profit')">利润计算</button>
+            </div>
+        </div>
+
+        <!-- 售价计算tab -->
+        <div id="priceTab" class="tab-content active">
+            <div class="section">
                 <h3>第一步：基础成本</h3>
                 <div class="step-description">
                     这部分是您需要支付给供应商的费用，包括商品本身的成本和相关税费。
@@ -734,7 +778,136 @@
                 </div>
             </div>
 
-        <button onclick="calculate()">计算合理售价</button>
+        </div><!-- 结束售价计算tab -->
+
+        <!-- 利润计算tab -->
+        <div id="profitTab" class="tab-content">
+            <div class="section">
+                <h3>利润计算</h3>
+                <div class="step-description">
+                    输入商品的进货价和实际售价，计算各项成本和最终利润。
+                </div>
+                <div class="input-groups-container">
+                    <div class="input-group">
+                        <label>进货价（不含税）:</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="profitCostPrice" value="100" step="0.01">
+                            <button class="save-button" onclick="saveInputs()">保存</button>
+                        </div>
+                        <div class="field-hint">这是供应商提供的不含税商品价格</div>
+                    </div>
+
+                    <div class="input-group">
+                        <label>实际售价（含税）:</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="actualPrice" value="200" step="0.01">
+                            <button class="save-button" onclick="saveInputs()">保存</button>
+                        </div>
+                        <div class="field-hint">实际销售时的含税价格</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>费用设置</h3>
+                <div class="step-description">
+                    设置各项费用参数，这些参数将影响最终的利润计算。
+                </div>
+                <div class="input-groups-container">
+                    <div class="cost-category">
+                        <div class="category-title">税费设置</div>
+                        <div class="input-group">
+                            <label>开票费率（%）:</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="profitInputTaxRate" value="6" step="0.1">
+                                <button class="save-button" onclick="saveInputs()">保存</button>
+                            </div>
+                            <div class="field-hint">供应商开具发票时收取的额外费用比例（通常是6%）</div>
+                        </div>
+
+                        <div class="input-group">
+                            <label>商品税率（%）:</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="profitOutputTaxRate" value="13" step="0.1">
+                                <button class="save-button" onclick="saveInputs()">保存</button>
+                            </div>
+                            <div class="field-hint">商品的增值税税率（如服装类13%）</div>
+                        </div>
+                    </div>
+
+                    <div class="cost-category">
+                        <div class="category-title">平台费用</div>
+                        <div class="input-group">
+                            <label>平台抽佣比例（%）:</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="profitPlatformRate" value="5.5" step="0.1">
+                                <button class="save-button" onclick="saveInputs()">保存</button>
+                            </div>
+                            <div class="field-hint">电商平台收取的交易佣金，基于最终售价（含税）计算</div>
+                        </div>
+                    </div>
+
+                    <div class="cost-category">
+                        <div class="category-title">物流费用</div>
+                        <div class="input-group">
+                            <label>物流费（元/单）:</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="profitShippingCost" value="5" step="0.01">
+                                <button class="save-button" onclick="saveInputs()">保存</button>
+                            </div>
+                            <div class="field-hint">每个订单的快递费用</div>
+                        </div>
+
+                        <div class="input-group">
+                            <label>运费险（元/单）:</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="profitShippingInsurance" value="1" step="0.01">
+                                <button class="save-button" onclick="saveInputs()">保存</button>
+                            </div>
+                            <div class="field-hint">每个订单的运费险费用</div>
+                        </div>
+                    </div>
+
+                    <div class="cost-category">
+                        <div class="category-title">营销费用</div>
+                        <div class="input-group">
+                            <label>广告费用比例（%）:</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="profitAdRate" value="30" step="0.1">
+                                <button class="save-button" onclick="saveInputs()">保存</button>
+                            </div>
+                            <div class="field-hint">广告费占最终售价的比例，可开具6%专票抵扣税款</div>
+                        </div>
+                    </div>
+
+                    <div class="cost-category">
+                        <div class="category-title">其他费用</div>
+                        <div class="input-group">
+                            <label>其他成本（元/单）:</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="profitOtherCost" value="2" step="0.01">
+                                <button class="save-button" onclick="saveInputs()">保存</button>
+                            </div>
+                            <div class="field-hint">包装材料等其他固定成本</div>
+                        </div>
+                    </div>
+
+                    <div class="cost-category">
+                        <div class="category-title">风险预期</div>
+                        <div class="input-group">
+                            <label>预计退货率（%）:</label>
+                            <div class="input-wrapper">
+                                <input type="number" id="profitReturnRate" value="20" step="0.1">
+                                <button class="save-button" onclick="saveInputs()">保存</button>
+                            </div>
+                            <div class="field-hint">预计的退货率，影响成本分摊（例：20%意味着每100单中有20单会退货）</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="calculateProfit()">计算利润</button>
+        </div>
 
         <div class="result" id="result"></div>
         
@@ -751,9 +924,239 @@
     </div>
 
     <script>
+        // Tab切换功能
+        function switchTab(tabName) {
+            // 隐藏所有tab内容
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // 移除所有tab按钮的active状态
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 显示选中的tab内容
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            
+            // 设置选中tab按钮的active状态
+            event.target.classList.add('active');
+            
+            // 清空结果区域
+            document.getElementById('result').innerHTML = '';
+        }
+
+        // 计算利润
+        function calculateProfit() {
+            try {
+                // 获取基础输入
+                const costPrice = validateInput(parseFloat(document.getElementById('profitCostPrice').value), 0.01, 1000000, "进货价");
+                const actualPrice = validateInput(parseFloat(document.getElementById('actualPrice').value), 0.01, 1000000, "实际售价");
+                const inputTaxRate = validateInput(parseFloat(document.getElementById('profitInputTaxRate').value), 0, 100, "开票费率") / 100;
+                const outputTaxRate = validateInput(parseFloat(document.getElementById('profitOutputTaxRate').value), 0, 100, "商品税率") / 100;
+                const platformRate = validateInput(parseFloat(document.getElementById('profitPlatformRate').value), 0, 100, "平台抽佣比例") / 100;
+                const shippingCost = validateInput(parseFloat(document.getElementById('profitShippingCost').value), 0, 10000, "物流费");
+                const shippingInsurance = validateInput(parseFloat(document.getElementById('profitShippingInsurance').value), 0, 100, "运费险");
+                const adRate = validateInput(parseFloat(document.getElementById('profitAdRate').value), 0, 100, "广告费用比例") / 100;
+                const otherCost = validateInput(parseFloat(document.getElementById('profitOtherCost').value), 0, 10000, "其他成本");
+                const returnRate = validateInput(parseFloat(document.getElementById('profitReturnRate').value), 0, 100, "退货率") / 100;
+
+                // 计算进货成本
+                const invoiceCost = costPrice * inputTaxRate; // 开票成本
+                const totalPurchaseCost = costPrice + invoiceCost; // 总进货成本
+                const purchaseVAT = costPrice * outputTaxRate; // 进项税额
+                const effectiveCost = totalPurchaseCost - purchaseVAT; // 税后实际成本
+
+                // 计算有效销售率
+                const effectiveRate = 1 - returnRate;
+
+                // 计算销售相关费用（考虑退货率）
+                const platformFee = actualPrice * platformRate; // 平台佣金（可退回）
+                const adCost = actualPrice * adRate; // 广告费（不可退回，需分摊）
+                const adCostEffective = adCost / effectiveRate; // 分摊后的广告费
+                const adVAT = adCostEffective * 0.06; // 广告费可抵扣进项税（6%）
+                
+                // 运营成本（不可退回，需分摊）
+                const operationalCostBase = shippingCost + shippingInsurance + otherCost;
+                const operationalCost = operationalCostBase / effectiveRate;
+
+                // 计算销项税
+                const netPrice = actualPrice / (1 + outputTaxRate); // 不含税售价
+                const outputVAT = netPrice * outputTaxRate; // 销项税额
+
+                // 计算总可抵扣进项税
+                const totalVATDeduction = purchaseVAT + adVAT + (platformFee * 0.06); // 商品+广告+平台佣金的进项税
+                const actualVAT = outputVAT - totalVATDeduction; // 实际应缴税额
+
+                // 计算总成本（考虑退货分摊）
+                const totalCost = effectiveCost + platformFee + adCostEffective + operationalCost + actualVAT;
+
+                // 计算利润
+                const profit = actualPrice - totalCost;
+                const profitRate = (profit / actualPrice * 100).toFixed(2);
+
+                // 生成结果HTML
+                const resultHtml = `
+                    <div class="final-price">
+                        <div class="price-label">实际利润</div>
+                        <div class="price-value">¥ ${profit.toFixed(2)}</div>
+                        <div class="price-hint">利润率：${profitRate}%</div>
+                    </div>
+
+                    <div class="section calculation-process">
+                        <h3>利润构成分析</h3>
+                        <div class="price-composition">
+                            <div class="composition-item">
+                                <div class="item-label">销售收入</div>
+                                <div class="item-value">¥ ${actualPrice.toFixed(2)}</div>
+                                <div class="item-percent">100%</div>
+                            </div>
+                            <div class="composition-item">
+                                <div class="item-label">基础成本</div>
+                                <div class="item-value">¥ ${effectiveCost.toFixed(2)}</div>
+                                <div class="item-percent">${(effectiveCost/actualPrice*100).toFixed(1)}%</div>
+                            </div>
+                            <div class="composition-item">
+                                <div class="item-label">销售费用</div>
+                                <div class="item-value">¥ ${(platformFee + operationalCost + adCostEffective).toFixed(2)}</div>
+                                <div class="item-percent">${((platformFee + operationalCost + adCostEffective)/actualPrice*100).toFixed(1)}%</div>
+                                <div class="cost-detail">
+                                    <div class="cost-item">平台佣金（可退回）：¥ ${platformFee.toFixed(2)}</div>
+                                    <div class="cost-item">广告费用（分摊后）：¥ ${adCostEffective.toFixed(2)}</div>
+                                    <div class="cost-item">物流及其他（分摊后）：¥ ${operationalCost.toFixed(2)}</div>
+                                    <div class="cost-item" style="color: #666; font-size: 0.85rem;">
+                                        注：不可退回费用已按退货率${(returnRate*100).toFixed(0)}%分摊
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="composition-item profit">
+                                <div class="item-label">实际利润</div>
+                                <div class="item-value">¥ ${profit.toFixed(2)}</div>
+                                <div class="item-percent">${profitRate}%</div>
+                            </div>
+                        </div>
+
+                        <div class="calculation-steps">
+                            <div class="step-header">详细成本分析：</div>
+                            
+                            <div class="step-section">
+                                <div class="step-title">1. 进货成本分析</div>
+                                <div class="cost-table">
+                                    <table>
+                                        <tr>
+                                            <td>进货价（不含税）</td>
+                                            <td class="amount">${costPrice.toFixed(2)}元</td>
+                                        </tr>
+                                        <tr>
+                                            <td>开票费用（${(inputTaxRate*100).toFixed(1)}%）</td>
+                                            <td class="amount">${invoiceCost.toFixed(2)}元</td>
+                                        </tr>
+                                        <tr>
+                                            <td>进项税额（${(outputTaxRate*100).toFixed(1)}%）</td>
+                                            <td class="amount">${purchaseVAT.toFixed(2)}元</td>
+                                        </tr>
+                                        <tr class="total">
+                                            <td>税后实际成本</td>
+                                            <td class="amount">${effectiveCost.toFixed(2)}元</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="step-section">
+                                <div class="step-title">2. 销售费用分析</div>
+                                <div class="cost-table">
+                                    <table>
+                                        <tr>
+                                            <td>平台佣金（${(platformRate*100).toFixed(1)}%，可退回）</td>
+                                            <td class="amount">${platformFee.toFixed(2)}元</td>
+                                        </tr>
+                                        <tr>
+                                            <td>广告费用（${(adRate*100).toFixed(1)}%）</td>
+                                            <td class="formula">${adCost.toFixed(2)} ÷ ${(effectiveRate*100).toFixed(0)}%</td>
+                                            <td class="amount">${adCostEffective.toFixed(2)}元</td>
+                                        </tr>
+                                        <tr>
+                                            <td>物流费用</td>
+                                            <td class="formula">${shippingCost.toFixed(2)} ÷ ${(effectiveRate*100).toFixed(0)}%</td>
+                                            <td class="amount">${(shippingCost/effectiveRate).toFixed(2)}元</td>
+                                        </tr>
+                                        <tr>
+                                            <td>运费险</td>
+                                            <td class="formula">${shippingInsurance.toFixed(2)} ÷ ${(effectiveRate*100).toFixed(0)}%</td>
+                                            <td class="amount">${(shippingInsurance/effectiveRate).toFixed(2)}元</td>
+                                        </tr>
+                                        <tr>
+                                            <td>其他成本</td>
+                                            <td class="formula">${otherCost.toFixed(2)} ÷ ${(effectiveRate*100).toFixed(0)}%</td>
+                                            <td class="amount">${(otherCost/effectiveRate).toFixed(2)}元</td>
+                                        </tr>
+                                        <tr class="total">
+                                            <td colspan="2">销售费用合计（考虑退货分摊）</td>
+                                            <td class="amount">${(platformFee + operationalCost + adCostEffective).toFixed(2)}元</td>
+                                        </tr>
+                                    </table>
+                                    <div style="margin-top: 1rem; font-size: 0.9rem; color: #666;">
+                                        注：由于退货率${(returnRate*100).toFixed(0)}%，不可退回费用（广告费、物流费等）需要由${(effectiveRate*100).toFixed(0)}%的成功订单分摊承担。
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="step-section">
+                                <div class="step-title">3. 税费分析</div>
+                                <div class="cost-table">
+                                    <table>
+                                        <tr>
+                                            <td>销项税额</td>
+                                            <td class="amount">${outputVAT.toFixed(2)}元</td>
+                                        </tr>
+                                        <tr>
+                                            <td>可抵扣进项税</td>
+                                            <td class="amount">${totalVATDeduction.toFixed(2)}元</td>
+                                        </tr>
+                                        <tr class="total">
+                                            <td>实际应缴税额</td>
+                                            <td class="amount">${actualVAT.toFixed(2)}元</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="step-section">
+                                <div class="step-title">4. 最终利润分析</div>
+                                <div class="cost-table">
+                                    <table>
+                                        <tr>
+                                            <td>销售收入（含税）</td>
+                                            <td class="amount">${actualPrice.toFixed(2)}元</td>
+                                        </tr>
+                                        <tr>
+                                            <td>总成本</td>
+                                            <td class="amount">${totalCost.toFixed(2)}元</td>
+                                        </tr>
+                                        <tr class="total">
+                                            <td>实际利润</td>
+                                            <td class="amount">${profit.toFixed(2)}元（${profitRate}%）</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('result').innerHTML = resultHtml;
+            } catch (error) {
+                document.getElementById('result').innerHTML = `
+                    <div class="error">${error.message}</div>
+                `;
+            }
+        }
+
         // 保存所有输入值到localStorage
         function saveInputs() {
             const inputs = {
+                // 售价计算tab的输入
                 costPrice: document.getElementById("costPrice").value,
                 inputTaxRate: document.getElementById("inputTaxRate").value,
                 outputTaxRate: document.getElementById("outputTaxRate").value,
@@ -763,7 +1166,19 @@
                 shippingInsurance: document.getElementById("shippingInsurance").value,
                 shippingCost: document.getElementById("shippingCost").value,
                 otherCost: document.getElementById("otherCost").value,
-                targetProfitRate: document.getElementById("targetProfitRate").value
+                targetProfitRate: document.getElementById("targetProfitRate").value,
+                
+                // 利润计算tab的输入
+                profitCostPrice: document.getElementById("profitCostPrice").value,
+                actualPrice: document.getElementById("actualPrice").value,
+                profitInputTaxRate: document.getElementById("profitInputTaxRate").value,
+                profitOutputTaxRate: document.getElementById("profitOutputTaxRate").value,
+                profitPlatformRate: document.getElementById("profitPlatformRate").value,
+                profitShippingCost: document.getElementById("profitShippingCost").value,
+                profitShippingInsurance: document.getElementById("profitShippingInsurance").value,
+                profitAdRate: document.getElementById("profitAdRate").value,
+                profitOtherCost: document.getElementById("profitOtherCost").value,
+                profitReturnRate: document.getElementById("profitReturnRate").value
             };
             localStorage.setItem('priceCalculatorInputs', JSON.stringify(inputs));
             
@@ -857,15 +1272,16 @@
                 other: inputs.otherCost / effectiveRate
             };
 
-            // 3. 广告费进项税额（可抵扣）
-            const AD_VAT_RATE = 0.06;
-            const adVAT = (adCost / effectiveRate) * AD_VAT_RATE;
+            // 3. 广告费和平台佣金的进项税额（可抵扣）
+            const VAT_RATE = 0.06; // 现代服务业增值税率6%
+            const adVAT = (adCost / effectiveRate) * VAT_RATE;
+            const platformVAT = inputs.platformRate * VAT_RATE; // 平台佣金的可抵扣进项税率
 
             // 4. 总销售成本（不含平台佣金，因为佣金基于最终售价）
             const totalOperationalCost = Object.values(operationalCosts).reduce((a, b) => a + b, 0);
 
             // 5. 总可抵扣进项税
-            const totalVATDeduction = purchaseCost.purchaseVAT + adVAT;
+            const totalVATDeduction = purchaseCost.purchaseVAT + adVAT + platformVAT;
 
             return {
                 operationalCosts,
@@ -886,16 +1302,17 @@
             
             // 2. 利润率按定义：(最终售价-所有成本和税费)/最终售价 = 目标利润率
             // 将基于最终价计提的销项税等比例项换算为"最终价的占比"
-            const AD_VAT_RATE = 0.06;
+            const VAT_RATE = 0.06; // 现代服务业增值税率6%
             const taxFactorOnFinal = inputs.salesTaxRate / (1 + inputs.salesTaxRate); // 销项税占最终售价比例
             const adFactorEffective = inputs.adRate / salesCost.effectiveRate;       // 广告费分摊（不可退回）
-            const adVatCreditFactor = AD_VAT_RATE * adFactorEffective;               // 广告费进项税抵扣占比
+            const adVatCreditFactor = VAT_RATE * adFactorEffective;                  // 广告费进项税抵扣占比
+            const platformVatCreditFactor = VAT_RATE * inputs.platformRate;          // 平台佣金进项税抵扣占比
             const profitFactorEffective = inputs.targetProfitRate;                   // 目标利润率按最终售价口径，不随退货分摊
             
             // 分子：C（已扣进项税）+ F_不可退回/(1-R)
             const numeratorFinal = purchaseCost.effectiveCost + fixedCosts;
-            // 分母：1 - 平台费 - 税占比 - 目标利润率 - 广告费分摊占比 + 广告费可抵扣进项税占比
-            const denominatorFinal = 1 - inputs.platformRate - taxFactorOnFinal - inputs.targetProfitRate - adFactorEffective + adVatCreditFactor;
+            // 分母：1 - 平台费 - 税占比 - 目标利润率 - 广告费分摊占比 + 广告费可抵扣进项税占比 + 平台佣金进项税抵扣占比
+            const denominatorFinal = 1 - inputs.platformRate - taxFactorOnFinal - inputs.targetProfitRate - adFactorEffective + adVatCreditFactor + platformVatCreditFactor;
             
             // 3. 计算含税售价、及不含税净价
             const finalPrice = numeratorFinal / denominatorFinal;
@@ -908,7 +1325,7 @@
             const profit = finalPrice * inputs.targetProfitRate;
             
             // 5. 计算广告费进项税（广告费为可抵扣6%，且为不可退回成本，需按(1-R)分摊）
-            const adVAT = (adCost / salesCost.effectiveRate) * AD_VAT_RATE;
+            const adVAT = (adCost / salesCost.effectiveRate) * VAT_RATE;
             
             // 6. 计算实际税负（销项税 - 进项税(商品+广告)）
             const totalVATDeduction = purchaseCost.purchaseVAT + adVAT;
@@ -937,7 +1354,8 @@
                 taxFactorOnFinal,
                 adFactorEffective,
                 adVatCreditFactor,
-                profitFactorEffective
+                profitFactorEffective,
+                platformVatCreditFactor
             };
         }
 
@@ -1052,7 +1470,7 @@
                             <div class="formula-box">
                                 <div class="formula-title">计算公式：</div>
                                 <div class="formula-content">
-                                    (税后进货成本 + 不可退回固定成本/(1-退货率)) ÷ (1 - 平台费率 - 销项税率 - 目标利润率 - 广告费率/(1-退货率))
+                                    (税后进货成本 + 不可退回固定成本/(1-退货率)) ÷ (1 - 平台费率 - 销项税率 - 目标利润率 - 广告费率/(1-退货率) + 广告费进项税抵扣 + 平台佣金进项税抵扣)
                                 </div>
                                 <div class="formula-note">
                                     说明：按利润率定义 (最终售价-所有成本和税费)/最终售价 = 目标利润率 进行联立求解
@@ -1073,10 +1491,11 @@
                                                 销项税占比 ${(priceInfo.taxFactorOnFinal*100).toFixed(1)}% +<br>
                                                 目标利润分摊 ${(priceInfo.profitFactorEffective*100).toFixed(1)}% +<br>
                                                 广告费分摊 ${(priceInfo.adFactorEffective*100).toFixed(1)}% -<br>
-                                                广告费进项税抵扣 ${(priceInfo.adVatCreditFactor*100).toFixed(1)}%
+                                                广告费进项税抵扣 ${(priceInfo.adVatCreditFactor*100).toFixed(1)}% -<br>
+                                                平台佣金进项税抵扣 ${(priceInfo.platformVatCreditFactor*100).toFixed(1)}%
                                             </span>
                                         </td>
-                                        <td class="amount">${(100*(inputs.platformRate + priceInfo.taxFactorOnFinal + priceInfo.profitFactorEffective + priceInfo.adFactorEffective - priceInfo.adVatCreditFactor)).toFixed(1)}%</td>
+                                        <td class="amount">${(100*(inputs.platformRate + priceInfo.taxFactorOnFinal + priceInfo.profitFactorEffective + priceInfo.adFactorEffective - priceInfo.adVatCreditFactor - priceInfo.platformVatCreditFactor)).toFixed(1)}%</td>
                                     </tr>
                                 </table>
                                 
@@ -1176,10 +1595,11 @@
                     <h3>税费分析</h3>
                     <ul>
                         <li>销项税额（应收）：${priceInfo.outputVAT.toFixed(2)} 元</li>
-                        <li>进项税额（可抵扣）：${(purchaseCost.purchaseVAT + priceInfo.adVAT).toFixed(2)} 元
+                        <li>进项税额（可抵扣）：${(purchaseCost.purchaseVAT + priceInfo.adVAT + priceInfo.platformVatCreditFactor * priceInfo.finalPrice).toFixed(2)} 元
                             <ul>
                                 <li>商品进项税：${purchaseCost.purchaseVAT.toFixed(2)} 元</li>
                                 <li>广告费进项税：${priceInfo.adVAT.toFixed(2)} 元</li>
+                                <li>平台佣金进项税：${(priceInfo.platformVatCreditFactor * priceInfo.finalPrice).toFixed(2)} 元</li>
                             </ul>
                         </li>
                         <li>实际应缴税额：${priceInfo.actualVAT.toFixed(2)} 元</li>
@@ -1269,10 +1689,10 @@
                 // 需满足 1 - (平台 + 销项税占比 + 目标利润 + 广告分摊 - 广告进项抵扣) > 0
                 const returnRate = parseFloat(document.getElementById("returnRate").value) / 100 || 0;
                 const effectiveRate = 1 - returnRate;
-                const AD_VAT_RATE = 0.06;
+                const VAT_RATE = 0.06; // 现代服务业增值税率6%
                 const taxFactorOnFinal = inputs.salesTaxRate / (1 + inputs.salesTaxRate);
                 const adFactorEffective = inputs.adRate / effectiveRate;
-                const adVatCreditFactor = AD_VAT_RATE * adFactorEffective;
+                const adVatCreditFactor = VAT_RATE * adFactorEffective;
                 const profitFactorEffective = inputs.targetProfitRate; // 利润率按最终售价口径
                 const denominatorFinal = 1 - (inputs.platformRate + taxFactorOnFinal + profitFactorEffective + adFactorEffective - adVatCreditFactor);
                 if (denominatorFinal <= 0) {
