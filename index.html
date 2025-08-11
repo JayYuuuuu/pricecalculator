@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>电商合理售价计算器</title>
+    <style>
+        /* 现代化的UI样式 */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #2c3e50;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        .input-group {
+            margin-bottom: 1rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #495057;
+            font-weight: 500;
+        }
+        input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: border-color 0.15s ease-in-out;
+        }
+        input:focus {
+            border-color: #80bdff;
+            outline: 0;
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+        }
+        .radio-group {
+            display: flex;
+            gap: 1rem;
+        }
+        .radio-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+        .radio-label input[type="radio"] {
+            width: auto;
+            margin: 0;
+            cursor: pointer;
+        }
+        .field-hint {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-top: 0.25rem;
+        }
+        button {
+            width: 100%;
+            padding: 1rem;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.15s ease-in-out;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            font-size: 1.1rem;
+        }
+        .result b {
+            color: #28a745;
+        }
+        .result ul ul {
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+            padding-left: 1.5rem;
+            font-size: 0.95em;
+            color: #666;
+        }
+        .error {
+            color: #dc3545;
+            padding: 1rem;
+            background-color: #f8d7da;
+            border-radius: 5px;
+            margin-top: 1rem;
+        }
+        .description {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        .calculation-note {
+            font-size: 0.9rem;
+            color: #495057;
+            margin-top: 1rem;
+            border-top: 1px solid #dee2e6;
+            padding-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>电商合理售价计算器</h2>
+        
+        <div class="input-group">
+            <label>进货价（不含税）:</label>
+            <input type="number" id="costPrice" value="100" step="0.01">
+        </div>
+
+        <div class="input-group">
+            <label>开票费率（%）:</label>
+            <input type="number" id="inputTaxRate" value="6" step="0.1">
+            <div class="field-hint">供应商收取的开票费用比例</div>
+        </div>
+
+        <div class="input-group">
+            <label>销项税率（%）:</label>
+            <input type="number" id="outputTaxRate" value="13" step="0.1">
+            <div class="field-hint">销售时的增值税税率，用于计算可抵扣金额</div>
+        </div>
+
+        <div class="input-group">
+            <label>平台抽佣比例（%）:</label>
+            <input type="number" id="platformRate" value="5" step="0.1">
+            <div class="field-hint">基于最终售价（含税）计算的平台佣金比例</div>
+        </div>
+
+        <div class="input-group">
+            <label>物流费（元）:</label>
+            <input type="number" id="shippingCost" value="8" step="0.01">
+        </div>
+
+        <div class="input-group">
+            <label>付费占比（%）:</label>
+            <input type="number" id="adRate" value="30" step="0.1">
+            <div class="field-hint">广告费占最终售价的比例，可开具6%专票用于抵扣</div>
+        </div>
+
+        <div class="input-group">
+            <label>运费险（元）:</label>
+            <input type="number" id="shippingInsurance" value="1" step="0.01">
+            <div class="field-hint">每单运费险的预估成本</div>
+        </div>
+
+        <div class="input-group">
+            <label>其他成本（元）:</label>
+            <input type="number" id="otherCost" value="2" step="0.01">
+        </div>
+
+        <div class="input-group">
+            <label>目标利润率（%）:</label>
+            <input type="number" id="targetProfitRate" value="20" step="0.1">
+        </div>
+
+        <button onclick="calculate()">计算合理售价</button>
+
+        <div class="result" id="result"></div>
+        
+        <div class="description">
+            <p>计算说明：</p>
+            <ul>
+                <li>进货价请填写不含税价格</li>
+                <li>开票费率是供应商收取的开票费用比例（如6%）</li>
+                <li>销项税率用于计算可抵扣的进项税额（如服装类目13%）</li>
+                <li>计算结果已考虑开票成本、税费抵扣、平台抽佣等</li>
+                <li>目标利润率基于最终售价计算</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // 验证输入值的合法性
+        function validateInput(value, min, max, name) {
+            if (isNaN(value) || value < min || value > max) {
+                throw new Error(`${name}必须在${min}到${max}之间`);
+            }
+            return value;
+        }
+
+        // 获取并验证所有输入值
+        function getValidatedInputs() {
+            return {
+                costPrice: validateInput(parseFloat(document.getElementById("costPrice").value), 0.01, 1000000, "进货价"),
+                inputTaxRate: validateInput(parseFloat(document.getElementById("inputTaxRate").value), 0, 100, "进项税率") / 100,
+                outputTaxRate: validateInput(parseFloat(document.getElementById("outputTaxRate").value), 0, 100, "销项税率") / 100,
+                platformRate: validateInput(parseFloat(document.getElementById("platformRate").value), 0, 100, "平台抽佣比例") / 100,
+                shippingCost: validateInput(parseFloat(document.getElementById("shippingCost").value), 0, 10000, "物流费"),
+                otherCost: validateInput(parseFloat(document.getElementById("otherCost").value), 0, 10000, "其他成本"),
+                adRate: validateInput(parseFloat(document.getElementById("adRate").value), 0, 100, "付费占比") / 100,
+                shippingInsurance: validateInput(parseFloat(document.getElementById("shippingInsurance").value), 0, 100, "运费险"),
+                targetProfitRate: validateInput(parseFloat(document.getElementById("targetProfitRate").value), 0, 100, "目标利润率") / 100
+            };
+        }
+
+        // 计算基础成本和税费
+        function calculateBaseCost(inputs, adCost) {
+            // 开票成本（供应商收取的开票费用）
+            const invoiceCost = inputs.costPrice * inputs.inputTaxRate;
+            
+            // 广告费可抵扣的进项税（6%）
+            const AD_TAX_RATE = 0.06;
+            const adTaxDeduction = adCost * AD_TAX_RATE;
+            
+            // 基础成本（产品成本 + 开票成本 + 物流 + 运费险 + 广告费 + 其他）
+            const baseCost = inputs.costPrice + invoiceCost + inputs.shippingCost + 
+                           inputs.shippingInsurance + adCost + inputs.otherCost;
+            
+            // 可抵扣进项税（产品进项税 + 广告费进项税）
+            const productTaxDeduction = inputs.costPrice * inputs.outputTaxRate;
+            const totalTaxDeduction = productTaxDeduction + adTaxDeduction;
+            
+            // 实际成本 = 基础成本 - 可抵扣税额
+            const effectiveCost = baseCost - totalTaxDeduction;
+            
+            return {
+                baseCost,
+                invoiceCost,
+                adCost,
+                adTaxDeduction,
+                productTaxDeduction,
+                totalTaxDeduction,
+                effectiveCost
+            };
+        }
+
+        // 计算净价和最终价格
+        function calculatePrices(effectiveCost, inputs) {
+            const adjustedProfitRate = inputs.targetProfitRate / (1 + inputs.outputTaxRate);
+            const netPrice = effectiveCost / (1 - inputs.platformRate - adjustedProfitRate);
+            const finalPrice = netPrice * (1 + inputs.outputTaxRate);
+            return { netPrice, finalPrice };
+        }
+
+        // 计算各项费用和利润
+        function calculateFees(prices, inputs) {
+            const { netPrice, finalPrice } = prices;
+            return {
+                platformFee: finalPrice * inputs.platformRate, // 平台佣金统一按最终售价（含税）计算
+                outputTax: netPrice * inputs.outputTaxRate,
+                profit: finalPrice * inputs.targetProfitRate,
+                profitRate: (finalPrice * inputs.targetProfitRate / finalPrice * 100)
+            };
+        }
+
+        // 生成结果HTML
+        function generateResultHtml(costs, prices, fees, inputs) {
+            return `
+                <p>建议含税售价：<b>${prices.finalPrice.toFixed(2)} 元</b></p>
+                <p>成本及利润明细：</p>
+                <ul>
+                    <li>产品成本（不含税）：${inputs.costPrice.toFixed(2)} 元</li>
+                    <li>开票费用：${costs.invoiceCost.toFixed(2)} 元</li>
+                    <li>广告费用：${costs.adCost.toFixed(2)} 元</li>
+                    <li>运费险：${inputs.shippingInsurance.toFixed(2)} 元</li>
+                    <li>物流费用：${inputs.shippingCost.toFixed(2)} 元</li>
+                    <li>其他成本：${inputs.otherCost.toFixed(2)} 元</li>
+                    <li>可抵扣税额：${costs.totalTaxDeduction.toFixed(2)} 元
+                        <ul>
+                            <li>产品进项税：${costs.productTaxDeduction.toFixed(2)} 元</li>
+                            <li>广告费进项税：${costs.adTaxDeduction.toFixed(2)} 元</li>
+                        </ul>
+                    </li>
+                    <li>实际成本（抵扣后）：${costs.effectiveCost.toFixed(2)} 元</li>
+                    <li>平台抽佣：${fees.platformFee.toFixed(2)} 元</li>
+                    <li>销项税额：${fees.outputTax.toFixed(2)} 元</li>
+                    <li>预期利润：${fees.profit.toFixed(2)} 元</li>
+                    <li>毛利率：${fees.profitRate.toFixed(2)}%</li>
+                </ul>
+                <p class="calculation-note">计算说明：</p>
+                <ul class="calculation-note">
+                    <li>开票费用 = 产品成本 × 开票费率(${(costs.invoiceCost/inputs.costPrice*100).toFixed(1)}%)</li>
+                    <li>广告费用 = 最终售价 × 付费占比(${(costs.adCost/prices.finalPrice*100).toFixed(1)}%)</li>
+                    <li>产品进项税 = 产品成本 × 销项税率(${(costs.productTaxDeduction/inputs.costPrice*100).toFixed(1)}%)</li>
+                    <li>广告费进项税 = 广告费 × 6%</li>
+                    <li>平台佣金 = 最终售价 × 平台费率(${(fees.platformFee/prices.finalPrice*100).toFixed(1)}%)</li>
+                    <li>实际成本 = 总成本 - 可抵扣税额</li>
+                </ul>
+            `;
+        }
+
+        // 计算合理售价的主函数
+                function calculate() {
+            // 清除之前的错误信息
+            document.getElementById("result").innerHTML = "";
+            try {
+                // 1. 获取并验证所有输入值
+                const inputs = getValidatedInputs();
+                
+                // 2. 验证利润率和平台费率的组合是否合法
+                const adjustedProfitRate = inputs.targetProfitRate / (1 + inputs.outputTaxRate);
+                if (inputs.platformRate + adjustedProfitRate >= 1) {
+                    throw new Error("平台抽佣比例与目标利润率的组合过高，无法计算有效售价");
+                }
+
+                // 3. 由于广告费基于最终售价，我们需要迭代计算
+                let prevFinalPrice = 0;
+                let finalPrice = 1000; // 初始估计值
+                let iteration = 0;
+                const MAX_ITERATIONS = 10;
+                const TOLERANCE = 0.01;
+
+                while (Math.abs(finalPrice - prevFinalPrice) > TOLERANCE && iteration < MAX_ITERATIONS) {
+                    prevFinalPrice = finalPrice;
+                    
+                    // 基于当前估计的最终价格计算广告费
+                    const adCost = prevFinalPrice * inputs.adRate;
+                    
+                    // 计算基础成本和税费
+                    const costs = calculateBaseCost(inputs, adCost);
+                    
+                    // 计算净价和最终价格
+                    const prices = calculatePrices(costs.effectiveCost, inputs);
+                    finalPrice = prices.finalPrice;
+                    
+                    iteration++;
+                }
+
+                // 使用最终的广告费重新计算所有数值
+                const adCost = finalPrice * inputs.adRate;
+                const costs = calculateBaseCost(inputs, adCost);
+                const prices = calculatePrices(costs.effectiveCost, inputs);
+                
+                // 5. 计算各项费用和利润
+                const fees = calculateFees(prices, inputs);
+
+                // 6. 显示结果
+                document.getElementById("result").innerHTML = generateResultHtml(costs, prices, fees, inputs);
+            } catch (error) {
+                // 显示错误信息
+                document.getElementById("result").innerHTML = `
+                    <div class="error">${error.message}</div>
+                `;
+            }
+        }
+
+        // 页面加载完成后自动执行一次计算
+        window.onload = calculate;
+        
+        // 为所有输入框添加实时计算功能
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('input', calculate);
+        });
+    </script>
+</body>
+</html>
