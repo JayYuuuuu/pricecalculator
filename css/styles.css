@@ -92,6 +92,7 @@ label {
     position: relative;
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
 }
 input {
     width: 100%;
@@ -102,6 +103,11 @@ input {
     transition: all 0.2s ease;
     background-color: #fafafa;
     margin-right: 8px;
+}
+.compact-number {
+    width: 120px;
+    min-width: 100px;
+    flex: 0 0 auto; /* 防止被压缩 */
 }
 input:focus {
     border-color: #0066cc;
@@ -224,6 +230,13 @@ button:hover {
     font-size: 1.1rem;
     padding-bottom: 0.5rem;
     border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* 标题左，开关右 */
+    gap: 12px;
+}
+.category-title .switch-wrapper {
+    margin: 0; /* 标题右上角不需要外边距 */
 }
 .summary-title {
     font-weight: 500;
@@ -239,6 +252,21 @@ button:hover {
     color: #666;
     font-size: 0.9rem;
     margin-top: 0.5rem;
+}
+
+/* 区块头部：标题 + 操作 */
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.section-header h3 {
+    margin: 0;
+}
+.header-actions {
+    display: flex;
+    align-items: center;
 }
 
 /* 价格构成分析样式 */
@@ -506,6 +534,18 @@ button:hover {
     margin-bottom: 1rem;
 }
 
+/* 保本建议售价右侧注释样式 */
+.breakeven-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+.breakeven-note {
+    margin-top: 4px;
+    font-size: 0.85rem;
+    color: #666;
+}
+
 /* 销售成本分析样式 */
 .sales-cost-analysis {
     background: white;
@@ -587,6 +627,63 @@ button:hover {
 .save-button:hover {
     color: #0077ed;
     background: none;
+}
+.switch-wrapper {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 8px;
+    flex: 0 0 auto; /* 不参与换行压缩 */
+}
+.switch-label {
+    font-size: 0.85rem;
+    color: #666;
+    white-space: nowrap; /* 防止折行 */
+}
+/* 美观的开关样式 */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+}
+.input-group .switch {
+    /* 保证开关在父容器内显示，不超出背景边界 */
+    transform: translateZ(0);
+}
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #d2d2d7;
+    transition: 0.2s;
+    border-radius: 24px;
+}
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    top: 3px;
+    background-color: white;
+    transition: 0.2s;
+    border-radius: 50%;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+.switch input:checked + .slider {
+    background-color: #2ea44f;
+}
+.switch input:checked + .slider:before {
+    transform: translateX(20px);
 }
 .toast {
     position: fixed;

@@ -62,11 +62,19 @@
                 </div>
                 <div class="input-groups-container">
                     <div class="cost-category">
-                        <div class="category-title">平台费用</div>
+                        <div class="category-title">平台费用
+                            <div class="switch-wrapper" title="免佣开关：开启后平台佣金按0%计算">
+                                <span class="switch-label">免佣</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="platformFreeToggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
                         <div class="input-group">
                             <label>平台抽佣比例（%）:</label>
                             <div class="input-wrapper">
-                                <input type="number" id="platformRate" value="5.5" step="0.1">
+                                <input type="number" id="platformRate" value="5.5" step="0.1" class="compact-number">
                                 <button class="save-button" onclick="saveInputs()">保存</button>
                             </div>
                             <div class="field-hint">电商平台收取的交易佣金，基于最终售价（含税）计算</div>
@@ -167,7 +175,19 @@
         <!-- 利润计算tab -->
         <div id="profitTab" class="tab-content active">
             <div class="section">
-                <h3>利润计算</h3>
+                <div class="section-header">
+                    <h3>利润计算</h3>
+                    <!-- 顶部右侧免佣开关（与平台费用中的免佣同步） -->
+                    <div class="header-actions" title="免佣开关：与下方平台费用免佣联动">
+                        <div class="switch-wrapper">
+                            <span class="switch-label">免佣</span>
+                            <label class="switch">
+                                <input type="checkbox" id="profitPlatformFreeToggleTop">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
                 <div class="step-description">
                     输入商品的进货价和实际售价，计算各项成本和最终利润。
                 </div>
@@ -230,7 +250,10 @@
                             <div style="font-weight:600;">保本建议售价（利润率=0） </div>
                             <div style="color:#999; font-size:0.85rem; margin-top:2px;">按当前参数在利润率为0时联立求解的含税售价</div>
                         </div>
-                        <div id="breakevenPriceValue" style="font-size:1.25rem; font-weight:700; color:#2ea44f;">-</div>
+                        <div class="breakeven-right">
+                            <div id="breakevenPriceValue" style="font-size:1.25rem; font-weight:700; color:#2ea44f;">-</div>
+                            <div id="breakevenPriceNote" class="breakeven-note">&nbsp;</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -303,11 +326,19 @@
                     </div>
 
                     <div class="cost-category">
-                        <div class="category-title">平台费用</div>
+                        <div class="category-title">平台费用
+                            <div class="switch-wrapper" title="免佣开关：开启后平台佣金按0%计算">
+                                <span class="switch-label">免佣</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="profitPlatformFreeToggle">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
                         <div class="input-group">
                             <label>平台抽佣比例（%）:</label>
                             <div class="input-wrapper">
-                                <input type="number" id="profitPlatformRate" value="5.5" step="0.1">
+                                <input type="number" id="profitPlatformRate" value="5.5" step="0.1" class="compact-number">
                                 <button class="save-button" onclick="saveInputs()">保存</button>
                             </div>
                             <div class="field-hint">电商平台收取的交易佣金，基于最终售价（含税）计算。平台开具6%专票，可抵扣进项税。</div>

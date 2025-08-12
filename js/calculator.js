@@ -282,6 +282,16 @@ function calculateProfit() {
             const priceInfo0 = calculatePrices(purchaseCost0, salesCost0, breakevenInputs);
             const elBreakeven = document.getElementById('breakevenPriceValue');
             if (elBreakeven) elBreakeven.textContent = `¥ ${priceInfo0.finalPrice.toFixed(2)}`;
+            // 动态注释：是否包含平台佣金
+            const elNote = document.getElementById('breakevenPriceNote');
+            if (elNote) {
+                const toggleOn = (document.getElementById('profitPlatformFreeToggle') || {}).checked;
+                if (toggleOn || platformRate === 0) {
+                    elNote.textContent = '免佣金价格';
+                } else {
+                    elNote.textContent = `包含平台佣金 ${(platformRate * 100).toFixed(1)}%`;
+                }
+            }
         } catch (e) {}
     } catch (error) {
         document.getElementById('result').innerHTML = `
@@ -602,6 +612,10 @@ function calculate() {
 // 页面加载时的初始化
 window.addEventListener('load', () => {
     loadSavedInputs(); // 先加载保存的输入值
+    // 初始化免佣开关状态与事件
+    try {
+        initPlatformFreeToggles();
+    } catch (e) {}
     
     try {
         // 默认显示利润计算结果
@@ -656,3 +670,112 @@ window.addEventListener('load', () => {
         });
     });
 });
+
+/**
+ * 初始化“平台免佣”开关，并与输入框联动
+ * 功能说明：
+ * 1. 两个开关分别作用于售价页(platformRate)与利润页(profitPlatformRate)
+ * 2. 开关开启时，将对应输入值置为0，禁用输入框；关闭时恢复到上次的非零值（本地记忆），并解禁输入框
+ * 3. 状态持久化到 localStorage，键：platformFreeToggle / profitPlatformFreeToggle；历史值键：platformRateLast / profitPlatformRateLast
+ * 4. 切换时自动触发对应页的实时重算
+ */
+function initPlatformFreeToggles() {
+    // 获取DOM
+    const togglePrice = document.getElementById('platformFreeToggle');
+    const inputPrice = document.getElementById('platformRate');
+    const toggleProfit = document.getElementById('profitPlatformFreeToggle');
+    const toggleProfitTop = document.getElementById('profitPlatformFreeToggleTop');
+    const inputProfit = document.getElementById('profitPlatformRate');
+
+    // 从localStorage恢复状态
+    const saved = localStorage.getItem('priceCalculatorInputs');
+    let savedObj = {};
+    try { savedObj = saved ? JSON.parse(saved) : {}; } catch (e) {}
+
+    const savedPriceToggle = localStorage.getItem('platformFreeToggle') === 'true';
+    const savedProfitToggle = localStorage.getItem('profitPlatformFreeToggle') === 'true';
+
+    const savedPriceLast = localStorage.getItem('platformRateLast');
+    const savedProfitLast = localStorage.getItem('profitPlatformRateLast');
+
+    // 辅助：应用开关状态
+    const applyToggle = (isOn, inputEl, lastKey, toggleKey) => {
+        if (!inputEl) return;
+        if (isOn) {
+            // 记录当前非零值作为上次值（若当前为0则保留原记录）
+            const currentVal = parseFloat(inputEl.value || '0');
+            if (currentVal > 0) {
+                localStorage.setItem(lastKey, String(currentVal));
+            }
+            inputEl.value = '0';
+            inputEl.setAttribute('disabled', 'disabled');
+        } else {
+            // 恢复上次非零值，若不存在则不变
+            const last = localStorage.getItem(lastKey);
+            if (last !== null && last !== undefined) {
+                inputEl.value = last;
+            }
+            inputEl.removeAttribute('disabled');
+        }
+        localStorage.setItem(toggleKey, String(isOn));
+    };
+
+    // 首次进入时根据存储恢复UI
+    if (togglePrice && inputPrice) {
+        if (savedPriceToggle) togglePrice.checked = true;
+        applyToggle(savedPriceToggle, inputPrice, 'platformRateLast', 'platformFreeToggle');
+    }
+    if (toggleProfit && inputProfit) {
+        if (savedProfitToggle) toggleProfit.checked = true;
+        applyToggle(savedProfitToggle, inputProfit, 'profitPlatformRateLast', 'profitPlatformFreeToggle');
+    }
+    if (toggleProfitTop) {
+        toggleProfitTop.checked = !!savedProfitToggle;
+    }
+
+    // 绑定切换事件
+    if (togglePrice && inputPrice) {
+        togglePrice.addEventListener('change', () => {
+            const isOn = togglePrice.checked;
+            applyToggle(isOn, inputPrice, 'platformRateLast', 'platformFreeToggle');
+            // 切换后保存一次，并触发售价页或利润页实时重算
+            saveInputs();
+            try { 
+                const profitTabActive = document.getElementById('profitTab').classList.contains('active');
+                if (profitTabActive) {
+                    // 同步利润页两个开关
+                    if (toggleProfit) toggleProfit.checked = isOn;
+                    if (toggleProfitTop) toggleProfitTop.checked = isOn;
+                    calculateProfit();
+                } else {
+                    calculate();
+                }
+            } catch (e) {}
+        });
+    }
+    const handleProfitToggleChange = (isOn) => {
+        applyToggle(isOn, inputProfit, 'profitPlatformRateLast', 'profitPlatformFreeToggle');
+        saveInputs();
+        try { 
+            // 同步两个利润页开关
+            if (toggleProfit) toggleProfit.checked = isOn;
+            if (toggleProfitTop) toggleProfitTop.checked = isOn;
+            const profitTabActive = document.getElementById('profitTab').classList.contains('active');
+            if (profitTabActive) {
+                calculateProfit();
+            } else {
+                calculate();
+            }
+        } catch (e) {}
+    };
+    if (toggleProfit && inputProfit) {
+        toggleProfit.addEventListener('change', () => {
+            handleProfitToggleChange(toggleProfit.checked);
+        });
+    }
+    if (toggleProfitTop && inputProfit) {
+        toggleProfitTop.addEventListener('change', () => {
+            handleProfitToggleChange(toggleProfitTop.checked);
+        });
+    }
+}
