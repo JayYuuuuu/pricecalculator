@@ -27,7 +27,7 @@
                     <div class="input-group">
                         <label>进货价（不含税）:</label>
                         <div class="input-wrapper">
-                            <input type="number" id="costPrice" value="100" step="0.01">
+                            <input type="number" id="costPrice" value="38" step="0.01">
                             <button class="save-button" onclick="saveInputs()">保存</button>
                         </div>
                         <div class="field-hint">这是供应商提供的不含税商品价格</div>
@@ -181,10 +181,10 @@
                         <div class="input-group">
                             <label>目标利润率（%）:</label>
                             <div class="input-wrapper">
-                                <input type="number" id="targetProfitRate" value="8" step="0.1">
+                                <input type="number" id="targetProfitRate" value="5" step="0.1">
                                 <button class="save-button" onclick="saveInputs()">保存</button>
                             </div>
-                            <div class="field-hint">您期望的利润率，基于最终售价计算（例：8%意味着每100元售价中有8元是利润）</div>
+                            <div class="field-hint">您期望的利润率，基于最终售价计算（例：5%意味着每100元售价中有5元是利润）</div>
                         </div>
                     </div>
 
@@ -216,7 +216,7 @@
                     <div class="input-group">
                         <label>进货价（不含税）:</label>
                         <div class="input-wrapper">
-                            <input type="number" id="profitCostPrice" value="100" step="0.01">
+                            <input type="number" id="profitCostPrice" value="38" step="0.01">
                             <button class="save-button" onclick="saveInputs()">保存</button>
                         </div>
                         <div class="field-hint">这是供应商提供的不含税商品价格</div>
@@ -225,10 +225,10 @@
                     <div class="input-group">
                         <label>实际售价（含税）:</label>
                         <div class="input-wrapper">
-                            <input type="number" id="actualPrice" value="200" step="0.01">
+                            <input type="number" id="actualPrice" value="79" step="0.01">
                             <button class="save-button" onclick="saveInputs()">保存</button>
                         </div>
-                        <div class="field-hint">实际销售时的含税价格</div>
+                        <div class="field-hint">实际销售时的含税价格（买家到手价）</div>
                     </div>
 
                     <div class="input-group">
@@ -277,7 +277,7 @@
                                 <input type="number" id="profitSalesTaxRate" value="13" step="0.1">
                                 <button class="save-button" onclick="saveInputs()">保存</button>
                             </div>
-                            <div class="field-hint">销售时的增值税税率，通常与商品进项税率相同（如13%）</div>
+                            <div class="field-hint">销售时的增值税税率，通常与商品进项税率相同（如服装类13%）</div>
                         </div>
                     </div>
 

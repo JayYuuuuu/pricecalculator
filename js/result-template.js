@@ -50,7 +50,7 @@ function generateResultHtml({ purchaseCost, salesCost, priceInfo, inputs }) {
                         <div class="cost-item">广告费用（分摊后）：¥ ${(adCost / salesCost.effectiveRate).toFixed(2)}</div>
                         <div class="cost-item">物流及其他（分摊后）：¥ ${(salesCost.operationalCosts.shipping + salesCost.operationalCosts.insurance).toFixed(2)}</div>
                         <div class="cost-item" style="color: #666; font-size: 0.85rem;">
-                            注：不可退回费用已按退货率${(salesCost.returnRate*100).toFixed(0)}%分摊
+                            注：可退回是指买家退货，对应费用会退回商家。<br>已分摊是指不可退回费用已按退货率${(salesCost.returnRate*100).toFixed(0)}%分摊
                         </div>
                     </div>
                 </div>
