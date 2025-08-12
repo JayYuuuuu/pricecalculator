@@ -130,7 +130,7 @@ function generateResultHtml({ purchaseCost, salesCost, priceInfo, inputs }) {
                                 <td class="amount">${priceInfo.platformFee.toFixed(2)}元</td>
                             </tr>
                             <tr>
-                                <td>广告费用（${(inputs.adRate*100).toFixed(1)}%）</td>
+                                <td>广告费用（全店付费占比 ${(inputs.adRate*100).toFixed(1)}%）</td>
                                 <td class="formula">${adCost.toFixed(2)} ÷ ${(salesCost.effectiveRate*100).toFixed(0)}%</td>
                                 <td class="amount">${(adCost / salesCost.effectiveRate).toFixed(2)}元</td>
                             </tr>

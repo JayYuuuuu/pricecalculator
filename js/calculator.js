@@ -75,7 +75,7 @@ function calculateProfit() {
         const platformRate = validateInput(parseFloat(document.getElementById('profitPlatformRate').value), 0, 100, "平台抽佣比例") / 100;
         const shippingCost = validateInput(parseFloat(document.getElementById('profitShippingCost').value), 0, 10000, "物流费");
         const shippingInsurance = validateInput(parseFloat(document.getElementById('profitShippingInsurance').value), 0, 100, "运费险");
-        const adRate = validateInput(parseFloat(document.getElementById('profitAdRate').value), 0, 100, "广告费用比例") / 100;
+        const adRate = validateInput(parseFloat(document.getElementById('profitAdRate').value), 0, 100, "全店付费占比") / 100;
         const otherCost = validateInput(parseFloat(document.getElementById('profitOtherCost').value), 0, 10000, "其他成本");
         const returnRate = validateInput(parseFloat(document.getElementById('profitReturnRate').value), 0, 100, "退货率") / 100;
 
@@ -927,7 +927,7 @@ function collectShareContext() {
                 { label: '商品进项税率', value: Number(outputTaxRate||0).toFixed(1), unit: '%' },
                 { label: '销项税率', value: Number(salesTaxRate||0).toFixed(1), unit: '%' },
                 { label: '平台佣金', value: Number(platformRate||0).toFixed(1), unit: '%' },
-                { label: '广告费用比例', value: Number(adRate||0).toFixed(1), unit: '%' },
+                { label: '全店付费占比', value: Number(adRate||0).toFixed(1), unit: '%' },
                 { label: '退货率', value: Number(returnRate||0).toFixed(1), unit: '%' },
                 { label: '物流费', value: Number(shippingCost||0).toFixed(2), unit: '元/单' },
                 { label: '运费险', value: Number(shippingInsurance||0).toFixed(2), unit: '元/单' },
@@ -969,7 +969,7 @@ function collectShareContext() {
                 { label: '商品税率', value: Number(outputTaxRate||0).toFixed(1), unit: '%' },
                 { label: '销项税率', value: Number(salesTaxRate||0).toFixed(1), unit: '%' },
                 { label: '平台佣金', value: Number(platformRate||0).toFixed(1), unit: '%' },
-                { label: '广告费用比例', value: Number(adRate||0).toFixed(1), unit: '%' },
+                { label: '全店付费占比', value: Number(adRate||0).toFixed(1), unit: '%' },
                 { label: '退货率', value: Number(returnRate||0).toFixed(1), unit: '%' },
                 { label: '物流费', value: Number(shippingCost||0).toFixed(2), unit: '元/单' },
                 { label: '运费险', value: Number(shippingInsurance||0).toFixed(2), unit: '元/单' },

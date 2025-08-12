@@ -95,7 +95,7 @@ function generatePriceResultHtml({ purchaseCost, salesCost, priceInfo, inputs })
                     <div class="item-percent">${(displaySalesExpense/priceInfo.finalPrice*100).toFixed(1)}%</div>
                     <div class="cost-detail">
                         <div class="cost-item">平台佣金：¥ ${priceInfo.platformFee.toFixed(2)}</div>
-                        <div class="cost-item">广告费用：¥ ${(priceInfo.adCost / salesCost.effectiveRate).toFixed(2)}</div>
+                        <div class="cost-item">广告费用（全店付费占比）：¥ ${(priceInfo.adCost / salesCost.effectiveRate).toFixed(2)}</div>
                         <div class="cost-item">物流及其他：¥ ${(salesCost.operationalCosts.shipping + salesCost.operationalCosts.insurance + salesCost.operationalCosts.other).toFixed(2)}</div>
                     </div>
                 </div>
@@ -115,7 +115,7 @@ function generatePriceResultHtml({ purchaseCost, salesCost, priceInfo, inputs })
                     <div class="item-percent">${displayProfitRate}%</div>
                 </div>
             </div>
-            <div class="price-note">注意：由于平台佣金（${(inputs.platformRate*100).toFixed(1)}%）和广告费（${(inputs.adRate*100).toFixed(1)}%）是基于最终售价计算的，所以各项金额直接相加不等于最终售价。</div>
+            <div class="price-note">注意：由于平台佣金（${(inputs.platformRate*100).toFixed(1)}%）和广告费（全店付费占比 ${(inputs.adRate*100).toFixed(1)}%）是基于最终售价计算的，所以各项金额直接相加不等于最终售价。</div>
             
             <div class="calculation-steps">
                 <div class="step-header">计算过程分为以下步骤（所有成本都已考虑退货率${(salesCost.returnRate*100).toFixed(0)}%的影响）：</div>
@@ -153,7 +153,7 @@ function generatePriceResultHtml({ purchaseCost, salesCost, priceInfo, inputs })
                                     <td class="amount">${salesCost.operationalCosts.insurance.toFixed(2)}元</td>
                                 </tr>
                                 <tr>
-                                    <td>广告费（不可退回）</td>
+                                    <td>广告费（不可退回，按全店付费占比分摊）</td>
                                     <td class="formula">${adCost.toFixed(2)} ÷ ${(salesCost.effectiveRate*100).toFixed(0)}%</td>
                                     <td class="amount">${(adCost / salesCost.effectiveRate).toFixed(2)}元</td>
                                 </tr>
@@ -201,8 +201,8 @@ function generatePriceResultHtml({ purchaseCost, salesCost, priceInfo, inputs })
                                         平台佣金 ${(inputs.platformRate*100).toFixed(1)}% +<br>
                                         销项税占比 ${(priceInfo.taxFactorOnFinal*100).toFixed(1)}% +<br>
                                         目标利润分摊 ${(priceInfo.profitFactorEffective*100).toFixed(1)}% +<br>
-                                        广告费分摊 ${(priceInfo.adFactorEffective*100).toFixed(1)}% -<br>
-                                        广告费进项税抵扣 ${(priceInfo.adVatCreditFactor*100).toFixed(1)}% -<br>
+                                        广告费分摊（全店付费占比）${(priceInfo.adFactorEffective*100).toFixed(1)}% -<br>
+                                        广告费进项税抵扣（6%）${(priceInfo.adVatCreditFactor*100).toFixed(1)}% -<br>
                                         平台佣金进项税抵扣 ${(priceInfo.platformVatCreditFactor*100).toFixed(1)}%
                                     </span>
                                 </td>
