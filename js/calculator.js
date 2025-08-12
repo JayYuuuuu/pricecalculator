@@ -458,6 +458,76 @@ function updateSalesCostSummary(finalPrice = 0) {
     }
 }
 
+/**
+ * 计算合理售价的主函数
+ * 
+ * 重要说明：售价计算模块与利润计算模块的差异
+ * 1. 售价计算模块（本函数）
+ *    - 目的：确保有效订单（扣除退货后）达到目标利润率
+ *    - 原理：基于退货率提高售价，确保剩余有效订单达到目标利润
+ *    - 例如：目标利润率8%，退货率20%时：
+ *      · 售价会被适当提高，以确保80%的有效订单达到8%的利润率
+ *      · 最终售价会高于简单基于8%利润率计算的价格
+ * 
+ * 2. 与利润计算模块的区别
+ *    - 售价计算：关注单个有效订单的利润率（退货分摊后）
+ *    - 利润计算：展示整体业务的利润率（所有订单）
+ *    - 这导致：相同售价下，利润计算模块显示的利润率会高于目标利润率
+ *    - 原因：售价中包含了对退货损失的补偿
+ * 
+ * 3. 实际应用建议
+ *    - 如果想让整体利润率接近目标值，可以适当调低这里的目标利润率
+ *    - 建议通过实际运营数据来调整目标利润率
+ *    - 密切关注退货率变化对定价的影响
+ */
+function calculate() {
+    // 清除之前的错误信息
+    document.getElementById("result").innerHTML = "";
+    try {
+        // 1. 获取并验证所有输入值
+        const inputs = getValidatedInputs();
+        
+        // 2. 验证比例费用组合（按最终售价口径）：
+        // 需满足 1 - (平台 + 销项税占比 + 目标利润 + 广告分摊 - 广告进项抵扣) > 0
+        const returnRate = parseFloat(document.getElementById("returnRate").value) / 100 || 0;
+        const effectiveRate = 1 - returnRate;
+        const VAT_RATE = 0.06; // 现代服务业增值税率6%
+        const taxFactorOnFinal = inputs.salesTaxRate / (1 + inputs.salesTaxRate);
+        const adFactorEffective = inputs.adRate / effectiveRate;
+        const adVatCreditFactor = VAT_RATE * adFactorEffective;
+        const profitFactorEffective = inputs.targetProfitRate; // 利润率按最终售价口径
+        const denominatorFinal = 1 - (inputs.platformRate + taxFactorOnFinal + profitFactorEffective + adFactorEffective - adVatCreditFactor);
+        if (denominatorFinal <= 0) {
+            throw new Error("参数组合过高（平台、税费占比、目标利润、广告费(分摊) - 广告进项抵扣），无法计算有效售价");
+        }
+
+        // 3. 计算进货成本和可抵扣进项税
+        const purchaseCost = calculatePurchaseCost(inputs);
+        
+        // 4. 计算销售成本和总可抵扣税额（不含广告费，因为广告费会基于最终售价计算）
+        const salesCost = calculateSalesCost(inputs, 0, purchaseCost);
+        
+        // 5. 一次性计算最终价格和各项费用
+        const priceInfo = calculatePrices(purchaseCost, salesCost, inputs);
+
+        // 6. 更新销售成本预览
+        updateSalesCostSummary(priceInfo.finalPrice);
+
+        // 7. 显示结果
+        document.getElementById("result").innerHTML = generatePriceResultHtml({
+            purchaseCost,
+            salesCost,
+            priceInfo,
+            inputs
+        });
+    } catch (error) {
+        // 显示错误信息
+        document.getElementById("result").innerHTML = `
+            <div class="error">${error.message}</div>
+        `;
+    }
+}
+
 // 页面加载时的初始化
 window.addEventListener('load', () => {
     loadSavedInputs(); // 先加载保存的输入值
