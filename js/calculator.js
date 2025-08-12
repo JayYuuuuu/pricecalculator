@@ -261,6 +261,28 @@ function calculateProfit() {
                 returnRate
             }
         });
+
+        // 计算保本建议售价（利润率=0），沿用售价联立口径
+        try {
+            const breakevenInputs = {
+                costPrice,
+                inputTaxRate,
+                outputTaxRate: salesTaxRate, // 商品税率=销项税率
+                salesTaxRate,
+                platformRate,
+                shippingCost,
+                otherCost,
+                adRate,
+                shippingInsurance,
+                returnRate,
+                targetProfitRate: 0
+            };
+            const purchaseCost0 = calculatePurchaseCost(breakevenInputs);
+            const salesCost0 = calculateSalesCost(breakevenInputs, 0, purchaseCost0);
+            const priceInfo0 = calculatePrices(purchaseCost0, salesCost0, breakevenInputs);
+            const elBreakeven = document.getElementById('breakevenPriceValue');
+            if (elBreakeven) elBreakeven.textContent = `¥ ${priceInfo0.finalPrice.toFixed(2)}`;
+        } catch (e) {}
     } catch (error) {
         document.getElementById('result').innerHTML = `
             <div class="error">${error.message}</div>
