@@ -2,6 +2,8 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
+    <!-- 移动端视口适配：确保在手机端按设备宽度渲染，并启用沉浸式安全区域支持 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>电商合理售价计算器（税务合规版）</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
@@ -122,7 +124,7 @@
                                 <input type="number" id="otherCost" value="2.5" step="0.01">
                                 <button class="save-button" onclick="saveInputs()">保存</button>
                             </div>
-                            <div class="field-hint">包装材料等其他固定成本</div>
+                            <div class="field-hint">包装材料等其他固定成本（提示：该项为“预估”口径，建议纳入包装材料、耗材、办公与管理等未单独计提的固定/间接费用；不含随增值税附征的城建税、教育费附加、地方教育附加等税费）</div>
                         </div>
 
                         <div class="input-group">
@@ -377,7 +379,7 @@
                                 <input type="number" id="profitOtherCost" value="2.5" step="0.01">
                                 <button class="save-button" onclick="saveInputs()">保存</button>
                             </div>
-                            <div class="field-hint">包装材料等其他固定成本</div>
+                            <div class="field-hint">包装材料等其他固定成本（提示：该项为“预估”口径，建议纳入包装材料、耗材、办公与管理等未单独计提的固定/间接费用；不含随增值税附征的城建税、教育费附加、地方教育附加等税费）</div>
                         </div>
                     </div>
                 </div>
@@ -403,6 +405,18 @@
                 <li>销项税率用于计算可抵扣的进项税额（如服装类目13%）</li>
                 <li>计算结果已考虑开票成本、税费抵扣、平台抽佣等</li>
                 <li>目标利润率基于最终售价计算</li>
+                <li>其他成本为“预估口径”，用于汇总包装材料、耗材、办公与管理等未单独计提的固定/间接费用；不包含以下随增值税附征或按规定征收的税费（这些税费已体现在“销项税—进项税=实际应缴VAT”的口径内，或另行按政策缴纳）：
+                    <ul>
+                        <li>增值税（常见税率：13%，部分行业为9%或6%）</li>
+                        <li>城建税（对实际缴纳的增值税等按7%/5%/1%征收，视地区而定）</li>
+                        <li>教育费附加（3%）</li>
+                        <li>地方教育附加（2%）</li>
+                        <li>印花税（常见0.03%或按票据种类从定额/定率计征）</li>
+                        <li>房产税（按房产原值1.2%或按租金12%计征，依口径不同）</li>
+                        <li>土地使用税（按占地面积征收，各地标准不同）</li>
+                    </ul>
+                </li>
+                <li>温馨提示：除“增值税销项—进项抵扣”已在模型中精确计算外，其余附加税费通常与增值税应纳额或资产/面积口径相关，难以按单笔订单精准分摊，本工具未单独逐项拆分，建议在“其他成本”中作保守预估。</li>
             </ul>
         </div>
     </div>
