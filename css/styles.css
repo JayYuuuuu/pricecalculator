@@ -1,0 +1,627 @@
+/* Tab切换样式 */
+.tab-container {
+    margin-bottom: 2rem;
+}
+.tabs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid #d2d2d7;
+    padding-bottom: 0.5rem;
+}
+.tab {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    background: none;
+    border: none;
+    color: #666;
+}
+.tab:hover {
+    background: #f5f5f7;
+    color: #1d1d1f;
+}
+.tab.active {
+    background: #0066cc;
+    color: white;
+}
+.tab-content {
+    display: none;
+}
+.tab-content.active {
+    display: block;
+}
+
+/* 现代化的UI样式 */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    max-width: 1000px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+    background-color: #f5f5f7;
+    color: #333;
+    min-height: 100vh;
+}
+.container {
+    background: white;
+    padding: 2.5rem;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 
+               0 8px 24px rgba(0, 0, 0, 0.04);
+}
+h2 {
+    color: #1d1d1f;
+    margin-bottom: 2rem;
+    text-align: center;
+    font-weight: 500;
+}
+.section {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+.section h3 {
+    color: #1d1d1f;
+    font-size: 1.1rem;
+    margin: 0 0 1.5rem 0;
+    font-weight: 500;
+}
+.input-groups-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+}
+.input-group {
+    margin-bottom: 0;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+label {
+    display: block;
+    margin-bottom: 0.35rem;
+    color: #1d1d1f;
+    font-weight: 400;
+    font-size: 0.9rem;
+}
+.input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #d2d2d7;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    background-color: #fafafa;
+    margin-right: 8px;
+}
+input:focus {
+    border-color: #0066cc;
+    outline: none;
+    background-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(0,102,204,0.15);
+}
+.field-hint {
+    font-size: 0.8rem;
+    color: #86868b;
+    margin-top: 0.25rem;
+    line-height: 1.2;
+}
+button {
+    width: auto;
+    padding: 0.75rem 1.5rem;
+    background-color: #0066cc;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin: 1.5rem auto;
+    display: block;
+}
+button:hover {
+    background-color: #0077ed;
+}
+.result {
+    margin-top: 2rem;
+    font-size: 1rem;
+}
+.final-price {
+    text-align: center;
+    background: #f5f5f7;
+    padding: 2rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+.final-price .price-label {
+    font-size: 1.2rem;
+    color: #1d1d1f;
+    margin-bottom: 1rem;
+}
+.final-price .price-value {
+    font-size: 2.5rem;
+    font-weight: 600;
+    color: #0066cc;
+}
+.calculation-process {
+    margin-top: 2rem;
+    background: #ffffff;
+}
+.result .section {
+    margin-bottom: 1.5rem;
+}
+.result .section h3 {
+    color: #1d1d1f;
+    font-size: 1rem;
+    margin: 0 0 1rem 0;
+    font-weight: 500;
+}
+.result ul {
+    margin: 0.5rem 0;
+    padding-left: 1.25rem;
+    list-style-type: none;
+}
+.result ul li {
+    margin: 0.4rem 0;
+    position: relative;
+}
+.result ul li:before {
+    content: "•";
+    color: #86868b;
+    position: absolute;
+    left: -1rem;
+}
+.result ul ul {
+    margin: 0.35rem 0 0.35rem 0.5rem;
+    color: #515154;
+}
+.result ul ul li:before {
+    content: "◦";
+}
+.error {
+    color: #ff3b30;
+    padding: 1rem;
+    background-color: #fff2f2;
+    border-radius: 6px;
+    margin-top: 1rem;
+    font-size: 0.95rem;
+}
+.description {
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
+    color: #86868b;
+    padding: 1rem;
+    background-color: #f5f5f7;
+    border-radius: 6px;
+}
+.step-description {
+    margin-bottom: 1.5rem;
+    color: #666;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+.cost-category {
+    background: #fff;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    border: 1px solid #e6e6e6;
+}
+.category-title {
+    font-weight: 500;
+    color: #1d1d1f;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+.summary-title {
+    font-weight: 500;
+    color: #1d1d1f;
+    margin-bottom: 1rem;
+    font-size: 1rem;
+}
+.field-hint {
+    color: #666;
+    line-height: 1.4;
+}
+.price-hint {
+    color: #666;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+}
+
+/* 价格构成分析样式 */
+.price-composition {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin: 2rem 0;
+}
+.price-composition .composition-item {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+}
+
+/* 利润构成分析样式 */
+.profit-composition {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 1rem;
+    margin: 2rem 0;
+}
+.profit-composition .composition-item {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+}
+.profit-composition .composition-item.revenue {
+    grid-column: span 3;
+}
+.profit-composition .composition-item.cost {
+    grid-column: span 3;
+}
+.profit-composition .composition-item.expenses {
+    grid-column: span 3;
+}
+.profit-composition .composition-item.tax {
+    grid-column: span 3;
+}
+.composition-item.profit {
+    background: #e8f5e9;
+}
+.item-label {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 0.5rem;
+}
+.item-value {
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: #1d1d1f;
+    margin-bottom: 0.25rem;
+}
+.item-percent {
+    font-size: 0.85rem;
+    color: #666;
+    margin-bottom: 0.5rem;
+}
+.tax-detail {
+    border-top: 1px dashed #e0e0e0;
+    padding-top: 0.5rem;
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+}
+.tax-item {
+    color: #666;
+    margin: 0.2rem 0;
+    display: flex;
+    justify-content: space-between;
+}
+.tax-item:last-child {
+    color: #2ea44f;
+    font-weight: 500;
+    margin-top: 0.5rem;
+}
+.cost-detail {
+    border-top: 1px dashed #e0e0e0;
+    padding-top: 0.5rem;
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+}
+.cost-item {
+    color: #666;
+    margin: 0.2rem 0;
+    display: flex;
+    justify-content: space-between;
+}
+.price-note {
+    margin-top: 1rem;
+    padding: 0.5rem;
+    background: #fff3e0;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    color: #e65100;
+}
+.calculation-note {
+    font-size: 0.85rem;
+    color: #515154;
+    margin-top: 1rem;
+    border-top: 1px solid #d2d2d7;
+    padding-top: 1rem;
+}
+
+/* 计算步骤样式 */
+.calculation-steps {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+.step-header {
+    font-size: 1rem;
+    color: #1d1d1f;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+.step-section {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+.step-title {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #1d1d1f;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e6e6e6;
+}
+.cost-table {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+.table-section {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+.section-title {
+    font-weight: 500;
+    color: #1d1d1f;
+    margin-bottom: 1rem;
+}
+.section-note {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 1rem;
+    padding: 0.5rem;
+    background: #fff3e0;
+    border-radius: 4px;
+}
+.cost-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.cost-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+.cost-table td:last-child {
+    text-align: right;
+}
+.cost-table .formula {
+    color: #666;
+    font-size: 0.9rem;
+    text-align: center;
+}
+.cost-table .amount {
+    font-weight: 500;
+    color: #1d1d1f;
+}
+.cost-table .total {
+    background: #f8f9fa;
+    font-weight: 500;
+}
+.total-amount {
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: #2ea44f;
+    text-align: right;
+}
+.note {
+    font-size: 0.8rem;
+    color: #666;
+    font-weight: normal;
+}
+.formula-box {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+.formula-title {
+    font-weight: 500;
+    color: #1d1d1f;
+    margin-bottom: 1rem;
+}
+.formula-content {
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: #1d1d1f;
+}
+.formula-note {
+    margin-top: 0.75rem;
+    font-size: 0.85rem;
+    color: #666;
+}
+.calculation-details table {
+    width: 100%;
+    margin-bottom: 1.5rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+.calculation-details td {
+    padding: 1rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+.detail-items {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    color: #666;
+    line-height: 1.6;
+}
+.final-calculation {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-top: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+.calc-step {
+    font-family: monospace;
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 0.75rem;
+}
+.calc-result {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #2ea44f;
+}
+.final-price-calc {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+.calc-formula {
+    font-weight: 500;
+    color: #1d1d1f;
+    margin-bottom: 1rem;
+}
+
+/* 销售成本分析样式 */
+.sales-cost-analysis {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+.analysis-header {
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+    line-height: 1.5;
+}
+.cost-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+.cost-item {
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 1rem;
+}
+.cost-title {
+    font-weight: 500;
+    color: #1d1d1f;
+    margin-bottom: 0.75rem;
+}
+.cost-details {
+    margin-left: 1.5rem;
+}
+.detail-row {
+    margin: 0.5rem 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #666;
+    font-size: 0.9rem;
+}
+.cost-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+}
+.cost-formula {
+    color: #666;
+    font-size: 0.9rem;
+}
+.total-cost {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 2px solid #f0f0f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 500;
+}
+.total-value {
+    color: #2ea44f;
+    font-size: 1.1rem;
+}
+.save-button {
+    background: none;
+    color: #0066cc;
+    border: none;
+    padding: 0.25rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    width: auto;
+    margin: 0;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.save-button:hover {
+    color: #0077ed;
+    background: none;
+}
+.toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 0.6rem 1.2rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    z-index: 1000;
+    transition: opacity 0.3s ease;
+}
+.toast-hide {
+    opacity: 0;
+}
+
+/* 利润计算特定样式 */
+#actualProfit {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-weight: 500;
+}
+#actualProfit.profit-positive {
+    color: #2ea44f;
+}
+#actualProfit.profit-negative {
+    color: #e65100;
+}
+#profitStatus.status-good {
+    color: #2ea44f;
+}
+#profitStatus.status-bad {
+    color: #e65100;
+}
+#profitStatus.status-warning {
+    color: #f59e0b;
+}
