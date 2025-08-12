@@ -146,6 +146,22 @@ function calculateProfit() {
         profitStatus.textContent = statusText;
         profitStatus.className = statusClass;
 
+        // 计算并更新价格指标（基于进货价与含税售价）
+        try {
+            const metricMultiple = (actualPrice / costPrice).toFixed(2); // 进货倍率 = 售价 ÷ 进货价
+            const metricMarkupRate = (((actualPrice - costPrice) / costPrice) * 100).toFixed(2) + '%'; // 加成率
+            const metricGrossMargin = (((actualPrice - costPrice) / actualPrice) * 100).toFixed(2) + '%'; // 毛利率
+
+            const elMultiple = document.getElementById('metricMultiple');
+            const elMarkup = document.getElementById('metricMarkupRate');
+            const elGross = document.getElementById('metricGrossMargin');
+            if (elMultiple) elMultiple.textContent = `${metricMultiple}倍`;
+            if (elMarkup) elMarkup.textContent = metricMarkupRate;
+            if (elGross) elGross.textContent = metricGrossMargin;
+        } catch (e) {
+            // 指标展示非关键，忽略异常
+        }
+
         // 调试输出：利润计算模块的关键中间量
         debugCalculation('profit', {
             inputs: {
