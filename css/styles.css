@@ -722,3 +722,60 @@ button:hover {
 #profitStatus.status-warning {
     color: #f59e0b;
 }
+
+/* 分享工具栏样式 */
+.share-toolbar {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    align-items: center;
+    margin-top: 1rem;
+}
+.share-btn {
+    padding: 0.5rem 1rem;
+    background: #4f46e5;
+    border-radius: 6px;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.2s ease, background 0.2s ease;
+}
+.share-btn:hover { background: #6366f1; }
+.share-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* 分享图片用的内嵌样式（由 html2canvas 读取） */
+.share-section-title {
+    margin-top: 12px;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #1d1d1f;
+}
+.share-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+.share-badge {
+    display: inline-block;
+    padding: 6px 10px;
+    font-size: 12px;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 999px;
+    color: #374151;
+}
+.share-conclusion {
+    margin: 8px 0 16px 0;
+    padding: 12px;
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+    border-radius: 8px;
+}
+.share-conclusion-text {
+    color: #14532d;
+    font-weight: 600;
+}

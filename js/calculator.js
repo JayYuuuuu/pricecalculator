@@ -16,8 +16,9 @@ function switchTab(tabName) {
     // 设置选中tab按钮的active状态
     event.target.classList.add('active');
     
-    // 清空结果区域
+    // 清空结果区域，并禁用分享按钮
     document.getElementById('result').innerHTML = '';
+    try { if (window.__setShareButtonsEnabled) window.__setShareButtonsEnabled(false); } catch (e) {}
 }
 
 // 调试输出工具函数：在控制台打印结构化的调试数据
@@ -261,6 +262,8 @@ function calculateProfit() {
                 returnRate
             }
         });
+        // 启用分享按钮
+        try { if (window.__setShareButtonsEnabled) window.__setShareButtonsEnabled(true); } catch (e) {}
 
         // 计算保本建议售价（利润率=0），沿用售价联立口径
         try {
@@ -601,6 +604,8 @@ function calculate() {
             priceInfo,
             inputs
         });
+        // 启用分享按钮
+        try { if (window.__setShareButtonsEnabled) window.__setShareButtonsEnabled(true); } catch (e) {}
     } catch (error) {
         // 显示错误信息
         document.getElementById("result").innerHTML = `
@@ -623,6 +628,11 @@ window.addEventListener('load', () => {
     } catch (error) {
         console.error('初始化计算错误:', error);
     }
+
+    // 初始化分享工具栏按钮事件
+    try {
+        initShareButtons();
+    } catch (e) {}
 
     // 为所有输入框添加实时计算功能
     document.querySelectorAll('input').forEach(input => {
@@ -670,6 +680,307 @@ window.addEventListener('load', () => {
         });
     });
 });
+
+/**
+ * 初始化分享/导出按钮
+ * 功能：
+ * - 将结果区域（含标题、分析步骤等）渲染为图片
+ * - 提供三种操作：下载到本地、复制到剪贴板、系统分享（若浏览器支持）
+ * - 成功计算结果后自动启用按钮；无结果或异常时禁用
+ */
+function initShareButtons() {
+    const btnDownload = document.getElementById('btnDownloadImage');
+    const btnCopy = document.getElementById('btnCopyImage');
+    const btnShare = document.getElementById('btnShareImage');
+    const shareButtons = [btnDownload, btnCopy, btnShare].filter(Boolean);
+
+    // 工具：设置按钮启用/禁用
+    const setButtonsEnabled = (enabled) => {
+        shareButtons.forEach(btn => btn.disabled = !enabled);
+    };
+
+    // 初始禁用（直到有计算结果）
+    setButtonsEnabled(Boolean(document.getElementById('result')?.firstChild));
+
+    // 暴露到全局，供计算完成后调用
+    window.__setShareButtonsEnabled = setButtonsEnabled;
+
+    // 统一的渲染函数：将容器渲染为画布
+    const renderResultToCanvas = async () => {
+        const container = document.querySelector('.container');
+        const resultEl = document.getElementById('result');
+        if (!container || !resultEl || !resultEl.firstChild) {
+            throw new Error('暂无可分享的结果');
+        }
+        // 克隆结果区域
+        const cloneResultOnly = resultEl.cloneNode(true);
+
+        // 收集当前参数与结论（根据当前Tab）
+        const shareCtx = collectShareContext();
+
+        // 包装一个简洁的白底卡片，包含标题 + 参数徽章 + 结论 + 结果内容
+        const wrapper = document.createElement('div');
+        wrapper.style.background = '#ffffff';
+        wrapper.style.color = getComputedStyle(document.body).color || '#333';
+        wrapper.style.fontFamily = getComputedStyle(document.body).fontFamily;
+        wrapper.style.borderRadius = '16px';
+        wrapper.style.padding = '24px';
+        wrapper.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)';
+        wrapper.style.width = container.offsetWidth + 'px';
+
+        const title = document.createElement('h2');
+        title.textContent = document.querySelector('h2')?.textContent || '电商合理售价计算器';
+        title.style.marginTop = '0';
+        title.style.textAlign = 'center';
+        title.style.fontWeight = '500';
+        wrapper.appendChild(title);
+
+        // 参数徽章区
+        if (shareCtx && Array.isArray(shareCtx.inputsForBadges)) {
+            const badgesWrap = document.createElement('div');
+            badgesWrap.className = 'share-badges';
+            const sectionTitle = document.createElement('div');
+            sectionTitle.className = 'share-section-title';
+            sectionTitle.textContent = '计算参数';
+            wrapper.appendChild(sectionTitle);
+            wrapper.appendChild(badgesWrap);
+            shareCtx.inputsForBadges.forEach(b => {
+                const badge = document.createElement('span');
+                badge.className = 'share-badge';
+                badge.textContent = `${b.label}：${b.value}${b.unit || ''}`;
+                badgesWrap.appendChild(badge);
+            });
+        }
+
+        // 结论区
+        if (shareCtx && shareCtx.conclusion) {
+            const concWrap = document.createElement('div');
+            concWrap.className = 'share-conclusion';
+            const concTitle = document.createElement('div');
+            concTitle.className = 'share-section-title';
+            concTitle.textContent = '结论';
+            const concText = document.createElement('div');
+            concText.className = 'share-conclusion-text';
+            concText.textContent = shareCtx.conclusion;
+            wrapper.appendChild(concTitle);
+            concWrap.appendChild(concText);
+            wrapper.appendChild(concWrap);
+        }
+
+        // 剪裁结果详情中“步骤/详细成本分析”部分
+        try {
+            // 两个模式中，步骤区域都在 .calculation-steps 内，统一移除
+            cloneResultOnly.querySelectorAll('.calculation-steps').forEach(node => node.remove());
+        } catch (_) {}
+
+        // 结果详情
+        const detailTitle = document.createElement('div');
+        detailTitle.className = 'share-section-title';
+        detailTitle.textContent = shareCtx?.mode === 'profit' ? '利润构成分析' : '价格构成分析';
+        wrapper.appendChild(detailTitle);
+        wrapper.appendChild(cloneResultOnly);
+
+        // 放入文档外层容器
+        const offscreen = document.createElement('div');
+        offscreen.style.position = 'fixed';
+        offscreen.style.left = '-10000px';
+        offscreen.style.top = '0';
+        offscreen.style.width = container.offsetWidth + 'px';
+        offscreen.appendChild(wrapper);
+        document.body.appendChild(offscreen);
+        try {
+            const canvas = await html2canvas(wrapper, {
+                backgroundColor: '#ffffff',
+                scale: Math.min(2, window.devicePixelRatio || 1.5),
+                useCORS: true
+            });
+            return canvas;
+        } finally {
+            document.body.removeChild(offscreen);
+        }
+    };
+
+    // 下载
+    if (btnDownload) {
+        btnDownload.addEventListener('click', async () => {
+            try {
+                const canvas = await renderResultToCanvas();
+                const dataUrl = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                const now = new Date();
+                const ts = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}`;
+                link.href = dataUrl;
+                link.download = `价格计算_${ts}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (e) {
+                showToast(e.message || '保存图片失败');
+            }
+        });
+    }
+
+    // 复制到剪贴板（优先 ClipboardItem，其次写入PNG数据URL）
+    if (btnCopy) {
+        btnCopy.addEventListener('click', async () => {
+            try {
+                const canvas = await renderResultToCanvas();
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                if (!blob) throw new Error('生成图片失败');
+                if (navigator.clipboard && window.ClipboardItem) {
+                    await navigator.clipboard.write([
+                        new ClipboardItem({ 'image/png': blob })
+                    ]);
+                    showToast('已复制到剪贴板');
+                } else {
+                    // 回退：复制图片的 DataURL 文本
+                    const dataUrl = canvas.toDataURL('image/png');
+                    await navigator.clipboard.writeText(dataUrl);
+                    showToast('已复制图片链接');
+                }
+            } catch (e) {
+                showToast(e.message || '复制失败');
+            }
+        });
+    }
+
+    // 系统分享（Web Share Level 2，支持文件分享的浏览器）
+    if (btnShare) {
+        btnShare.addEventListener('click', async () => {
+            try {
+                if (!navigator.share) {
+                    showToast('当前浏览器不支持系统分享');
+                    return;
+                }
+                const canvas = await renderResultToCanvas();
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                if (!blob) throw new Error('生成图片失败');
+                const file = new File([blob], '价格计算.png', { type: 'image/png' });
+                const shareData = {
+                    title: '电商合理售价/利润计算结果',
+                    text: '基于当前参数的计算过程与结果',
+                    files: (navigator.canShare && navigator.canShare({ files: [file] })) ? [file] : undefined
+                };
+                await navigator.share(shareData);
+            } catch (e) {
+                if (e && e.name === 'AbortError') return; // 用户取消
+                showToast(e.message || '分享失败');
+            }
+        });
+    }
+}
+
+/**
+ * 轻量提示
+ */
+function showToast(message) {
+    try {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.classList.add('toast-hide');
+            setTimeout(() => document.body.removeChild(toast), 300);
+        }, 2000);
+    } catch (e) {
+        alert(message);
+    }
+}
+
+/**
+ * 收集分享所需上下文（当前模式、参数徽章、结论文案）
+ * 返回示例：
+ * {
+ *   mode: 'price' | 'profit',
+ *   inputsForBadges: [ { label, value, unit? }, ... ],
+ *   conclusion: '建议售价 ¥xx.xx，预期利润率 xx.xx%'
+ * }
+ */
+function collectShareContext() {
+    const isProfitMode = document.getElementById('profitTab')?.classList.contains('active');
+    if (isProfitMode) {
+        // 利润计算模式
+        const costPrice = document.getElementById('profitCostPrice')?.value;
+        const actualPrice = document.getElementById('actualPrice')?.value;
+        const inputTaxRate = document.getElementById('profitInputTaxRate')?.value;
+        const outputTaxRate = document.getElementById('profitOutputTaxRate')?.value;
+        const salesTaxRate = document.getElementById('profitSalesTaxRate')?.value;
+        const platformRate = document.getElementById('profitPlatformRate')?.value;
+        const shippingCost = document.getElementById('profitShippingCost')?.value;
+        const shippingInsurance = document.getElementById('profitShippingInsurance')?.value;
+        const adRate = document.getElementById('profitAdRate')?.value;
+        const otherCost = document.getElementById('profitOtherCost')?.value;
+        const returnRate = document.getElementById('profitReturnRate')?.value;
+
+        // 从当前结果中提取关键结论（利润金额与利润率）
+        const profitValue = document.querySelector('.final-price .price-value')?.textContent || '';
+        const profitRateText = document.querySelector('.final-price .price-hint')?.textContent || '';
+        const conclusion = `实际售价 ¥${Number(actualPrice || 0).toFixed(2)}，${profitRateText.replace(/\s+/g,' ')}`;
+
+        return {
+            mode: 'profit',
+            inputsForBadges: [
+                { label: '进货价', value: Number(costPrice||0).toFixed(2), unit: '元' },
+                { label: '实际售价', value: Number(actualPrice||0).toFixed(2), unit: '元' },
+                { label: '开票成本', value: Number(inputTaxRate||0).toFixed(1), unit: '%' },
+                { label: '商品进项税率', value: Number(outputTaxRate||0).toFixed(1), unit: '%' },
+                { label: '销项税率', value: Number(salesTaxRate||0).toFixed(1), unit: '%' },
+                { label: '平台佣金', value: Number(platformRate||0).toFixed(1), unit: '%' },
+                { label: '广告费用比例', value: Number(adRate||0).toFixed(1), unit: '%' },
+                { label: '退货率', value: Number(returnRate||0).toFixed(1), unit: '%' },
+                { label: '物流费', value: Number(shippingCost||0).toFixed(2), unit: '元/单' },
+                { label: '运费险', value: Number(shippingInsurance||0).toFixed(2), unit: '元/单' },
+                { label: '其他成本', value: Number(otherCost||0).toFixed(2), unit: '元/单' },
+            ],
+            conclusion: `利润 ${profitValue.replace(/^¥\s?/, '¥ ')}，${profitRateText}`
+        };
+    } else {
+        // 售价计算模式
+        const costPrice = document.getElementById('costPrice')?.value;
+        const inputTaxRate = document.getElementById('inputTaxRate')?.value;
+        const outputTaxRate = document.getElementById('outputTaxRate')?.value;
+        const salesTaxRate = document.getElementById('salesTaxRate')?.value;
+        const platformRate = document.getElementById('platformRate')?.value;
+        const shippingCost = document.getElementById('shippingCost')?.value;
+        const shippingInsurance = document.getElementById('shippingInsurance')?.value;
+        const adRate = document.getElementById('adRate')?.value;
+        const otherCost = document.getElementById('otherCost')?.value;
+        const returnRate = document.getElementById('returnRate')?.value;
+        const targetProfitRate = document.getElementById('targetProfitRate')?.value;
+
+        // 从当前结果中提取关键结论（建议售价、预期利润率）
+        const finalPriceText = document.querySelector('.final-price .price-value')?.textContent || '';
+        const hintEl = document.querySelector('.final-price + .calculation-process');
+        const profitRateDisplay = (function(){
+            try {
+                // 在价格构成分析卡片里查找“预期利润”区块百分比
+                const profitPercent = hintEl?.querySelector('.composition-item.profit .item-percent')?.textContent?.trim();
+                return profitPercent ? `预期利润率 ${profitPercent}` : '';
+            } catch(_) { return ''; }
+        })();
+        const conclusion = `${finalPriceText ? `建议含税售价 ${finalPriceText.replace(/^¥\s?/, '¥ ')}` : ''}${profitRateDisplay ? `，${profitRateDisplay}` : ''}`;
+
+        return {
+            mode: 'price',
+            inputsForBadges: [
+                { label: '进货价', value: Number(costPrice||0).toFixed(2), unit: '元' },
+                { label: '开票成本', value: Number(inputTaxRate||0).toFixed(1), unit: '%' },
+                { label: '商品税率', value: Number(outputTaxRate||0).toFixed(1), unit: '%' },
+                { label: '销项税率', value: Number(salesTaxRate||0).toFixed(1), unit: '%' },
+                { label: '平台佣金', value: Number(platformRate||0).toFixed(1), unit: '%' },
+                { label: '广告费用比例', value: Number(adRate||0).toFixed(1), unit: '%' },
+                { label: '退货率', value: Number(returnRate||0).toFixed(1), unit: '%' },
+                { label: '物流费', value: Number(shippingCost||0).toFixed(2), unit: '元/单' },
+                { label: '运费险', value: Number(shippingInsurance||0).toFixed(2), unit: '元/单' },
+                { label: '其他成本', value: Number(otherCost||0).toFixed(2), unit: '元/单' },
+                { label: '目标利润率', value: Number(targetProfitRate||0).toFixed(1), unit: '%' },
+            ],
+            conclusion
+        };
+    }
+}
+
 
 /**
  * 初始化“平台免佣”开关，并与输入框联动
