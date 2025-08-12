@@ -51,23 +51,6 @@
                         <div class="field-hint">商品的增值税税率（如服装类13%），这部分税费将来可以抵扣</div>
                     </div>
                 </div>
-                
-                <div class="cost-summary" id="purchaseCostSummary" style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
-                    <div class="summary-title">成本计算结果</div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                        <span>实际支付总额：</span>
-                        <span id="totalPayment" style="font-weight: 500;">¥0.00</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; color: #2ea44f;">
-                        <span>税后实际成本：</span>
-                        <span id="effectiveCost" style="font-weight: 500;">¥0.00</span>
-                    </div>
-                    <div class="field-hint" style="margin-top: 0.5rem; font-size: 0.8rem;">
-                        <div>• 实际支付总额 = 进货价 + 开票费用</div>
-                        <div>• 税后实际成本 = 实际支付总额 - 可抵扣进项税</div>
-                        <div>• 可抵扣进项税在销售时可以抵减应缴税款，相当于未来的税收优惠</div>
-                    </div>
-                </div>
             </div>
 
             <div class="section">
@@ -140,32 +123,6 @@
                             </div>
                             <div class="field-hint">销项税率（如13%）。注意：销项税不是直接用含税价×13%，而是要先去税，即：含税价÷1.13×13%</div>
                         </div>
-                    </div>
-                </div>
-                
-                <div class="cost-summary" id="salesCostSummary" style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                        <span>固定成本（含退货分摊）：</span>
-                        <span id="totalFixedCost" style="font-weight: 500;">¥0.00</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                        <span>平台佣金：</span>
-                        <span id="platformFeePreview" style="font-weight: 500;">¥0.00</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                        <span>广告费：</span>
-                        <span id="adCostPreview" style="font-weight: 500;">¥0.00</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                        <span>销项税（13%）：</span>
-                        <span id="salesTax" style="font-weight: 500;">¥0.00</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; color: #2ea44f;">
-                        <span>总销售成本：</span>
-                        <span id="totalSalesCost" style="font-weight: 500;">¥0.00</span>
-                    </div>
-                    <div class="field-hint" style="margin-top: 0.5rem; font-size: 0.8rem;">
-                        总销售成本 = 固定成本 + 平台佣金 + 广告费 + 销项税（基于最终售价）
                     </div>
                 </div>
             </div>
@@ -371,31 +328,6 @@
                 <li>销项税率用于计算可抵扣的进项税额（如服装类目13%）</li>
                 <li>计算结果已考虑开票成本、税费抵扣、平台抽佣等</li>
                 <li>目标利润率基于最终售价计算</li>
-            </ul>
-
-            <p style="margin-top: 1.5rem; color: #0066cc;">重要提示：关于利润率计算</p>
-            <ul style="color: #666;">
-                <li>售价计算模块：
-                    <ul>
-                        <li>目标利润率是针对有效订单（扣除退货后）的利润率</li>
-                        <li>系统会提高售价来补偿退货带来的损失</li>
-                        <li>确保有效订单能达到设定的目标利润率</li>
-                    </ul>
-                </li>
-                <li>利润计算模块：
-                    <ul>
-                        <li>显示整体业务的实际利润率（包含所有订单）</li>
-                        <li>通常会高于售价计算的目标利润率</li>
-                        <li>这是正常现象，因为售价中包含了退货补偿</li>
-                    </ul>
-                </li>
-                <li>建议：
-                    <ul>
-                        <li>同时参考两个模块来评估定价策略</li>
-                        <li>可以通过调整目标利润率来达到理想的整体利润水平</li>
-                        <li>定期根据实际运营数据调整参数设置</li>
-                    </ul>
-                </li>
             </ul>
         </div>
     </div>

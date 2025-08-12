@@ -7,6 +7,9 @@ function generateResultHtml({ purchaseCost, salesCost, priceInfo, inputs }) {
             <div class="price-label">实际利润</div>
             <div class="price-value">¥ ${priceInfo.profit.toFixed(2)}</div>
             <div class="price-hint">利润率：${priceInfo.profitRate}%</div>
+            <div class="price-hint" style="font-size: 0.85rem; color: #666; margin-top: 0.5rem;">
+                利润率说明：利润 ÷ 含税售价，利润中已扣除退货带来的损失（如退不回的运费、广告费）
+            </div>
         </div>
 
         <div class="section calculation-process">
@@ -16,6 +19,20 @@ function generateResultHtml({ purchaseCost, salesCost, priceInfo, inputs }) {
                     <div class="item-label">销售收入</div>
                     <div class="item-value">¥ ${priceInfo.finalPrice.toFixed(2)}</div>
                     <div class="item-percent">100%</div>
+                    <div class="cost-detail" style="text-align: left;">
+                        <div class="cost-item">
+                            含税销售金额：¥ ${priceInfo.finalPrice.toFixed(2)}
+                        </div>
+                        <div class="cost-item" style="color: #666; font-size: 0.85rem;">
+                            注：含税销售金额就是买家实际付款金额
+                        </div>
+                        <div class="cost-item">
+                            不含税销售收入：¥ ${(priceInfo.finalPrice / (1 + inputs.outputTaxRate)).toFixed(2)}
+                        </div>
+                        <div class="cost-item" style="color: #666; font-size: 0.85rem;">
+                            注：不含税销售收入 = 含税销售金额 ÷ (1 + ${(inputs.outputTaxRate*100).toFixed(0)}%)
+                        </div>
+                    </div>
                 </div>
                 <div class="composition-item cost">
                     <div class="item-label">基础成本</div>
@@ -29,26 +46,25 @@ function generateResultHtml({ purchaseCost, salesCost, priceInfo, inputs }) {
                             <div class="cost-item">
                                 开票成本（${(inputs.inputTaxRate*100).toFixed(1)}%）：¥ ${(purchaseCost.purchasePrice * inputs.inputTaxRate).toFixed(2)}
                             </div>
-                            <div class="cost-item" style="color: #2ea44f; margin-top: 0.5rem;">
-                                可抵扣商品税（${(inputs.outputTaxRate*100).toFixed(0)}%）：¥ ${purchaseCost.purchaseVAT.toFixed(2)}
-                            </div>
                         </div>
                         <div class="cost-item" style="font-weight: 500;">
-                            税后实际成本：¥ ${purchaseCost.effectiveCost.toFixed(2)}
+                            实际进货成本：¥ ${purchaseCost.effectiveCost.toFixed(2)}
                         </div>
                         <div style="font-size: 0.85rem; color: #666; margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px dashed #e0e0e0;">
-                            计算过程：进货价 + 开票成本 - 可抵扣商品税
+                            计算过程：进货价 + 开票成本
                         </div>
                     </div>
                 </div>
                 <div class="composition-item expenses">
                     <div class="item-label">销售费用</div>
-                    <div class="item-value">¥ ${(priceInfo.platformFee + salesCost.operationalCosts.shipping + salesCost.operationalCosts.insurance + (adCost / salesCost.effectiveRate)).toFixed(2)}</div>
-                    <div class="item-percent">${((priceInfo.platformFee + salesCost.operationalCosts.shipping + salesCost.operationalCosts.insurance + (adCost / salesCost.effectiveRate))/priceInfo.finalPrice*100).toFixed(1)}%</div>
+                    <div class="item-value">¥ ${(priceInfo.platformFee + salesCost.operationalCosts.shipping + salesCost.operationalCosts.insurance + salesCost.operationalCosts.other + (adCost / salesCost.effectiveRate)).toFixed(2)}</div>
+                    <div class="item-percent">${((priceInfo.platformFee + salesCost.operationalCosts.shipping + salesCost.operationalCosts.insurance + salesCost.operationalCosts.other + (adCost / salesCost.effectiveRate))/priceInfo.finalPrice*100).toFixed(1)}%</div>
                     <div class="cost-detail" style="text-align: left;">
                         <div class="cost-item">平台佣金（可退回）：¥ ${priceInfo.platformFee.toFixed(2)}</div>
                         <div class="cost-item">广告费用（分摊后）：¥ ${(adCost / salesCost.effectiveRate).toFixed(2)}</div>
-                        <div class="cost-item">物流及其他（分摊后）：¥ ${(salesCost.operationalCosts.shipping + salesCost.operationalCosts.insurance).toFixed(2)}</div>
+                        <div class="cost-item">物流费（分摊后）：¥ ${salesCost.operationalCosts.shipping.toFixed(2)}</div>
+                        <div class="cost-item">运费险（分摊后）：¥ ${salesCost.operationalCosts.insurance.toFixed(2)}</div>
+                        <div class="cost-item">其他成本（分摊后）：¥ ${salesCost.operationalCosts.other.toFixed(2)}</div>
                         <div class="cost-item" style="color: #666; font-size: 0.85rem;">
                             注：可退回是指买家退货，对应费用会退回商家。<br>已分摊是指不可退回费用已按退货率${(salesCost.returnRate*100).toFixed(0)}%分摊
                         </div>
@@ -94,15 +110,14 @@ function generateResultHtml({ purchaseCost, salesCost, priceInfo, inputs }) {
                                 <td>开票费用（${(inputs.inputTaxRate*100).toFixed(1)}%）</td>
                                 <td class="amount">${purchaseCost.invoiceCost.toFixed(2)}元</td>
                             </tr>
-                            <tr>
-                                <td>进项税额（${(inputs.outputTaxRate*100).toFixed(1)}%）</td>
-                                <td class="amount">${purchaseCost.purchaseVAT.toFixed(2)}元</td>
-                            </tr>
                             <tr class="total">
-                                <td>税后实际成本</td>
+                                <td>实际进货成本</td>
                                 <td class="amount">${purchaseCost.effectiveCost.toFixed(2)}元</td>
                             </tr>
                         </table>
+                        <div style="font-size: 0.85rem; color: #666; margin-top: 0.5rem;">
+                            注：进货成本 = 进货价 + 开票费用
+                        </div>
                     </div>
                 </div>
 
@@ -136,7 +151,7 @@ function generateResultHtml({ purchaseCost, salesCost, priceInfo, inputs }) {
                             </tr>
                             <tr class="total">
                                 <td colspan="2">销售费用合计（考虑退货分摊）</td>
-                                <td class="amount">${(priceInfo.platformFee + salesCost.operationalCosts.shipping + salesCost.operationalCosts.insurance + (adCost / salesCost.effectiveRate)).toFixed(2)}元</td>
+                                <td class="amount">${(priceInfo.platformFee + salesCost.operationalCosts.shipping + salesCost.operationalCosts.insurance + salesCost.operationalCosts.other + (adCost / salesCost.effectiveRate)).toFixed(2)}元</td>
                             </tr>
                         </table>
                         <div style="margin-top: 1rem; font-size: 0.9rem; color: #666;">
@@ -263,8 +278,8 @@ function generateResultHtml({ purchaseCost, salesCost, priceInfo, inputs }) {
                                 </tr>
                                 <tr>
                                     <td colspan="2">2. 销售费用：</td>
-                                    <td class="amount">${(priceInfo.platformFee + salesCost.operationalCosts.shipping + salesCost.operationalCosts.insurance + (adCost / salesCost.effectiveRate)).toFixed(2)}元</td>
-                                    <td class="percent">${((priceInfo.platformFee + salesCost.operationalCosts.shipping + salesCost.operationalCosts.insurance + (adCost / salesCost.effectiveRate))/priceInfo.finalPrice*100).toFixed(1)}%</td>
+                                    <td class="amount">${(priceInfo.platformFee + salesCost.operationalCosts.shipping + salesCost.operationalCosts.insurance + salesCost.operationalCosts.other + (adCost / salesCost.effectiveRate)).toFixed(2)}元</td>
+                                    <td class="percent">${((priceInfo.platformFee + salesCost.operationalCosts.shipping + salesCost.operationalCosts.insurance + salesCost.operationalCosts.other + (adCost / salesCost.effectiveRate))/priceInfo.finalPrice*100).toFixed(1)}%</td>
                                 </tr>
                                 <tr>
                                     <td width="20px"></td>
@@ -280,9 +295,21 @@ function generateResultHtml({ purchaseCost, salesCost, priceInfo, inputs }) {
                                 </tr>
                                 <tr>
                                     <td></td>
-                                    <td>• 物流及其他（分摊后）</td>
-                                    <td class="amount">${(salesCost.operationalCosts.shipping + salesCost.operationalCosts.insurance).toFixed(2)}元</td>
-                                    <td class="percent">${((salesCost.operationalCosts.shipping + salesCost.operationalCosts.insurance)/priceInfo.finalPrice*100).toFixed(1)}%</td>
+                                    <td>• 物流费（分摊后）</td>
+                                    <td class="amount">${salesCost.operationalCosts.shipping.toFixed(2)}元</td>
+                                    <td class="percent">${(salesCost.operationalCosts.shipping/priceInfo.finalPrice*100).toFixed(1)}%</td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                    <td>• 运费险（分摊后）</td>
+                                    <td class="amount">${salesCost.operationalCosts.insurance.toFixed(2)}元</td>
+                                    <td class="percent">${(salesCost.operationalCosts.insurance/priceInfo.finalPrice*100).toFixed(1)}%</td>
+                                </tr>
+                                <tr>
+                                    <td></td>
+                                    <td>• 其他成本（分摊后）</td>
+                                    <td class="amount">${salesCost.operationalCosts.other.toFixed(2)}元</td>
+                                    <td class="percent">${(salesCost.operationalCosts.other/priceInfo.finalPrice*100).toFixed(1)}%</td>
                                 </tr>
                                 <tr>
                                     <td colspan="2">3. 税费支出（净额）</td>
@@ -291,8 +318,8 @@ function generateResultHtml({ purchaseCost, salesCost, priceInfo, inputs }) {
                                 </tr>
                                 <tr class="total">
                                     <td colspan="2">总成本</td>
-                                    <td class="amount">${(purchaseCost.effectiveCost + priceInfo.platformFee + salesCost.operationalCosts.shipping + salesCost.operationalCosts.insurance + (adCost / salesCost.effectiveRate) + priceInfo.actualVAT).toFixed(2)}元</td>
-                                    <td class="percent">${((purchaseCost.effectiveCost + priceInfo.platformFee + salesCost.operationalCosts.shipping + salesCost.operationalCosts.insurance + (adCost / salesCost.effectiveRate) + priceInfo.actualVAT)/priceInfo.finalPrice*100).toFixed(1)}%</td>
+                                    <td class="amount">${(purchaseCost.effectiveCost + priceInfo.platformFee + salesCost.operationalCosts.shipping + salesCost.operationalCosts.insurance + salesCost.operationalCosts.other + (adCost / salesCost.effectiveRate) + priceInfo.actualVAT).toFixed(2)}元</td>
+                                    <td class="percent">${((purchaseCost.effectiveCost + priceInfo.platformFee + salesCost.operationalCosts.shipping + salesCost.operationalCosts.insurance + salesCost.operationalCosts.other + (adCost / salesCost.effectiveRate) + priceInfo.actualVAT)/priceInfo.finalPrice*100).toFixed(1)}%</td>
                                 </tr>
                             </table>
                         </div>
@@ -307,8 +334,8 @@ function generateResultHtml({ purchaseCost, salesCost, priceInfo, inputs }) {
                                 </tr>
                                 <tr>
                                     <td>总成本</td>
-                                    <td class="amount" style="color: #e65100;">-${(purchaseCost.effectiveCost + priceInfo.platformFee + salesCost.operationalCosts.shipping + salesCost.operationalCosts.insurance + (adCost / salesCost.effectiveRate) + priceInfo.actualVAT).toFixed(2)}元</td>
-                                    <td class="percent">${((purchaseCost.effectiveCost + priceInfo.platformFee + salesCost.operationalCosts.shipping + salesCost.operationalCosts.insurance + (adCost / salesCost.effectiveRate) + priceInfo.actualVAT)/priceInfo.finalPrice*100).toFixed(1)}%</td>
+                                    <td class="amount" style="color: #e65100;">-${(purchaseCost.effectiveCost + priceInfo.platformFee + salesCost.operationalCosts.shipping + salesCost.operationalCosts.insurance + salesCost.operationalCosts.other + (adCost / salesCost.effectiveRate) + priceInfo.actualVAT).toFixed(2)}元</td>
+                                    <td class="percent">${((purchaseCost.effectiveCost + priceInfo.platformFee + salesCost.operationalCosts.shipping + salesCost.operationalCosts.insurance + salesCost.operationalCosts.other + (adCost / salesCost.effectiveRate) + priceInfo.actualVAT)/priceInfo.finalPrice*100).toFixed(1)}%</td>
                                 </tr>
                                 <tr class="total">
                                     <td>实际利润</td>
