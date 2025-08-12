@@ -800,10 +800,12 @@ button:hover {
         grid-template-columns: 1fr; /* 表单单列展示，更便于竖向阅读 */
         gap: 1rem;
     }
-    .input-wrapper { flex-wrap: nowrap; gap: 8px; }
+    .input-wrapper { display: flex; align-items: center; flex-wrap: nowrap; gap: 8px; }
+    .input-wrapper input { flex: 1 1 0; min-width: 0; }
     input { margin-right: 0; }
-    .save-button { margin: 0; }
-    .compact-number { width: 100%; min-width: 0; }
+    .save-button { margin: 0; flex: 0 0 auto; }
+    /* 修复移动端“平台抽佣比例”等紧凑数字输入过长挤压“保存”按钮的问题 */
+    .compact-number { width: 120px; min-width: 100px; flex: 0 0 auto; }
 
     .price-composition { grid-template-columns: 1fr 1fr; }
     /* 移动端：利润页“价格指标”四卡片按两列排布 */
