@@ -19,6 +19,27 @@ function generatePriceResultHtml({ purchaseCost, salesCost, priceInfo, inputs })
             <div class="price-hint" style="font-size: 0.85rem; color: #666; margin-top: 0.5rem;">
                 利润率说明：系统已把预计的退货损失（如退不回的运费、广告费）提前摊入有效订单成本，确保实际利润率接近目标
             </div>
+            <div class="price-hint" style="font-size: 0.85rem; color: #2ea44f; margin-top: 0.25rem;">
+                保本ROI（有效GMV÷广告费）：${(function(){
+                    try{
+                        const roiRes = calculateBreakevenROI({
+                            costPrice: purchaseCost.costPrice,
+                            inputTaxRate: inputs.inputTaxRate,
+                            outputTaxRate: inputs.outputTaxRate,
+                            salesTaxRate: inputs.salesTaxRate,
+                            platformRate: inputs.platformRate,
+                            shippingCost: inputs.shippingCost,
+                            shippingInsurance: inputs.shippingInsurance,
+                            otherCost: inputs.otherCost,
+                            returnRate: inputs.returnRate,
+                            finalPrice: priceInfo.finalPrice
+                        });
+                        if (!isFinite(roiRes.breakevenROI)) return '∞';
+                        if (isNaN(roiRes.breakevenROI) || roiRes.breakevenROI <= 0) return '-';
+                        return Number(roiRes.breakevenROI).toFixed(2);
+                    }catch(_){return '-'}
+                })()}
+            </div>
         </div>
 
         <div class="section calculation-process">
@@ -224,8 +245,8 @@ function generatePriceResultHtml({ purchaseCost, salesCost, priceInfo, inputs })
                 <div class="step-section">
                     <div class="step-title">3. 去税得到不含税售价</div>
                     <div class="final-price-calc">
-                        <div class="calc-formula">含税售价 ÷ (1 + 商品税率)</div>
-                        <div class="calc-step">${priceInfo.finalPrice.toFixed(2)} ÷ (1 + ${(inputs.outputTaxRate*100).toFixed(0)}%)</div>
+                        <div class="calc-formula">含税售价 ÷ (1 + 销项税率)</div>
+                        <div class="calc-step">${priceInfo.finalPrice.toFixed(2)} ÷ (1 + ${(inputs.salesTaxRate*100).toFixed(0)}%)</div>
                         <div class="calc-result">= ${priceInfo.netPrice.toFixed(2)}元</div>
                     </div>
                 </div>

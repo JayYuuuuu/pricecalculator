@@ -806,6 +806,8 @@ button:hover {
     .compact-number { width: 100%; min-width: 0; }
 
     .price-composition { grid-template-columns: 1fr 1fr; }
+    /* 移动端：利润页“价格指标”四卡片按两列排布 */
+    .metrics-grid { grid-template-columns: repeat(2, 1fr) !important; }
     .final-price { padding: 1.25rem; }
     .final-price .price-value { font-size: 2rem; }
     .final-price .price-label { font-size: 1rem; }

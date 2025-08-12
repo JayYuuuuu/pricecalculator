@@ -45,12 +45,12 @@
                     </div>
 
                     <div class="input-group">
-                        <label>商品税率（%）:</label>
+                        <label>进项税率（%）:</label>
                         <div class="input-wrapper">
                             <input type="number" id="outputTaxRate" value="13" step="0.1">
                             <button class="save-button" onclick="saveInputs()">保存</button>
                         </div>
-                        <div class="field-hint">商品的增值税税率（如服装类13%），这部分税费将来可以抵扣</div>
+                        <div class="field-hint">商品的进项税率（如服装类13%），这部分税费将来可用于抵扣销项税</div>
                     </div>
                 </div>
 
@@ -126,16 +126,21 @@
                             </div>
                             <div class="field-hint">包装材料等其他固定成本（提示：该项为“预估”口径，建议纳入包装材料、耗材、办公与管理等未单独计提的固定/间接费用；不含随增值税附征的城建税、教育费附加、地方教育附加等税费）</div>
                         </div>
-
-                        <div class="input-group">
-                            <label>销项税率（%）:</label>
-                            <div class="input-wrapper">
-                                <input type="number" id="salesTaxRate" value="13" step="0.1">
-                                <button class="save-button" onclick="saveInputs()">保存</button>
-                            </div>
-                            <div class="field-hint">销项税率（如13%）。注意：销项税不是直接用含税价×13%，而是要先去税，即：含税价÷1.13×13%</div>
-                        </div>
                     </div>
+
+                     <!-- 新增：税费设置（将原先位于“其他费用”内的销项税率独立成单独模块） -->
+                     <div class="cost-category">
+                         <div class="category-title">税费设置</div>
+                         <div class="input-group">
+                             <label>销项税率（%）:</label>
+                             <div class="input-wrapper">
+                                 <!-- 保持原有ID不变：salesTaxRate，确保计算脚本中的读取逻辑无需改动 -->
+                                 <input type="number" id="salesTaxRate" value="13" step="0.1">
+                                 <button class="save-button" onclick="saveInputs()">保存</button>
+                             </div>
+                             <div class="field-hint">销项税率（如13%）。注意：销项税不是直接用含税价×13%，而是要先去税，即：含税价÷1.13×13%</div>
+                         </div>
+                     </div>
                 </div>
             </div>
 
@@ -213,7 +218,7 @@
                     </div>
 
                     <div class="input-group">
-                        <label>实际利润:</label>
+                        <label>根据目前费用设置计算的利润:</label>
                         <div class="input-wrapper" style="position: relative;">
                             <input type="text" id="actualProfit" readonly style="background-color: #f8f9fa; cursor: default;">
                             <div id="profitRate" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); color: #2ea44f; font-size: 0.9rem;"></div>
@@ -227,21 +232,26 @@
                 <!-- 价格指标：基于输入的进货价与含税售价，展示常用倍率/加成/毛利率指标 -->
                 <div class="section" style="margin-top: 1rem;">
                     <h3>价格指标（基于进货价与含税售价）</h3>
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+                    <div class="metrics-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
                         <div style="background:#f8f9fa; border-radius:8px; padding:12px; text-align:center;">
                             <div style="color:#666; font-size:0.9rem;">加价倍率</div>
                             <div id="metricMultiple" style="font-size:1.25rem; font-weight:600; margin-top:4px;">-</div>
                             <div style="color:#999; font-size:0.8rem; margin-top:2px;">售价 ÷ 进货价</div>
                         </div>
                         <div style="background:#f8f9fa; border-radius:8px; padding:12px; text-align:center;">
-                            <div style="color:#666; font-size:0.9rem;">加成率</div>
-                            <div id="metricMarkupRate" style="font-size:1.25rem; font-weight:600; margin-top:4px;">-</div>
-                            <div style="color:#999; font-size:0.8rem; margin-top:2px;">(售价 - 进货价) ÷ 进货价</div>
-                        </div>
-                        <div style="background:#f8f9fa; border-radius:8px; padding:12px; text-align:center;">
                             <div style="color:#666; font-size:0.9rem;">毛利率</div>
                             <div id="metricGrossMargin" style="font-size:1.25rem; font-weight:600; margin-top:4px;">-</div>
                             <div style="color:#999; font-size:0.8rem; margin-top:2px;">(售价 - 进货价) ÷ 售价</div>
+                        </div>
+                        <div id="metricBreakevenROICard" style="background:#f8f9fa; border-radius:8px; padding:12px; text-align:center; cursor: help;">
+                            <div style="color:#666; font-size:0.9rem;">保本 ROI</div>
+                            <div id="metricBreakevenROI" style="font-size:1.25rem; font-weight:600; margin-top:4px;">-</div>
+                            <div style="color:#999; font-size:0.8rem; margin-top:2px;">GMV ÷ 广告费（利润=0）</div>
+                        </div>
+                        <div style="background:#f8f9fa; border-radius:8px; padding:12px; text-align:center;">
+                            <div style="color:#666; font-size:0.9rem;">保本广告占比</div>
+                            <div id="metricBreakevenAdRate" style="font-size:1.25rem; font-weight:600; margin-top:4px;">-</div>
+                            <div style="color:#999; font-size:0.8rem; margin-top:2px;">单品付费占比警戒线</div>
                         </div>
                     </div>
                     <div style="color:#999; font-size:0.8rem; margin-top:6px;">提示：以上指标只反映“售价与进货价”的相对关系，未计入税费、运费、广告等经营费用。</div>
