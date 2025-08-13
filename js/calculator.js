@@ -1085,9 +1085,11 @@ function initBreakevenROITooltip() {
     const buildExplainHtml = (ctx) => {
         const {P, C, purchaseVAT, fixedCosts, E, tOnFinal, platformRate, breakevenAdRate, breakevenROI} = ctx;
         const D = 1 - platformRate - tOnFinal + 0.06 * platformRate;
-        return (
-            '<div>'+
-            '<div style="margin-bottom:6px; color:#111;">公式与中间量（ROI=有效GMV÷广告费）：</div>'+
+		// 增补：在浮窗顶部给出“保本 ROI”的通俗定义，便于非技术同学理解
+		return (
+			'<div>'+
+			'<div style="margin-bottom:6px; color:#333;">保本 ROI 的含义是：在考虑退货、平台扣点、销项税、进项抵扣、固定成本之后，利润刚好为 0 时的 ROI。</div>'+
+			'<div style="margin-bottom:6px; color:#111;">公式与中间量（ROI=有效GMV÷广告费）：</div>'+
             `<div>• 有效率 E = 1 - 退货率 = ${(E*100).toFixed(1)}%</div>`+
             `<div>• 销项税占比 = 税率/(1+税率) = ${(tOnFinal*100).toFixed(2)}%</div>`+
             `<div>• 分子 B = C - 商品进项税 + 固定成本/E = ${C.toFixed(2)} - ${purchaseVAT.toFixed(2)} + ${fixedCosts.toFixed(2)} = ${(C - purchaseVAT + fixedCosts).toFixed(2)}</div>`+
