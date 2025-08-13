@@ -287,7 +287,7 @@ function generateListPriceHtml({ targetFinalPrice, tiers, results }) {
         return `<tr class="lp-price-row" data-s="${Number(item.price).toFixed(2)}">
             <td class="lp-col-left" data-label="单品立减"><span class="lp-chip gray">${rPct}</span></td>
             <td class="lp-col-right lp-price" data-label="建议标价"><span class="lp-strong">¥ ${Number(item.price).toFixed(2)}</span></td>
-            <td class="lp-col-right" data-label="满减触发">${offText}</td>
+            <td class="lp-col-right lp-nowrap" data-label="满减触发">${offText}</td>
             <td class="lp-col-right lp-price" data-label="叠加后到手价">¥ ${isFinite(item.finalPrice)? Number(item.finalPrice).toFixed(2) : '-'}</td>
             <td class="lp-col-right" data-label="校验">${note}</td>
         </tr>`;

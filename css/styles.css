@@ -1123,6 +1123,7 @@ button:hover {
 .lp-col-center { text-align: center; }
 .lp-price { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
 .lp-strong { font-weight: 700; color: #0b63ce; }
+.lp-nowrap { white-space: nowrap; }
 
 /* 状态徽章（精确/偏差） */
 .lp-badge {
@@ -1137,7 +1138,7 @@ button:hover {
 .lp-badge.warn { background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; }
 
 /* 轻量“Chip”展示（比如立减/满减） */
-.lp-chip { display:inline-block; padding: 2px 8px; border-radius: 999px; background:#f3f4f6; color:#374151; font-size:12px; }
+.lp-chip { display:inline-block; padding: 2px 8px; border-radius: 999px; background:#f3f4f6; color:#374151; font-size:12px; white-space: nowrap; }
 .lp-chip.blue { background:#eef2ff; color:#3730a3; }
 .lp-chip.green { background:#ecfdf5; color:#065f46; }
 .lp-chip.gray { background:#f3f4f6; color:#374151; }

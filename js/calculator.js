@@ -995,13 +995,20 @@ function calculateListPrice() {
                     }).join('');
                     return `<div style=\"font-weight:600;margin-bottom:8px;\">各立减档到手价</div>${rows}`;
                 })();
-                // 简易面板
+                // 深色样式面板（对齐桌面端浮窗风格）
                 const panel = document.createElement('div');
                 panel.style.position = 'fixed'; panel.style.left = '50%'; panel.style.top = '50%';
-                panel.style.transform = 'translate(-50%, -50%)'; panel.style.background = '#fff';
-                panel.style.borderRadius = '12px'; panel.style.boxShadow = '0 12px 36px rgba(0,0,0,0.18)';
-                panel.style.padding = '16px'; panel.style.maxWidth = '88%'; panel.style.zIndex = '10002';
-                panel.innerHTML = `<div style=\"display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;\"><div style=\"font-weight:600;\">标价 ¥ ${S.toFixed(2)}</div><button id=\"lpClose\" style=\"border:none;background:#f5f5f5;border-radius:6px;padding:6px 10px;\">关闭</button></div>${html}`;
+                panel.style.transform = 'translate(-50%, -50%)';
+                panel.style.background = 'rgba(17,24,39,0.95)';
+                panel.style.color = '#fff';
+                panel.style.borderRadius = '8px';
+                panel.style.boxShadow = '0 12px 36px rgba(0,0,0,0.25)';
+                panel.style.padding = '12px 14px';
+                panel.style.maxWidth = '88%';
+                panel.style.zIndex = '10002';
+                panel.style.fontSize = '12px';
+                panel.style.lineHeight = '1.5';
+                panel.innerHTML = `<div style=\"display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;\"><div style=\"font-weight:600;\">标价 <b>¥ ${S.toFixed(2)}</b></div><button id=\"lpClose\" aria-label=\"关闭\" style=\"border:none;background:rgba(255,255,255,0.12);color:#fff;border-radius:6px;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;font-size:16px;line-height:1;\">×</button></div>${html}`;
                 const mask = document.createElement('div');
                 mask.style.position = 'fixed'; mask.style.left = '0'; mask.style.top = '0'; mask.style.right = '0'; mask.style.bottom = '0';
                 mask.style.background = 'rgba(0,0,0,0.35)'; mask.style.zIndex = '10001';
@@ -1059,6 +1066,7 @@ function initSuggestPriceTooltip(tiers) {
         });
         document.body.appendChild(tip);
     }
+    const isHoverDevice = !!(window.matchMedia && window.matchMedia('(hover: hover)').matches);
     const hide = () => { tip.style.opacity = '0'; };
     const show = (html, x, y) => {
         tip.innerHTML = html;
@@ -1082,7 +1090,8 @@ function initSuggestPriceTooltip(tiers) {
                 const final = s1 - off;
                 return `<tr><td style="padding:2px 8px;color:#a7f3d0;">${(r*100).toFixed(0)}%</td><td style="padding:2px 8px;">${formatYuan(final)}</td></tr>`;
             }).join('');
-            return `<div style="font-weight:600;margin-bottom:6px;">各立减档到手价</div>
+            return `<div style="font-weight:600;margin-bottom:4px;">标价 <b>${formatYuan(S)}</b></div>
+                    <div style="font-weight:600;margin-bottom:6px;">各立减档到手价</div>
                     <table style="border-collapse:collapse;">${rows}</table>`;
         } catch (_) {
             return '无法计算';
@@ -1112,10 +1121,15 @@ function initSuggestPriceTooltip(tiers) {
     container.removeEventListener('mouseover', container.__lpOver || (()=>{}));
     container.removeEventListener('mousemove', container.__lpMove || (()=>{}));
     container.removeEventListener('mouseleave', container.__lpLeave || (()=>{}));
-    container.__lpOver = onOver; container.__lpMove = onMove; container.__lpLeave = onLeave;
-    container.addEventListener('mouseover', onOver);
-    container.addEventListener('mousemove', onMove);
-    container.addEventListener('mouseleave', onLeave);
+    if (isHoverDevice) {
+        container.__lpOver = onOver; container.__lpMove = onMove; container.__lpLeave = onLeave;
+        container.addEventListener('mouseover', onOver);
+        container.addEventListener('mousemove', onMove);
+        container.addEventListener('mouseleave', onLeave);
+    } else {
+        // 触摸设备不绑定 hover 浮窗，避免与点击面板重复
+        hide();
+    }
 }
 
 
