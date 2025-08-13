@@ -365,6 +365,22 @@ button:hover {
     display: flex;
     justify-content: space-between;
 }
+
+/* 统一利润页“基础成本/税费分析”卡片内部的分割线为虚线，避免混入实线边框 */
+.profit-composition .composition-item .cost-detail,
+.profit-composition .composition-item .tax-detail {
+    border-top: 1px dashed #e0e0e0; /* 容器顶部统一虚线 */
+}
+.profit-composition .composition-item .cost-detail .cost-item + .cost-item,
+.profit-composition .composition-item .tax-detail .tax-item + .tax-item {
+    border-top: 1px dashed #e0e0e0; /* 子项之间统一虚线分隔 */
+    padding-top: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+/* 防御性覆盖：移除利润构成卡片内部任何“实线”分隔（包括内联样式带来的 solid） */
+.profit-composition .composition-item [style*="border-top: 1px solid"] { border-top: none !important; }
+.profit-composition .composition-item [style*="border-bottom: 1px solid"] { border-bottom: none !important; }
 .price-note {
     margin-top: 1rem;
     padding: 0.5rem;
@@ -578,7 +594,6 @@ button:hover {
     gap: 1.5rem;
 }
 .cost-item {
-    border-bottom: 1px solid #f0f0f0;
     padding-bottom: 1rem;
 }
 .cost-title {
