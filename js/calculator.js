@@ -778,6 +778,11 @@ window.addEventListener('load', () => {
         initQuickSliders();
     } catch (e) {}
 
+    // 初始化“批量利润率推演”功能
+    try {
+        initBatchProfitScenario();
+    } catch (e) {}
+
     // 为所有输入框添加实时计算功能
     document.querySelectorAll('input').forEach(input => {
         input.addEventListener('input', () => {
@@ -1364,6 +1369,221 @@ function collectShareContext() {
     }
 }
 
+
+/**
+ * 批量利润率推演：初始化入口按钮与浮窗
+ * 功能目标：
+ * - 在“利润计算”页基于当前参数，批量推演不同“全店付费占比×预计退货率”组合下的利润率
+ * - 仅枚举两类档位：
+ *   • 全店付费占比：15%、20%、25%、30%
+ *   • 预计退货率：8%、12%、15%、18%、20%、25%
+ * - 以浮窗表格展示：行=退货率，列=付费占比，单元格=利润率（%）
+ */
+function initBatchProfitScenario() {
+    const btn = document.getElementById('btnBatchScenario');
+    if (!btn) return;
+
+    // 懒创建：浮窗DOM（遮罩+面板）
+    let overlay = null;
+    let panel = null;
+
+    // 生成（或刷新）内容区域HTML
+    const buildPanelContent = () => {
+        // 读取当前利润页的基础参数；如校验失败则抛错以便提示
+        const base = getProfitBaseInputs();
+
+        // 固定档位（按需求枚举）
+        const adRates = [0.15, 0.20, 0.25, 0.30];
+        const returnRates = [0.08, 0.12, 0.15, 0.18, 0.20, 0.25];
+
+        // 计算矩阵结果
+        const rows = returnRates.map(rr => {
+            const cells = adRates.map(ar => {
+                const res = computeProfitScenario(base, ar, rr);
+                return {
+                    adRate: ar,
+                    returnRate: rr,
+                    profit: res.profit,
+                    profitRate: res.profitRate
+                };
+            });
+            return { rr, cells };
+        });
+
+        // 渲染表格（使用内联样式，避免侵入全局CSS）
+        const headerBadges = `
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;color:#555;font-size:12px;">
+                <span style="background:#f5f5f5;border-radius:999px;padding:4px 8px;">进货价：¥${base.costPrice.toFixed(2)}</span>
+                <span style="background:#f5f5f5;border-radius:999px;padding:4px 8px;">实际售价：¥${base.actualPrice.toFixed(2)}</span>
+                <span style="background:#f5f5f5;border-radius:999px;padding:4px 8px;">平台佣金：${(base.platformRate*100).toFixed(1)}%</span>
+                <span style="background:#f5f5f5;border-radius:999px;padding:4px 8px;">销项税率：${(base.salesTaxRate*100).toFixed(1)}%</span>
+                <span style="background:#f5f5f5;border-radius:999px;padding:4px 8px;">开票成本：${(base.inputTaxRate*100).toFixed(1)}%</span>
+                <span style="background:#f5f5f5;border-radius:999px;padding:4px 8px;">商品进项税率：${(base.outputTaxRate*100).toFixed(1)}%</span>
+                <span style="background:#f5f5f5;border-radius:999px;padding:4px 8px;">物流费：¥${base.shippingCost.toFixed(2)}</span>
+                <span style="background:#f5f5f5;border-radius:999px;padding:4px 8px;">运费险：¥${base.shippingInsurance.toFixed(2)}</span>
+                <span style="background:#f5f5f5;border-radius:999px;padding:4px 8px;">其他成本：¥${base.otherCost.toFixed(2)}</span>
+            </div>`;
+
+        const tableHeader = `
+            <tr>
+                <th style="position:sticky;left:0;background:#fff;z-index:2;border-bottom:1px solid #eee;text-align:left;padding:8px 10px;color:#666;font-weight:500;">退货率 \\ 付费占比</th>
+                ${adRates.map(a => `<th style="border-bottom:1px solid #eee;padding:8px 10px;color:#333;font-weight:600;">${(a*100).toFixed(0)}%</th>`).join('')}
+            </tr>`;
+
+        const tableRows = rows.map(r => {
+            const firstCol = `<td style="position:sticky;left:0;background:#fff;z-index:1;border-right:1px solid #f2f2f2;padding:8px 10px;color:#333;">${(r.rr*100).toFixed(0)}%</td>`;
+            const tds = r.cells.map(c => {
+                const rate = (c.profitRate*100).toFixed(2);
+                const color = c.profitRate > 0 ? '#2ea44f' : (c.profitRate < 0 ? '#d32f2f' : '#555');
+                const bg = c.profitRate > 0 ? 'rgba(46,164,79,0.08)' : (c.profitRate < 0 ? 'rgba(211,47,47,0.08)' : 'transparent');
+                const title = `广告占比 ${(c.adRate*100).toFixed(0)}%｜退货率 ${(c.returnRate*100).toFixed(0)}%\n利润 ¥${c.profit.toFixed(2)}｜利润率 ${rate}%`;
+                return `<td title="${title}" style="padding:8px 10px;text-align:right;color:${color};background:${bg};">${rate}%</td>`;
+            }).join('');
+            return `<tr>${firstCol}${tds}</tr>`;
+        }).join('');
+
+        const table = `
+            <div style="overflow:auto;max-height:56vh;border:1px solid #eee;border-radius:8px;">
+                <table style="border-collapse:separate;border-spacing:0;width:100%;min-width:520px;font-size:13px;">
+                    <thead style="position:sticky;top:0;background:#fff;">${tableHeader}</thead>
+                    <tbody>${tableRows}</tbody>
+                </table>
+            </div>`;
+
+        return `
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <div style="font-weight:600;">批量利润率推演</div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <button id="btnBatchScenarioRefresh" class="batch-modal-btn primary">刷新</button>
+                    <button id="btnBatchScenarioClose" class="batch-modal-btn">关闭</button>
+                </div>
+            </div>
+            <div style="color:#666;font-size:12px;margin-bottom:6px;">仅变动“全店付费占比”与“预计退货率”，其余参数沿用当前利润页设置：</div>
+            ${headerBadges}
+            ${table}
+            <div style="margin-top:10px;color:#999;font-size:12px;">提示：绿色为盈利，红色为亏损。单元格悬停可查看对应组合的利润金额与利润率。</div>
+        `;
+    };
+
+    const ensureOverlay = () => {
+        if (overlay && panel) return;
+        overlay = document.createElement('div');
+        overlay.id = 'batchScenarioOverlay';
+        overlay.style.position = 'fixed';
+        overlay.style.left = '0';
+        overlay.style.top = '0';
+        overlay.style.right = '0';
+        overlay.style.bottom = '0';
+        overlay.style.background = 'rgba(0,0,0,0.35)';
+        overlay.style.zIndex = '10000';
+        overlay.style.display = 'none';
+
+        panel = document.createElement('div');
+        panel.style.position = 'fixed';
+        panel.style.left = '50%';
+        panel.style.top = '50%';
+        panel.style.transform = 'translate(-50%, -50%)';
+        panel.style.width = '92%';
+        panel.style.maxWidth = '860px';
+        panel.style.maxHeight = '80vh';
+        panel.style.overflow = 'auto';
+        panel.style.background = '#fff';
+        panel.style.borderRadius = '12px';
+        panel.style.boxShadow = '0 12px 36px rgba(0,0,0,0.18)';
+        panel.style.padding = '16px';
+        overlay.appendChild(panel);
+
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+        document.body.appendChild(overlay);
+    };
+
+    const open = () => {
+        ensureOverlay();
+        try {
+            panel.innerHTML = buildPanelContent();
+        } catch (e) {
+            panel.innerHTML = `<div style="color:#d32f2f;">${e && e.message ? e.message : '参数无效，无法推演'}</div>`;
+        }
+        overlay.style.display = 'block';
+        // 绑定按钮事件（需在内容插入后）
+        const btnClose = panel.querySelector('#btnBatchScenarioClose');
+        if (btnClose) btnClose.addEventListener('click', close);
+        const btnRefresh = panel.querySelector('#btnBatchScenarioRefresh');
+        if (btnRefresh) btnRefresh.addEventListener('click', () => {
+            try { panel.innerHTML = buildPanelContent(); } catch (e) { showToast(e && e.message ? e.message : '刷新失败'); }
+        });
+    };
+
+    const close = () => { if (overlay) overlay.style.display = 'none'; };
+
+    btn.addEventListener('click', () => {
+        // 仅当利润页激活时开放；避免切到“售价计算”页时的误操作
+        const profitTabActive = document.getElementById('profitTab')?.classList.contains('active');
+        if (!profitTabActive) { showToast('请先切换到“利润计算”页'); return; }
+        open();
+    });
+}
+
+/**
+ * 读取利润页基础输入（用于批量推演），并做范围校验
+ * 返回：一组标准化参数（百分比转小数）
+ */
+function getProfitBaseInputs() {
+    const base = {
+        costPrice: validateInput(parseFloat(document.getElementById('profitCostPrice').value), 0.01, 1000000, '进货价'),
+        actualPrice: validateInput(parseFloat(document.getElementById('actualPrice').value), 0.01, 1000000, '实际售价'),
+        inputTaxRate: validateInput(parseFloat(document.getElementById('profitInputTaxRate').value), 0, 100, '开票成本') / 100,
+        outputTaxRate: validateInput(parseFloat(document.getElementById('profitOutputTaxRate').value), 0, 100, '商品进项税率') / 100,
+        salesTaxRate: validateInput(parseFloat(document.getElementById('profitSalesTaxRate').value), 0, 100, '销项税率') / 100,
+        platformRate: validateInput(parseFloat(document.getElementById('profitPlatformRate').value), 0, 100, '平台抽佣比例') / 100,
+        shippingCost: validateInput(parseFloat(document.getElementById('profitShippingCost').value), 0, 10000, '物流费'),
+        shippingInsurance: validateInput(parseFloat(document.getElementById('profitShippingInsurance').value), 0, 100, '运费险'),
+        otherCost: validateInput(parseFloat(document.getElementById('profitOtherCost').value), 0, 10000, '其他成本')
+    };
+    return base;
+}
+
+/**
+ * 基于利润页口径，计算给定“广告占比/退货率”组合下的利润与利润率（复用 calculateProfit 的口径）
+ * 参数：
+ * - base：getProfitBaseInputs() 返回的固定参数
+ * - adRate：全店付费占比（0~1 小数）
+ * - returnRate：预计退货率（0~1 小数）
+ * 返回：{ profit, profitRate }，其中 profitRate 为小数（如 0.123 表示 12.3%）
+ */
+function computeProfitScenario(base, adRate, returnRate) {
+    // 进货成本相关
+    const invoiceCost = base.costPrice * base.inputTaxRate;            // 开票成本
+    const totalPurchaseCost = base.costPrice + invoiceCost;            // 总进货成本
+    const purchaseVAT = base.costPrice * base.outputTaxRate;           // 商品进项税
+    const effectiveCost = totalPurchaseCost;                           // 实际成本
+
+    // 有效率与按(1-退货率)分摊的费用
+    const effectiveRate = 1 - returnRate;                              // 有效销售率
+    const platformFee = base.actualPrice * base.platformRate;          // 平台佣金（可退回）
+    const adCost = base.actualPrice * adRate;                          // 广告费（不可退回，需分摊）
+    const adCostEffective = adCost / effectiveRate;                    // 广告费分摊
+    const adVAT = adCostEffective * 0.06;                              // 广告费进项税抵扣（6%）
+
+    const shippingCostEffective = base.shippingCost / effectiveRate;   // 物流费分摊
+    const insuranceCostEffective = base.shippingInsurance / effectiveRate; // 运费险分摊
+    const otherCostEffective = base.otherCost / effectiveRate;         // 其他成本分摊
+
+    // 销项税相关
+    const netPrice = base.actualPrice / (1 + base.salesTaxRate);       // 不含税售价
+    const outputVAT = netPrice * base.salesTaxRate;                    // 销项税额
+
+    // 进项抵扣合计（商品 + 广告费 + 平台佣金）
+    const totalVATDeduction = purchaseVAT + adVAT + (platformFee * 0.06);
+    const actualVAT = outputVAT - totalVATDeduction;                   // 实缴税费
+
+    // 总成本与利润
+    const totalCost = effectiveCost + platformFee + adCostEffective + shippingCostEffective + insuranceCostEffective + otherCostEffective + actualVAT;
+    const profit = base.actualPrice - totalCost;
+    const profitRate = profit / base.actualPrice;                      // 小数
+
+    return { profit, profitRate };
+}
 
 /**
  * 初始化“平台免佣”开关，并与输入框联动

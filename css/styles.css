@@ -278,6 +278,39 @@ button:hover {
     align-items: center;
 }
 
+/* 标题栏右侧操作按钮：与开关风格协调、紧凑不突兀 */
+.header-btn {
+    margin: 0 0 0 8px; /* 靠右并与开关留 8px 间距 */
+    padding: 8px 14px;
+    font-size: 0.9rem;
+    line-height: 1;
+    border-radius: 999px; /* 胶囊形，呼应开关圆角 */
+    background: #0b63ce; /* 略深蓝，与主色协调 */
+    color: #fff;
+    border: 1px solid #0b63ce;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+}
+.header-btn:hover { background: #0d6efd; border-color: #0d6efd; }
+.header-btn:active { background: #0859be; border-color: #0859be; }
+.header-btn:focus { outline: none; box-shadow: 0 0 0 3px rgba(13,110,253,0.15); }
+
+/* 批量推演浮窗内按钮（在白底面板内保持可见性与一致风格） */
+.batch-modal-btn {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    background: #f9fafb;
+    color: #374151;
+    cursor: pointer;
+}
+.batch-modal-btn:hover { background: #f3f4f6; }
+.batch-modal-btn.primary {
+    background: #0b63ce;
+    border-color: #0b63ce;
+    color: #fff;
+}
+.batch-modal-btn.primary:hover { background: #0d6efd; border-color: #0d6efd; }
+
 /* 价格构成分析样式 */
 .price-composition {
     display: grid;
@@ -782,6 +815,29 @@ button:hover {
 .switch input:checked + .slider:before {
     transform: translateX(20px);
 }
+
+/* 将“免佣 文案 + 开关”融合成一枚紧凑的胶囊态控件 */
+.switch-chip {
+    background: #f5f6f7;
+    border: 1px solid #e5e7eb;
+    border-radius: 999px;
+    padding: 4px 8px 4px 10px; /* 文案左、开关右 更紧凑 */
+    gap: 10px; /* 文案与开关间距略增，避免拥挤 */
+    display: inline-flex;           /* 保证内部垂直居中 */
+    align-items: center;            /* 垂直居中内容 */
+    box-sizing: border-box;         /* 将内边距计入高度 */
+    height: 32px;                   /* 24px 开关 + 上下各 4px 内边距 */
+    line-height: 0;                 /* 清除父级行高影响 */
+}
+.switch-chip .switch-label {
+    color: #4b5563;
+    font-weight: 500;
+    display: inline-flex;           /* 让文字自身也按容器高度居中 */
+    align-items: center;
+    height: 24px;                   /* 与开关同高 */
+    line-height: 24px;              /* 文字行盒=24px，双保险 */
+}
+.switch-chip .switch { transform: translateY(0); align-self: center; margin: 0; }
 .toast {
     position: fixed;
     bottom: 20px;

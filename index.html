@@ -184,15 +184,17 @@
             <div class="section">
                 <div class="section-header">
                     <h3>利润计算</h3>
-                    <!-- 顶部右侧免佣开关（与平台费用中的免佣同步） -->
+                    <!-- 顶部右侧区域：免佣开关 + 批量推演按钮（置于模块标题行） -->
                     <div class="header-actions" title="免佣开关：与下方平台费用免佣联动">
-                        <div class="switch-wrapper">
+                        <div class="switch-wrapper switch-chip">
                             <span class="switch-label">免佣</span>
                             <label class="switch">
                                 <input type="checkbox" id="profitPlatformFreeToggleTop">
                                 <span class="slider"></span>
                             </label>
                         </div>
+                        <!-- 批量利润率推演按钮（仅更改广告占比与退货率做推演） -->
+                        <button id="btnBatchScenario" class="header-btn">批量利润率推演</button>
                     </div>
                 </div>
                 <div class="step-description">
