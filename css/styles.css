@@ -327,6 +327,10 @@ button:hover {
 }
 .batch-badge.input input:focus { outline:none; box-shadow: 0 0 0 2px rgba(255,255,255,0.45); }
 
+/* 浮窗头部指标：与价格输入同一风格的“只读胶囊” */
+.batch-badge.metric { display:inline-flex; align-items:center; gap:6px; }
+.batch-badge.metric b { font-weight:700; color:#fff; }
+
 /* 价格构成分析样式 */
 .price-composition {
     display: grid;

@@ -1413,16 +1413,24 @@ function initBatchProfitScenario() {
         });
 
         // 渲染表格（使用内联样式，避免侵入全局CSS）
+        // 价格相关即时指标：加价倍率、毛利率（按“仅基于价格”的直观口径计算）
+        const markup = (base.costPrice > 0 && base.actualPrice > 0) ? (base.actualPrice / base.costPrice) : NaN;
+        const grossMargin = (base.actualPrice > 0 && base.costPrice > 0) ? ((base.actualPrice - base.costPrice) / base.actualPrice) : NaN;
+        const markupText = isFinite(markup) ? markup.toFixed(2) : '-';
+        const grossText = isFinite(grossMargin) ? (grossMargin * 100).toFixed(2) : '-';
+
         const headerBadges = `
-            <div class="batch-badges">
-                <label class="batch-badge emphasis input">
+            <div class=\"batch-badges\">
+                <label class=\"batch-badge emphasis input\">
                     <span>进货价：</span>
-                    <input id="batchCostPrice" type="number" step="0.01" min="0.01" value="${base.costPrice.toFixed(2)}" />
+                    <input id=\"batchCostPrice\" type=\"number\" step=\"0.01\" min=\"0.01\" value=\"${base.costPrice.toFixed(2)}\" />
                 </label>
-                <label class="batch-badge emphasis input">
+                <label class=\"batch-badge emphasis input\">
                     <span>实际售价：</span>
-                    <input id="batchActualPrice" type="number" step="0.01" min="0.01" value="${base.actualPrice.toFixed(2)}" />
+                    <input id=\"batchActualPrice\" type=\"number\" step=\"0.01\" min=\"0.01\" value=\"${base.actualPrice.toFixed(2)}\" />
                 </label>
+                <label class=\"batch-badge emphasis metric\" title=\"加价倍率 = 实际售价 ÷ 进货价\">加价倍率：<b id=\"badgeMarkupValue\">${markupText}</b></label>
+                <label class=\"batch-badge emphasis metric\" title=\"毛利率 = (实际售价 − 进货价) ÷ 实际售价\">毛利率：<b id=\"badgeGrossMarginValue\">${grossText === '-' ? '-' : grossText + '%'}\n</b></label>
             </div>
             <div class="batch-badges">
                 <span class="batch-badge">平台佣金：${(base.platformRate*100).toFixed(1)}%</span>
@@ -1448,8 +1456,23 @@ function initBatchProfitScenario() {
                 const profitText = `¥ ${c.profit.toFixed(2)}`;
                 const color = c.profitRate > 0 ? '#2ea44f' : (c.profitRate < 0 ? '#d32f2f' : '#555');
                 const bg = c.profitRate > 0 ? 'rgba(46,164,79,0.08)' : (c.profitRate < 0 ? 'rgba(211,47,47,0.08)' : 'transparent');
+                // 计算“保本 ROI / 保本付费占比”（受退货率影响）
+                const roiRes = calculateBreakevenROI({
+                    costPrice: base.costPrice,
+                    inputTaxRate: base.inputTaxRate,
+                    outputTaxRate: base.outputTaxRate,
+                    salesTaxRate: base.salesTaxRate,
+                    platformRate: base.platformRate,
+                    shippingCost: base.shippingCost,
+                    shippingInsurance: base.shippingInsurance,
+                    otherCost: base.otherCost,
+                    returnRate: c.returnRate,
+                    finalPrice: base.actualPrice
+                });
+                const breakevenROIText = isFinite(roiRes.breakevenROI) ? roiRes.breakevenROI.toFixed(2) : '∞';
+                const breakevenAdRateText = isFinite(roiRes.breakevenAdRate) ? `${(roiRes.breakevenAdRate*100).toFixed(2)}%` : '-';
                 // 自定义悬浮提示：立即显示，无需等待浏览器 title 的延迟
-                const tooltipData = `广告占比 ${(c.adRate*100).toFixed(0)}%｜退货率 ${(c.returnRate*100).toFixed(0)}%\n利润 ${profitText}｜利润率 ${rate}%`;
+                const tooltipData = `广告占比 ${(c.adRate*100).toFixed(0)}%｜退货率 ${(c.returnRate*100).toFixed(0)}%\n利润 ${profitText}｜利润率 ${rate}%\n保本ROI ${breakevenROIText}｜保本付费占比 ${breakevenAdRateText}`;
                 return `<td class="profit-cell" data-tooltip="${tooltipData}" style="padding:8px 10px;text-align:right;color:${color};background:${bg};cursor:help;">
                             <div style="font-weight:600;">${rate}%</div>
                             <div style="font-size:12px;opacity:0.9;">${profitText}</div>
@@ -1591,7 +1614,18 @@ function initBatchProfitScenario() {
             if (btnClose) btnClose.addEventListener('click', close);
             const btnRefresh = panel.querySelector('#btnBatchScenarioRefresh');
             if (btnRefresh) btnRefresh.addEventListener('click', () => {
-                try { panel.innerHTML = buildPanelContent(); wireEvents(); } catch (e) { showToast(e && e.message ? e.message : '刷新失败'); }
+                try {
+                    // 刷新时优先保留弹窗里的“进货价/实际售价”输入，不回退到外部输入
+                    const base = getProfitBaseInputs();
+                    const ci = panel.querySelector('#batchCostPrice');
+                    const ai = panel.querySelector('#batchActualPrice');
+                    const cVal = parseFloat(ci && ci.value || '');
+                    const aVal = parseFloat(ai && ai.value || '');
+                    if (isFinite(cVal) && cVal > 0) base.costPrice = cVal;
+                    if (isFinite(aVal) && aVal > 0) base.actualPrice = aVal;
+                    panel.innerHTML = buildPanelContent(base);
+                    wireEvents();
+                } catch (e) { showToast(e && e.message ? e.message : '刷新失败'); }
             });
 
             // 悬停提示：委托到表格容器，悬停即显
@@ -1659,6 +1693,26 @@ function initBatchProfitScenario() {
             const costInput = panel.querySelector('#batchCostPrice');
             const actualInput = panel.querySelector('#batchActualPrice');
             
+            // 即时更新“加价倍率/毛利率”徽章（仅更新文本，不重绘DOM，保证不失焦）
+            const updateHeaderMetrics = () => {
+                try {
+                    const cost = parseFloat(costInput?.value || '');
+                    const price = parseFloat(actualInput?.value || '');
+                    const elMarkup = panel.querySelector('#badgeMarkupValue');
+                    const elGross = panel.querySelector('#badgeGrossMarginValue');
+                    if (!elMarkup || !elGross) return;
+                    if (!isFinite(cost) || cost <= 0 || !isFinite(price) || price <= 0) {
+                        elMarkup.textContent = '-';
+                        elGross.textContent = '-';
+                        return;
+                    }
+                    const m = price / cost;
+                    const g = (price - cost) / price * 100;
+                    elMarkup.textContent = m.toFixed(2);
+                    elGross.textContent = g.toFixed(2) + '%';
+                } catch(_) {}
+            };
+
             // 防抖函数：延迟执行重算，只更新表格内容，保持输入框焦点
             let debounceTimer = null;
             const debouncedRecalculate = (base) => {
@@ -1676,6 +1730,8 @@ function initBatchProfitScenario() {
             };
             
             const onInlineChange = () => {
+                // 先即时更新头部“加价倍率/毛利率”展示
+                updateHeaderMetrics();
                 const cost = parseFloat(costInput?.value || '');
                 const price = parseFloat(actualInput?.value || '');
                 if (!isFinite(cost) || cost <= 0 || !isFinite(price) || price <= 0) return;
@@ -1691,6 +1747,8 @@ function initBatchProfitScenario() {
             
             if (costInput) costInput.addEventListener('input', onInlineChange);
             if (actualInput) actualInput.addEventListener('input', onInlineChange);
+            // 打开弹窗后，初始化一次头部指标，确保显示与输入同步
+            updateHeaderMetrics();
 
             // 免佣联动：与利润页顶部/费用设置中的免佣开关保持同步；切换后即时重算表格
             const batchToggle = panel.querySelector('#batchPlatformFreeToggle');
@@ -1713,8 +1771,18 @@ function initBatchProfitScenario() {
                             mainToggle.dispatchEvent(new Event('change', { bubbles: true }));
                         }
                     } catch (_) {}
-                    // 切换后立即按最新参数重绘表格
-                    try { panel.innerHTML = buildPanelContent(); wireEvents(); } catch (_) {}
+                    // 切换后立即按最新参数重绘内容：优先保留弹窗内的“进货价/实际售价”
+                    try {
+                        const base = getProfitBaseInputs();
+                        const ci = panel.querySelector('#batchCostPrice');
+                        const ai = panel.querySelector('#batchActualPrice');
+                        const cVal = parseFloat(ci && ci.value || '');
+                        const aVal = parseFloat(ai && ai.value || '');
+                        if (isFinite(cVal) && cVal > 0) base.costPrice = cVal;
+                        if (isFinite(aVal) && aVal > 0) base.actualPrice = aVal;
+                        panel.innerHTML = buildPanelContent(base);
+                        wireEvents();
+                    } catch (_) {}
                 });
             }
         };
