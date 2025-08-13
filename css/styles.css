@@ -571,6 +571,51 @@ button:hover {
     color: #666;
 }
 
+/* 保本ROI卡片右上角“小圆点”提示
+   作用：提醒用户此卡片可悬停/点击查看详细说明（不影响原有交互） */
+#metricBreakevenROICard {
+    position: relative; /* 为伪元素定位提供参照 */
+}
+#metricBreakevenROICard::after {
+    content: ""; /* 生成一个无文字内容的小点 */
+    position: absolute;
+    top: 8px;          /* 右上角位置，兼顾移动端与桌面端的留白 */
+    right: 8px;
+    width: 8px;        /* 小圆点大小，尽量克制不抢占视觉 */
+    height: 8px;
+    border-radius: 50%;
+    background: #f59e0b; /* 橙色提示，呼应“提示/说明”语义 */
+    box-shadow: 0 0 0 2px #f8f9fa; /* 与卡片背景同色形成外环，增强可见性 */
+    /* 呼吸动效：轻微放大与发光，节奏舒缓不打扰阅读 */
+    animation: roiBreath 1.6s ease-in-out infinite;
+}
+
+/* 保本ROI提示点“呼吸动效”关键帧
+   - 轻微缩放 + 光晕强弱变化
+   - 控制在 1.6s 周期，避免频闪与注意力过度吸引 */
+@keyframes roiBreath {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+        box-shadow: 0 0 0 2px #f8f9fa, 0 0 0 0 rgba(245, 158, 11, 0.30);
+    }
+    60% {
+        transform: scale(1.25);
+        opacity: 0.9;
+        box-shadow: 0 0 0 2px #f8f9fa, 0 0 10px 4px rgba(245, 158, 11, 0.22);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+        box-shadow: 0 0 0 2px #f8f9fa, 0 0 0 0 rgba(245, 158, 11, 0.18);
+    }
+}
+
+/* 无动画降级：尊重系统“减少动态效果”的无障碍偏好设置 */
+@media (prefers-reduced-motion: reduce) {
+    #metricBreakevenROICard::after { animation: none; }
+}
+
 /* 销售成本分析样式 */
 .sales-cost-analysis {
     background: white;
