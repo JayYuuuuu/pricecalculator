@@ -19,6 +19,13 @@ function switchTab(tabName) {
     // 清空结果区域，并禁用分享按钮
     document.getElementById('result').innerHTML = '';
     try { if (window.__setShareButtonsEnabled) window.__setShareButtonsEnabled(false); } catch (e) {}
+
+    // 若切到标价页，初始化一次展示（尝试实时计算）
+    try {
+        if (tabName === 'listprice') {
+            calculateListPrice();
+        }
+    } catch (_) {}
 }
 
 // 调试输出工具函数：在控制台打印结构化的调试数据
@@ -371,7 +378,25 @@ function saveInputs() {
         profitShippingInsurance: document.getElementById("profitShippingInsurance").value,
         profitAdRate: document.getElementById("profitAdRate").value,
         profitOtherCost: document.getElementById("profitOtherCost").value,
-        profitReturnRate: document.getElementById("profitReturnRate").value
+        profitReturnRate: document.getElementById("profitReturnRate").value,
+
+        // 标价计算tab 输入
+        targetFinalPrice: (document.getElementById('targetFinalPrice')||{}).value,
+        listPriceRates: (function(){
+            try {
+                return Array.from(document.querySelectorAll('.lp-rate'))
+                    .filter(x => x.checked)
+                    .map(x => parseFloat(x.value));
+            } catch(_) { return []; }
+        })(),
+        fullReductionTiers: (function(){
+            try {
+                return Array.from(document.querySelectorAll('#fullReductionList .tier-row')).map(row => ({
+                    threshold: parseFloat(row.querySelector('.tier-threshold').value),
+                    off: parseFloat(row.querySelector('.tier-off').value)
+                }));
+            } catch(_) { return []; }
+        })()
     };
     localStorage.setItem('priceCalculatorInputs', JSON.stringify(inputs));
     
@@ -399,6 +424,41 @@ function loadSavedInputs() {
                 element.value = value;
             }
         });
+
+        // 恢复标价页：立减勾选、满减档位
+        try {
+            if (Array.isArray(inputs.listPriceRates)) {
+                const all = document.querySelectorAll('.lp-rate');
+                all.forEach(cb => { cb.checked = inputs.listPriceRates.includes(parseFloat(cb.value)); });
+            }
+        } catch (_) {}
+        try {
+            if (Array.isArray(inputs.fullReductionTiers)) {
+                const list = document.getElementById('fullReductionList');
+                if (list) {
+                    // 清空现有，按存储重建
+                    list.innerHTML = '';
+                    inputs.fullReductionTiers.forEach(t => {
+                        const row = document.createElement('div');
+                        row.className = 'tier-row';
+                        row.style.display = 'flex';
+                        row.style.alignItems = 'center';
+                        row.style.gap = '8px';
+                        row.innerHTML = '<span style="color:#666; font-size:0.9rem;">满</span>'+
+                                        `<input type="number" class="tier-threshold" value="${Number(t.threshold||0).toFixed(2)}" step="0.01" style="width:120px;">`+
+                                        '<span style="color:#666; font-size:0.9rem;">减</span>'+
+                                        `<input type="number" class="tier-off" value="${Number(t.off||0).toFixed(2)}" step="0.01" style="width:120px;">`+
+                                        '<button type="button" class="save-button" onclick="saveInputs()" style="margin:0;">保存</button>'+
+                                        '<button type="button" class="batch-modal-btn" onclick="removeTierRow(this)" style="margin:0;">删除</button>';
+                        list.appendChild(row);
+                    });
+                    // 若没有任何档位，添加一行默认
+                    if (inputs.fullReductionTiers.length === 0) {
+                        addTierRow();
+                    }
+                }
+            }
+        } catch (_) {}
     }
 }
 
@@ -789,6 +849,7 @@ window.addEventListener('load', () => {
             try {
                 // 判断当前激活的tab
                 const profitTabActive = document.getElementById('profitTab').classList.contains('active');
+                const listpriceTabActive = document.getElementById('listpriceTab')?.classList.contains('active');
                 
                 if (profitTabActive) {
                     // 利润计算tab的实时计算
@@ -798,6 +859,10 @@ window.addEventListener('load', () => {
                         // 如果输入无效，清空结果区域
                         document.getElementById('result').innerHTML = '';
                     }
+                } else {
+                    if (listpriceTabActive) {
+                        // 标价计算实时
+                        try { calculateListPrice(); } catch (_) { document.getElementById('result').innerHTML = ''; }
                 } else {
                     // 售价计算tab的实时计算
                     try {
@@ -813,13 +878,11 @@ window.addEventListener('load', () => {
                         // 计算最终价格
                         const priceInfo = calculatePrices(purchaseCost, salesCost, inputs);
 
-                        // 更新显示（已移除成本计算结果和销售成本预览模块）
-                        // updatePurchaseCostSummary();
-                        // updateSalesCostSummary(priceInfo.finalPrice);
+                            // 更新显示
                         calculate();
                     } catch (error) {
-                        // updatePurchaseCostSummary(); // 已移除成本计算结果模块
-                        // updateSalesCostSummary(0); // 已移除销售成本预览模块
+                            // 忽略实时计算错误
+                        }
                     }
                 }
             } catch (error) {
@@ -828,7 +891,233 @@ window.addEventListener('load', () => {
             }
         });
     });
+
+    // 标价页：对内部新增元素使用事件委托，保证动态“满减档位行/勾选”等也能触发实时计算
+    try {
+        const lpTab = document.getElementById('listpriceTab');
+        if (lpTab) {
+            const onLPChange = () => {
+                if (lpTab.classList.contains('active')) {
+                    try { calculateListPrice(); } catch (_) {}
+                }
+            };
+            lpTab.addEventListener('input', onLPChange);
+            lpTab.addEventListener('change', onLPChange);
+        }
+    } catch (_) {}
 });
+
+/**
+ * 标价计算核心逻辑
+ * 目标：给定“目标到手价 P_final”，在可叠加优惠（单品立减 r、满减 T→O）下，反推页面标价 S。
+ * 规则：
+ * - 单品立减：按比例 r 对标价 S 打折，得到 S1 = S × (1 - r)
+ * - 满减：对 S1 按可触发的最大档位扣减固定金额 off，使到手价 P = S1 - off
+ * - 叠加顺序：先单品立减，再满减
+ * - 反解：对于给定 r 与满减档集合 {(threshold_i, off_i)}，我们要找到 S 使得 P ≈ 目标价
+ *   做法：对每个 r，枚举可能的“触发满减档位集合”，将 off 视为常数，解 S = (P + off) / (1 - r)，再检查是否满足 S1 >= threshold_i 的触发条件。
+ *   取满足条件且 S>0 的解中，到手价误差最小的一个解，作为该 r 下的建议标价。
+ */
+function calculateListPrice() {
+    // 读取输入
+    const targetFinalPrice = validateInput(parseFloat(document.getElementById('targetFinalPrice').value), 0.01, 100000000, '目标到手价');
+    const rateValues = Array.from(document.querySelectorAll('.lp-rate')).filter(x => x.checked).map(x => parseFloat(x.value));
+    const tiers = Array.from(document.querySelectorAll('#fullReductionList .tier-row')).map(row => ({
+        threshold: parseFloat(row.querySelector('.tier-threshold').value),
+        off: parseFloat(row.querySelector('.tier-off').value)
+    })).filter(t => isFinite(t.threshold) && isFinite(t.off) && t.threshold > 0 && t.off >= 0);
+
+    if (!rateValues.length) throw new Error('请至少选择一个单品立减档位');
+
+    // 若无满减档，按 off=0 处理
+    const offCandidates = tiers.length ? tiers.map(t => t.off).sort((a,b)=>a-b) : [0];
+
+    // 对每个立减比例分别给出建议标价
+    const results = rateValues.map(r => {
+        let best = null; // { price, off, thresholdUsed, finalPrice, diff }
+        const k = 1 - r;
+        if (k <= 0) return { r, price: NaN, finalPrice: NaN, detail: [], note: '立减过高' };
+
+        // 穷举可能的 off（由各档可触发的最大减额决定）。考虑不触发满减的 off=0 场景
+        const candidates = new Set(offCandidates.concat([0]));
+        candidates.forEach(off => {
+            // 反解标价 S = (P + off)/k
+            const S = (targetFinalPrice + off) / k;
+            if (!isFinite(S) || S <= 0) return;
+            const S1 = S * k; // 立减后价
+            // 找到在 S1 下能触发的最大满减档位（若有）
+            const available = tiers.filter(t => S1 >= t.threshold);
+            const maxOff = available.length ? Math.max(...available.map(t => t.off)) : 0;
+            // 验证该解是否自洽：若我们假设的 off 与实际可触发 maxOff 不一致，则该解不成立
+            if (Math.abs((off||0) - (maxOff||0)) > 1e-6) return;
+            const P = S1 - (maxOff||0);
+            const diff = Math.abs(P - targetFinalPrice);
+            const candidate = { price: S, off: maxOff||0, thresholdUsed: (function(){
+                if (!maxOff) return null;
+                const t = available.find(x => x.off === maxOff);
+                return t ? t.threshold : null;
+            })(), finalPrice: P, diff };
+            if (!best || diff < best.diff || (Math.abs(diff - best.diff) < 1e-9 && S < best.price)) {
+                best = candidate;
+            }
+        });
+        return { r, price: best? best.price : NaN, finalPrice: best? best.finalPrice : NaN, off: best? best.off : 0, thresholdUsed: best? best.thresholdUsed : null };
+    });
+
+    // 渲染结果
+    document.getElementById('result').innerHTML = generateListPriceHtml({
+        targetFinalPrice,
+        tiers,
+        results
+    });
+    try { if (window.__setShareButtonsEnabled) window.__setShareButtonsEnabled(true); } catch (e) {}
+
+    // 绑定建议标价悬浮说明（列出各立减档的到手价）
+    try { initSuggestPriceTooltip(tiers); } catch (_) {}
+
+    // 移动端：在表格卡片中也可点击行查看详单（同浮窗内容），便于触摸设备
+    try {
+        if (window.matchMedia && !window.matchMedia('(hover: hover)').matches) {
+            const tapContainer = document.getElementById('result');
+            const onTap = (e) => {
+                const el = e.target.closest('.lp-price-row');
+                if (!el || !tapContainer.contains(el)) return;
+                const S = parseFloat(el.getAttribute('data-s'));
+                if (!isFinite(S) || S <= 0) return;
+                const html = (function(){
+                    const discountRates = [0.10, 0.12, 0.15, 0.18, 0.20];
+                    const rows = discountRates.map(r => {
+                        const k = 1 - r; const s1 = S * k;
+                        const avail = (tiers||[]).filter(t => isFinite(t.threshold) && isFinite(t.off) && t.threshold > 0 && t.off >= 0 && s1 >= t.threshold);
+                        const off = avail.length ? Math.max(...avail.map(t => t.off)) : 0;
+                        const final = s1 - off;
+                        return `<div style=\"display:flex;justify-content:space-between;\"><span>${(r*100).toFixed(0)}%</span><b>¥ ${final.toFixed(2)}</b></div>`;
+                    }).join('');
+                    return `<div style=\"font-weight:600;margin-bottom:8px;\">各立减档到手价</div>${rows}`;
+                })();
+                // 简易面板
+                const panel = document.createElement('div');
+                panel.style.position = 'fixed'; panel.style.left = '50%'; panel.style.top = '50%';
+                panel.style.transform = 'translate(-50%, -50%)'; panel.style.background = '#fff';
+                panel.style.borderRadius = '12px'; panel.style.boxShadow = '0 12px 36px rgba(0,0,0,0.18)';
+                panel.style.padding = '16px'; panel.style.maxWidth = '88%'; panel.style.zIndex = '10002';
+                panel.innerHTML = `<div style=\"display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;\"><div style=\"font-weight:600;\">标价 ¥ ${S.toFixed(2)}</div><button id=\"lpClose\" style=\"border:none;background:#f5f5f5;border-radius:6px;padding:6px 10px;\">关闭</button></div>${html}`;
+                const mask = document.createElement('div');
+                mask.style.position = 'fixed'; mask.style.left = '0'; mask.style.top = '0'; mask.style.right = '0'; mask.style.bottom = '0';
+                mask.style.background = 'rgba(0,0,0,0.35)'; mask.style.zIndex = '10001';
+                document.body.appendChild(mask); document.body.appendChild(panel);
+                const close = () => { try { document.body.removeChild(mask); document.body.removeChild(panel); } catch(_){} };
+                mask.addEventListener('click', close);
+                panel.querySelector('#lpClose').addEventListener('click', close);
+            };
+            // 防重复绑定
+            tapContainer.removeEventListener('click', tapContainer.__lpTap || (()=>{}));
+            tapContainer.__lpTap = onTap;
+            tapContainer.addEventListener('click', onTap);
+        }
+    } catch (_) {}
+}
+
+// 标价页：增加/删除一档
+function addTierRow() {
+    const list = document.getElementById('fullReductionList');
+    if (!list) return;
+    const row = document.createElement('div');
+    row.className = 'tier-row';
+    row.style.display = 'flex';
+    row.style.alignItems = 'center';
+    row.style.gap = '8px';
+    row.style.flexWrap = 'wrap';
+    row.innerHTML = '<span style="color:#666; font-size:0.9rem;">满</span>'+
+                    '<input type="number" class="tier-threshold" value="199" step="0.01" style="width:120px;max-width:100%;">'+
+                    '<span style="color:#666; font-size:0.9rem;">减</span>'+
+                    '<input type="number" class="tier-off" value="20" step="0.01" style="width:120px;max-width:100%;">'+
+                    '<button type="button" class="save-button" onclick="saveInputs()" style="margin:0;">保存</button>'+
+                    '<button type="button" class="batch-modal-btn" onclick="removeTierRow(this)" style="margin:0;">删除</button>';
+    list.appendChild(row);
+}
+function removeTierRow(btn) {
+    const row = btn && btn.closest('.tier-row');
+    if (row && row.parentNode) row.parentNode.removeChild(row);
+}
+
+/**
+ * 为“建议标价”列添加悬浮说明：展示给定标价在各立减档位下的到手价
+ * 档位固定为 [10%, 12%, 15%, 18%, 20%]
+ */
+function initSuggestPriceTooltip(tiers) {
+    // 统一的浮层节点（复用，避免反复创建）
+    let tip = document.getElementById('lpSuggestTooltip');
+    if (!tip) {
+        tip = document.createElement('div');
+        tip.id = 'lpSuggestTooltip';
+        Object.assign(tip.style, {
+            position: 'fixed', zIndex: 10001, padding: '10px 12px', borderRadius: '8px',
+            background: 'rgba(17,24,39,0.95)', color: '#fff', fontSize: '12px',
+            lineHeight: '1.5', boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+            pointerEvents: 'none', whiteSpace: 'nowrap', opacity: '0', transition: 'opacity .08s ease'
+        });
+        document.body.appendChild(tip);
+    }
+    const hide = () => { tip.style.opacity = '0'; };
+    const show = (html, x, y) => {
+        tip.innerHTML = html;
+        const offset = 12;
+        tip.style.left = `${x + offset}px`;
+        tip.style.top = `${y + offset}px`;
+        tip.style.opacity = '1';
+    };
+
+    const discountRates = [0.10, 0.12, 0.15, 0.18, 0.20];
+    const formatYuan = (n) => `¥ ${Number(n).toFixed(2)}`;
+
+    const buildHtml = (S) => {
+        try {
+            // 给定标价 S 时：先按各档立减得到 S1，再按满减触发的最大减额计算最终到手价
+            const rows = discountRates.map(r => {
+                const k = 1 - r;
+                const s1 = S * k;
+                const available = (tiers||[]).filter(t => isFinite(t.threshold) && isFinite(t.off) && t.threshold > 0 && t.off >= 0 && s1 >= t.threshold);
+                const off = available.length ? Math.max(...available.map(t => t.off)) : 0;
+                const final = s1 - off;
+                return `<tr><td style="padding:2px 8px;color:#a7f3d0;">${(r*100).toFixed(0)}%</td><td style="padding:2px 8px;">${formatYuan(final)}</td></tr>`;
+            }).join('');
+            return `<div style="font-weight:600;margin-bottom:6px;">各立减档到手价</div>
+                    <table style="border-collapse:collapse;">${rows}</table>`;
+        } catch (_) {
+            return '无法计算';
+        }
+    };
+
+    // 事件委托到结果容器，避免多次绑定
+    const container = document.getElementById('result');
+    if (!container) return;
+    const onOver = (e) => {
+        const el = e.target.closest('.lp-price-row');
+        if (!el || !container.contains(el)) return;
+        const S = parseFloat(el.getAttribute('data-s'));
+        if (!isFinite(S) || S <= 0) return;
+        show(buildHtml(S), e.clientX, e.clientY);
+    };
+    const onMove = (e) => {
+        const el = e.target.closest('.lp-price-row');
+        if (!el || !container.contains(el)) return hide();
+        const S = parseFloat(el.getAttribute('data-s'));
+        if (!isFinite(S) || S <= 0) return hide();
+        show(buildHtml(S), e.clientX, e.clientY);
+    };
+    const onLeave = hide;
+
+    // 先移除旧的监听，避免重复
+    container.removeEventListener('mouseover', container.__lpOver || (()=>{}));
+    container.removeEventListener('mousemove', container.__lpMove || (()=>{}));
+    container.removeEventListener('mouseleave', container.__lpLeave || (()=>{}));
+    container.__lpOver = onOver; container.__lpMove = onMove; container.__lpLeave = onLeave;
+    container.addEventListener('mouseover', onOver);
+    container.addEventListener('mousemove', onMove);
+    container.addEventListener('mouseleave', onLeave);
+}
+
 
 /**
  * 初始化“营销费用占比、预计退货率”的快速滑杆，支持与数值输入双向同步，并触发实时重算
@@ -1349,6 +1638,26 @@ function collectShareContext() {
         })();
         const conclusion = `${finalPriceText ? `建议含税售价 ${finalPriceText.replace(/^¥\s?/, '¥ ')}` : ''}${profitRateDisplay ? `，${profitRateDisplay}` : ''}`;
 
+        // 若标价页激活，则输出标价上下文；否则输出售价上下文
+        const listpriceTabActive = document.getElementById('listpriceTab')?.classList.contains('active');
+        if (listpriceTabActive) {
+            const targetFinalPrice = document.getElementById('targetFinalPrice')?.value;
+            const selectedRates = Array.from(document.querySelectorAll('.lp-rate')).filter(x=>x.checked).map(x=>Number(x.value||0));
+            const tiers = Array.from(document.querySelectorAll('#fullReductionList .tier-row')).map(row=>({
+                threshold: parseFloat(row.querySelector('.tier-threshold').value),
+                off: parseFloat(row.querySelector('.tier-off').value)
+            }));
+            const finalPriceText = document.querySelector('.final-price .price-value')?.textContent || '';
+            return {
+                mode: 'listprice',
+                inputsForBadges: [
+                    { label: '目标到手价', value: Number(targetFinalPrice||0).toFixed(2), unit: '元' },
+                    { label: '单品立减', value: selectedRates.length? selectedRates.map(r=>`${(r*100).toFixed(0)}%`).join(' / ') : '无' },
+                    { label: '满减', value: (tiers && tiers.length) ? tiers.map(t=>`满${Number(t.threshold||0).toFixed(0)}减${Number(t.off||0).toFixed(0)}`).join('，') : '无' }
+                ],
+                conclusion: finalPriceText ? `目标到手价 ${finalPriceText.replace(/^¥\s?/, '¥ ')}` : ''
+            };
+        } else {
         return {
             mode: 'price',
             inputsForBadges: [
@@ -1366,6 +1675,7 @@ function collectShareContext() {
             ],
             conclusion
         };
+        }
     }
 }
 

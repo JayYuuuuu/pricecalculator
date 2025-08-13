@@ -254,3 +254,102 @@ function generatePriceResultHtml({ purchaseCost, salesCost, priceInfo, inputs })
         </div>
     `;
 }
+
+// 生成标价计算结果HTML
+function generateListPriceHtml({ targetFinalPrice, tiers, results }) {
+    // 按立减比例从小到大排序展示（0, 10%, 12%, 15%, 18%）
+    const sorted = results.slice().sort((a,b)=>a.r-b.r);
+
+    const tierSummary = tiers && tiers.length ? (
+        '<div style="font-size:0.9rem;color:#666;margin-top:6px;">满减档位：'
+        + tiers
+            .slice()
+            .sort((a,b)=>a.threshold-b.threshold)
+            .map(t=>`满${Number(t.threshold).toFixed(2)}减${Number(t.off).toFixed(2)}`)
+            .join('，')
+        + '</div>'
+    ) : '<div style="font-size:0.9rem;color:#666;margin-top:6px;">未设置满减，按无满减计算</div>';
+
+    const rows = sorted.map(item => {
+        const rPct = (item.r*100).toFixed(0) + '%';
+        if (!isFinite(item.price)) {
+            return `<tr>
+                <td class="lp-col-left"><span class="lp-chip gray">${rPct}</span></td>
+                <td class="lp-col-right lp-price">-</td>
+                <td class="lp-col-right">-</td>
+                <td class="lp-col-right lp-price">-</td>
+                <td class="lp-col-right"><span class="lp-badge warn">参数无解</span></td>
+            </tr>`;
+        }
+        const offText = item.off ? `<span class="lp-chip green">减 ¥${Number(item.off).toFixed(2)}</span>${item.thresholdUsed? ` <span class="lp-chip blue">触发满¥${Number(item.thresholdUsed).toFixed(2)}</span>` : ''}` : '<span class="lp-chip gray">无</span>';
+        const isExact = Math.abs((item.finalPrice||0) - targetFinalPrice) < 0.005;
+        const note = isExact ? '<span class="lp-badge ok">精确匹配</span>' : `<span class="lp-badge warn">偏差 ¥${Math.abs((item.finalPrice||0)-targetFinalPrice).toFixed(2)}</span>`;
+        return `<tr class="lp-price-row" data-s="${Number(item.price).toFixed(2)}">
+            <td class="lp-col-left" data-label="单品立减"><span class="lp-chip gray">${rPct}</span></td>
+            <td class="lp-col-right lp-price" data-label="建议标价"><span class="lp-strong">¥ ${Number(item.price).toFixed(2)}</span></td>
+            <td class="lp-col-right" data-label="满减触发">${offText}</td>
+            <td class="lp-col-right lp-price" data-label="叠加后到手价">¥ ${isFinite(item.finalPrice)? Number(item.finalPrice).toFixed(2) : '-'}</td>
+            <td class="lp-col-right" data-label="校验">${note}</td>
+        </tr>`;
+    }).join('');
+
+    return `
+        <div class="final-price">
+            <div class="price-label">目标到手价</div>
+            <div class="price-value">¥ ${Number(targetFinalPrice).toFixed(2)}</div>
+            <div class="price-hint">下表展示不同“单品立减”档位下的建议页面标价；顺序为：先立减，再满减</div>
+            ${tierSummary}
+        </div>
+
+        <div class="section calculation-process lp-card">
+            <h3>标价建议与校验</h3>
+            <div class="lp-table-wrapper">
+                <table class="lp-table">
+                    <thead>
+                        <tr>
+                            <th class="lp-col-left lp-col-left">单品立减</th>
+                            <th class="lp-col-right lp-col-right">建议标价</th>
+                            <th class="lp-col-right lp-col-right">满减触发</th>
+                            <th class="lp-col-right lp-col-right">叠加后到手价</th>
+                            <th class="lp-col-right lp-col-right">校验</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="calculation-steps" style="margin-top:16px;">
+                <div class="step-header">计算说明</div>
+                <div class="step-section">
+                    <div class="step-title">公式与顺序</div>
+                    <div class="cost-table">
+                        <div class="table-section">
+                            <div class="section-title">设：</div>
+                            <div class="section-note">S=标价，r=单品立减比例，阈值/减额为满减各档位 (T_i, O_i)</div>
+                            <table>
+                                <tr>
+                                    <td>立减后价</td>
+                                    <td class="formula">S1 = S × (1 − r)</td>
+                                </tr>
+                                <tr>
+                                    <td>满减触发条件</td>
+                                    <td class="formula">若 S1 ≥ T_i，则可减 O_i，取 O_i 最大者</td>
+                                </tr>
+                                <tr>
+                                    <td>到手价</td>
+                                    <td class="formula">P = S1 − O_max</td>
+                                </tr>
+                                <tr>
+                                    <td>反解标价</td>
+                                    <td class="formula">S = (目标价 + O_assume) ÷ (1 − r)，并验证 O_assume 是否可由 S1 触发</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
