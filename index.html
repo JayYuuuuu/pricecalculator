@@ -281,11 +281,19 @@
                         <div class="input-group">
                             <label>全店付费占比（%）:</label>
                             <div class="input-wrapper">
-                                <input type="number" id="profitAdRate" value="30" step="0.1">
+                                <input type="number" id="profitAdRate" value="30" step="1">
                                 <button class="save-button" onclick="saveInputs()">保存</button>
                             </div>
-                            <div class="field-hint">广告费占最终售价的比例（全店口径），广告服务商可开具6%专票，用于进项税抵扣。</div>
+                            <div class="field-hint">广告费占最终售价的比例，广告服务商可开具6%专票，用于进项税抵扣。</div>
                         </div>
+                         <!-- 快速调整拉杆：营销费用占比 -->
+                         <div class="quick-slider">
+                             <input type="range" id="profitAdRateSlider" min="0" max="100" step="1">
+                             <div class="quick-slider-meta">
+                                 <span class="quick-slider-label">快速调整</span>
+                                 <span id="profitAdRateSliderValue" class="quick-slider-value">30%</span>
+                             </div>
+                         </div>
                         <div style="margin-top: 0.5rem; padding: 0.5rem; background: #f0f7ff; border-radius: 4px; font-size: 0.85rem; color: #2ea44f;">
                             💡 提示：广告费用可以获得6%的进项税抵扣。由于广告费金额较大，这部分抵扣会显著降低实际营销成本。
                         </div>
@@ -296,11 +304,19 @@
                         <div class="input-group">
                             <label>预计退货率（%）:</label>
                             <div class="input-wrapper">
-                                <input type="number" id="profitReturnRate" value="20" step="0.1">
+                                <input type="number" id="profitReturnRate" value="20" step="1">
                                 <button class="save-button" onclick="saveInputs()">保存</button>
                             </div>
                             <div class="field-hint">预计的退货率，影响成本分摊（例：20%意味着每100单中有20单会退货）</div>
                         </div>
+                         <!-- 快速调整拉杆：预计退货率 -->
+                         <div class="quick-slider">
+                             <input type="range" id="profitReturnRateSlider" min="0" max="100" step="1">
+                             <div class="quick-slider-meta">
+                                 <span class="quick-slider-label">快速调整</span>
+                                 <span id="profitReturnRateSliderValue" class="quick-slider-value">20%</span>
+                             </div>
+                         </div>
                         <div style="margin-top: 0.5rem; padding: 0.5rem; background: #fff7e6; border-radius: 4px; font-size: 0.85rem; color: #e65100;">
                             注意：此处是“退货退款率”。请剔除仅退款（不退货）订单，只统计退货退款的比例；
                             若将仅退款计入，会显著高估退货成本，导致保本/建议售价偏高。

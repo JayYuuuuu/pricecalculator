@@ -637,6 +637,34 @@ button:hover {
     color: #0077ed;
     background: none;
 }
+
+/* 快速调整滑杆样式：与输入组保持一致的留白与层次 */
+.quick-slider {
+    margin-top: 0.5rem;
+    background: #fafafa;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 10px 12px;
+    box-sizing: border-box;
+    overflow: hidden; /* 防止内部控件阴影或轨道溢出 */
+}
+.quick-slider input[type="range"] {
+    width: 100%;
+    margin: 0; /* 去掉默认水平外边距，避免超过父容器 */
+    box-sizing: border-box; /* 轨道宽度按内边距计算，避免超出 */
+}
+.quick-slider-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 6px;
+    font-size: 0.85rem;
+    color: #666;
+}
+.quick-slider-value {
+    color: #2ea44f;
+    font-weight: 600;
+}
 .switch-wrapper {
     display: inline-flex;
     align-items: center;

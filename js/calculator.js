@@ -773,6 +773,11 @@ window.addEventListener('load', () => {
         initBreakevenROITooltip();
     } catch (e) {}
 
+    // 初始化“费用设置”中的快速调整拉杆
+    try {
+        initQuickSliders();
+    } catch (e) {}
+
     // 为所有输入框添加实时计算功能
     document.querySelectorAll('input').forEach(input => {
         input.addEventListener('input', () => {
@@ -819,6 +824,63 @@ window.addEventListener('load', () => {
         });
     });
 });
+
+/**
+ * 初始化“营销费用占比、预计退货率”的快速滑杆，支持与数值输入双向同步，并触发实时重算
+ * 设计要点：
+ * - 两个滑杆仅在利润页“费用设置”模块内；与 `#profitAdRate`、`#profitReturnRate` 双向联动
+ * - 统一范围 0~100，步进 0.1；显示当前值百分比
+ * - 变更后：更新对应 number 输入 → 保存到 localStorage → 触发利润实时计算
+ */
+function initQuickSliders() {
+    // DOM 引用
+    const adInput = document.getElementById('profitAdRate');
+    const adSlider = document.getElementById('profitAdRateSlider');
+    const adSliderVal = document.getElementById('profitAdRateSliderValue');
+    const retInput = document.getElementById('profitReturnRate');
+    const retSlider = document.getElementById('profitReturnRateSlider');
+    const retSliderVal = document.getElementById('profitReturnRateSliderValue');
+
+    // 容错：若缺少任意一个元素，直接返回
+    if (!adInput || !adSlider || !adSliderVal || !retInput || !retSlider || !retSliderVal) return;
+
+    // 初始化滑杆位置与显示
+    const syncFromInputs = () => {
+        // 统一按整数处理：四舍五入到最近的整数
+        const ad = Math.min(100, Math.max(0, Math.round(parseFloat(adInput.value || '0'))));
+        const rr = Math.min(100, Math.max(0, Math.round(parseFloat(retInput.value || '0'))));
+        adSlider.value = String(ad);
+        retSlider.value = String(rr);
+        adInput.value = String(ad);
+        retInput.value = String(rr);
+        adSliderVal.textContent = `${ad}%`;
+        retSliderVal.textContent = `${rr}%`;
+    };
+    syncFromInputs();
+
+    // 滑杆 → 数字输入
+    const onSliderChange = () => {
+        // 仅当利润页处于激活状态时执行计算，避免切换到售价页时误触
+        const profitTabActive = document.getElementById('profitTab')?.classList.contains('active');
+        const ad = Math.round(parseFloat(adSlider.value));
+        const rr = Math.round(parseFloat(retSlider.value));
+        adInput.value = isNaN(ad) ? '0' : String(ad);
+        retInput.value = isNaN(rr) ? '0' : String(rr);
+        adSliderVal.textContent = `${ad}%`;
+        retSliderVal.textContent = `${rr}%`;
+        try { saveInputs(); } catch (_) {}
+        try { if (profitTabActive) calculateProfit(); } catch (_) {}
+    };
+    adSlider.addEventListener('input', onSliderChange);
+    retSlider.addEventListener('input', onSliderChange);
+
+    // 数字输入 → 滑杆（手动修改 number 后也要同步）
+    const onNumberInput = () => {
+        syncFromInputs();
+    };
+    adInput.addEventListener('input', onNumberInput);
+    retInput.addEventListener('input', onNumberInput);
+}
 
 /**
  * 初始化分享/导出按钮
