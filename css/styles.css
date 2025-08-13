@@ -311,6 +311,22 @@ button:hover {
 }
 .batch-modal-btn.primary:hover { background: #0d6efd; border-color: #0d6efd; }
 
+/* 批量推演浮窗：参数徽章区样式，强调进货价与实际售价 */
+.batch-badges { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px; color:#555; font-size:12px; }
+.batch-badge { background:#f5f5f5; border:1px solid #e5e7eb; border-radius:999px; padding:4px 8px; }
+.batch-badge.emphasis { background:#0b63ce; color:#fff; border-color:#0b63ce; font-weight:600; }
+.batch-badge.input { display:inline-flex; align-items:center; gap:6px; }
+.batch-badge.input input { 
+    width: 96px; 
+    padding: 4px 6px; 
+    border-radius: 6px; 
+    border: 1px solid rgba(255,255,255,0.8); 
+    background: rgba(255,255,255,0.92); 
+    color: #111; 
+    font-weight: 600; 
+}
+.batch-badge.input input:focus { outline:none; box-shadow: 0 0 0 2px rgba(255,255,255,0.45); }
+
 /* 价格构成分析样式 */
 .price-composition {
     display: grid;
@@ -993,6 +1009,28 @@ button:hover {
     /* iOS 防止输入时触发页面缩放：保证 >=16px */
     input { font-size: 16px; }
     .field-hint { font-size: 0.78rem; }
+}
+
+/* 移动端：批量推演弹窗表格适配（覆盖内联样式，提升可读性与可点按性） */
+@media (max-width: 768px) {
+    /* 表格整体：降低最小宽度、缩小字号 */
+    .batch-table-container table { min-width: 420px !important; font-size: 12px !important; }
+    /* 单元格内边距缩小，提升信息密度 */
+    .batch-table-container th, .batch-table-container td { padding: 6px 6px !important; }
+    /* 首列（退货率）最小宽度压缩，避免横向滚动过长 */
+    .batch-table-container th:first-child, .batch-table-container td:first-child { min-width: 72px !important; }
+    /* 单元格两行内容：主值（利润率）与副值（利润金额）字号区分，更易扫读 */
+    .batch-table-container td div:first-child { font-size: 12px !important; line-height: 1.2 !important; }
+    .batch-table-container td div:last-child { font-size: 11px !important; line-height: 1.2 !important; }
+}
+
+@media (max-width: 480px) {
+    /* 超小屏进一步压缩最小宽度与内边距 */
+    .batch-table-container table { min-width: 360px !important; font-size: 11px !important; }
+    .batch-table-container th, .batch-table-container td { padding: 4px 4px !important; }
+    .batch-table-container th:first-child, .batch-table-container td:first-child { min-width: 64px !important; }
+    .batch-table-container td div:first-child { font-size: 11px !important; }
+    .batch-table-container td div:last-child { font-size: 10px !important; }
 }
 
 @media (max-width: 360px) {

@@ -1388,13 +1388,15 @@ function initBatchProfitScenario() {
     let panel = null;
 
     // 生成（或刷新）内容区域HTML
-    const buildPanelContent = () => {
-        // 读取当前利润页的基础参数；如校验失败则抛错以便提示
-        const base = getProfitBaseInputs();
+    const buildPanelContent = (overrideBase) => {
+        // 读取当前利润页的基础参数；支持覆写（用于弹窗内即时改价）
+        const base = overrideBase || getProfitBaseInputs();
 
         // 固定档位（按需求枚举）
-        const adRates = [0.15, 0.20, 0.25, 0.30];
-        const returnRates = [0.08, 0.12, 0.15, 0.18, 0.20, 0.25];
+        // 付费占比扩充为 10%、15%、20%、25%、30%、35%（以小数表示，按从小到大排序）
+        const adRates = [0.10, 0.15, 0.20, 0.25, 0.30, 0.35];
+        // 新增退货率 5% 与 28% 两档 → 共 8 档：5、8、12、15、18、20、25、28（以小数表示）
+        const returnRates = [0.05, 0.08, 0.12, 0.15, 0.18, 0.20, 0.25, 0.28];
 
         // 计算矩阵结果
         const rows = returnRates.map(rr => {
@@ -1412,16 +1414,24 @@ function initBatchProfitScenario() {
 
         // 渲染表格（使用内联样式，避免侵入全局CSS）
         const headerBadges = `
-            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;color:#555;font-size:12px;">
-                <span style="background:#f5f5f5;border-radius:999px;padding:4px 8px;">进货价：¥${base.costPrice.toFixed(2)}</span>
-                <span style="background:#f5f5f5;border-radius:999px;padding:4px 8px;">实际售价：¥${base.actualPrice.toFixed(2)}</span>
-                <span style="background:#f5f5f5;border-radius:999px;padding:4px 8px;">平台佣金：${(base.platformRate*100).toFixed(1)}%</span>
-                <span style="background:#f5f5f5;border-radius:999px;padding:4px 8px;">销项税率：${(base.salesTaxRate*100).toFixed(1)}%</span>
-                <span style="background:#f5f5f5;border-radius:999px;padding:4px 8px;">开票成本：${(base.inputTaxRate*100).toFixed(1)}%</span>
-                <span style="background:#f5f5f5;border-radius:999px;padding:4px 8px;">商品进项税率：${(base.outputTaxRate*100).toFixed(1)}%</span>
-                <span style="background:#f5f5f5;border-radius:999px;padding:4px 8px;">物流费：¥${base.shippingCost.toFixed(2)}</span>
-                <span style="background:#f5f5f5;border-radius:999px;padding:4px 8px;">运费险：¥${base.shippingInsurance.toFixed(2)}</span>
-                <span style="background:#f5f5f5;border-radius:999px;padding:4px 8px;">其他成本：¥${base.otherCost.toFixed(2)}</span>
+            <div class="batch-badges">
+                <label class="batch-badge emphasis input">
+                    <span>进货价：</span>
+                    <input id="batchCostPrice" type="number" step="0.01" min="0.01" value="${base.costPrice.toFixed(2)}" />
+                </label>
+                <label class="batch-badge emphasis input">
+                    <span>实际售价：</span>
+                    <input id="batchActualPrice" type="number" step="0.01" min="0.01" value="${base.actualPrice.toFixed(2)}" />
+                </label>
+            </div>
+            <div class="batch-badges">
+                <span class="batch-badge">平台佣金：${(base.platformRate*100).toFixed(1)}%</span>
+                <span class="batch-badge">销项税率：${(base.salesTaxRate*100).toFixed(1)}%</span>
+                <span class="batch-badge">开票成本：${(base.inputTaxRate*100).toFixed(1)}%</span>
+                <span class="batch-badge">商品进项税率：${(base.outputTaxRate*100).toFixed(1)}%</span>
+                <span class="batch-badge">物流费：¥${base.shippingCost.toFixed(2)}</span>
+                <span class="batch-badge">运费险：¥${base.shippingInsurance.toFixed(2)}</span>
+                <span class="batch-badge">其他成本：¥${base.otherCost.toFixed(2)}</span>
             </div>`;
 
         const tableHeader = `
@@ -1433,17 +1443,23 @@ function initBatchProfitScenario() {
         const tableRows = rows.map(r => {
             const firstCol = `<td style="position:sticky;left:0;background:#fff;z-index:1;border-right:1px solid #f2f2f2;padding:8px 10px;color:#333;">${(r.rr*100).toFixed(0)}%</td>`;
             const tds = r.cells.map(c => {
+                // 利润率与利润金额：主副两行展示，利率更醒目，金额次要小一号
                 const rate = (c.profitRate*100).toFixed(2);
+                const profitText = `¥ ${c.profit.toFixed(2)}`;
                 const color = c.profitRate > 0 ? '#2ea44f' : (c.profitRate < 0 ? '#d32f2f' : '#555');
                 const bg = c.profitRate > 0 ? 'rgba(46,164,79,0.08)' : (c.profitRate < 0 ? 'rgba(211,47,47,0.08)' : 'transparent');
-                const title = `广告占比 ${(c.adRate*100).toFixed(0)}%｜退货率 ${(c.returnRate*100).toFixed(0)}%\n利润 ¥${c.profit.toFixed(2)}｜利润率 ${rate}%`;
-                return `<td title="${title}" style="padding:8px 10px;text-align:right;color:${color};background:${bg};">${rate}%</td>`;
+                // 自定义悬浮提示：立即显示，无需等待浏览器 title 的延迟
+                const tooltipData = `广告占比 ${(c.adRate*100).toFixed(0)}%｜退货率 ${(c.returnRate*100).toFixed(0)}%\n利润 ${profitText}｜利润率 ${rate}%`;
+                return `<td class="profit-cell" data-tooltip="${tooltipData}" style="padding:8px 10px;text-align:right;color:${color};background:${bg};cursor:help;">
+                            <div style="font-weight:600;">${rate}%</div>
+                            <div style="font-size:12px;opacity:0.9;">${profitText}</div>
+                        </td>`;
             }).join('');
             return `<tr>${firstCol}${tds}</tr>`;
         }).join('');
 
         const table = `
-            <div style="overflow:auto;max-height:56vh;border:1px solid #eee;border-radius:8px;">
+            <div class="batch-table-container" style="overflow:auto;max-height:56vh;border:1px solid #eee;border-radius:8px;">
                 <table style="border-collapse:separate;border-spacing:0;width:100%;min-width:520px;font-size:13px;">
                     <thead style="position:sticky;top:0;background:#fff;">${tableHeader}</thead>
                     <tbody>${tableRows}</tbody>
@@ -1453,7 +1469,14 @@ function initBatchProfitScenario() {
         return `
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
                 <div style="font-weight:600;">批量利润率推演</div>
-                <div style="display:flex;gap:8px;align-items:center;">
+                <div style="display:flex;gap:10px;align-items:center;">
+                    <div class="switch-wrapper switch-chip" title="与“费用设置-平台费用-免佣”联动">
+                        <span class="switch-label">免佣</span>
+                        <label class="switch">
+                            <input type="checkbox" id="batchPlatformFreeToggle">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
                     <button id="btnBatchScenarioRefresh" class="batch-modal-btn primary">刷新</button>
                     <button id="btnBatchScenarioClose" class="batch-modal-btn">关闭</button>
                 </div>
@@ -1462,6 +1485,63 @@ function initBatchProfitScenario() {
             ${headerBadges}
             ${table}
             <div style="margin-top:10px;color:#999;font-size:12px;">提示：绿色为盈利，红色为亏损。单元格悬停可查看对应组合的利润金额与利润率。</div>
+        `;
+    };
+
+    /**
+     * 只生成利润表格内容，用于实时更新而不重新渲染整个弹窗
+     * 参数：base - 计算参数
+     */
+    const buildProfitTable = (base) => {
+        // 固定档位（按需求枚举）
+        // 付费占比扩充为 10%、15%、20%、25%、30%、35%（以小数表示，按从小到大排序）
+        const adRates = [0.10, 0.15, 0.20, 0.25, 0.30, 0.35];
+        // 新增退货率 5% 与 28% 两档 → 共 8 档：5、8、12、15、18、20、25、28（以小数表示）
+        const returnRates = [0.05, 0.08, 0.12, 0.15, 0.18, 0.20, 0.25, 0.28];
+
+        // 计算矩阵结果
+        const rows = returnRates.map(rr => {
+            const cells = adRates.map(ar => {
+                const res = computeProfitScenario(base, ar, rr);
+                return {
+                    adRate: ar,
+                    returnRate: rr,
+                    profit: res.profit,
+                    profitRate: res.profitRate
+                };
+            });
+            return { rr, cells };
+        });
+
+        // 渲染表格
+        const tableHeader = `
+            <tr>
+                <th style="position:sticky;left:0;background:#fff;z-index:2;border-bottom:1px solid #eee;text-align:left;padding:8px 10px;color:#666;font-weight:500;">退货率 \\ 付费占比</th>
+                ${adRates.map(a => `<th style="border-bottom:1px solid #eee;padding:8px 10px;color:#333;font-weight:600;">${(a*100).toFixed(0)}%</th>`).join('')}
+            </tr>`;
+
+        const tableRows = rows.map(r => {
+            const firstCol = `<td style="position:sticky;left:0;background:#fff;z-index:1;border-right:1px solid #f2f2f2;padding:8px 10px;color:#333;">${(r.rr*100).toFixed(0)}%</td>`;
+            const tds = r.cells.map(c => {
+                // 利润率与利润金额：主副两行展示，利率更醒目，金额次要小一号
+                const rate = (c.profitRate*100).toFixed(2);
+                const profitText = `¥ ${c.profit.toFixed(2)}`;
+                const color = c.profitRate > 0 ? '#2ea44f' : (c.profitRate < 0 ? '#d32f2f' : '#555');
+                const bg = c.profitRate > 0 ? 'rgba(46,164,79,0.08)' : (c.profitRate < 0 ? 'rgba(211,47,47,0.08)' : 'transparent');
+                const title = `广告占比 ${(c.adRate*100).toFixed(0)}%｜退货率 ${(c.returnRate*100).toFixed(0)}%\n利润 ${profitText}｜利润率 ${rate}%`;
+                return `<td title="${title}" style="padding:8px 10px;text-align:right;color:${color};background:${bg};">
+                            <div style="font-weight:600;">${rate}%</div>
+                            <div style="font-size:12px;opacity:0.9;">${profitText}</div>
+                        </td>`;
+            }).join('');
+            return `<tr>${firstCol}${tds}</tr>`;
+        }).join('');
+
+        return `
+            <table style="border-collapse:separate;border-spacing:0;width:100%;min-width:520px;font-size:13px;">
+                <thead style="position:sticky;top:0;background:#fff;">${tableHeader}</thead>
+                <tbody>${tableRows}</tbody>
+            </table>
         `;
     };
 
@@ -1505,13 +1585,140 @@ function initBatchProfitScenario() {
             panel.innerHTML = `<div style="color:#d32f2f;">${e && e.message ? e.message : '参数无效，无法推演'}</div>`;
         }
         overlay.style.display = 'block';
-        // 绑定按钮事件（需在内容插入后）
-        const btnClose = panel.querySelector('#btnBatchScenarioClose');
-        if (btnClose) btnClose.addEventListener('click', close);
-        const btnRefresh = panel.querySelector('#btnBatchScenarioRefresh');
-        if (btnRefresh) btnRefresh.addEventListener('click', () => {
-            try { panel.innerHTML = buildPanelContent(); } catch (e) { showToast(e && e.message ? e.message : '刷新失败'); }
-        });
+        // 绑定事件（抽成函数，便于刷新后重新绑定）
+        const wireEvents = () => {
+            const btnClose = panel.querySelector('#btnBatchScenarioClose');
+            if (btnClose) btnClose.addEventListener('click', close);
+            const btnRefresh = panel.querySelector('#btnBatchScenarioRefresh');
+            if (btnRefresh) btnRefresh.addEventListener('click', () => {
+                try { panel.innerHTML = buildPanelContent(); wireEvents(); } catch (e) { showToast(e && e.message ? e.message : '刷新失败'); }
+            });
+
+            // 悬停提示：委托到表格容器，悬停即显
+            // 说明：使用事件委托以适配表格的局部刷新（只更新 .batch-table-container 内部 HTML），避免丢失事件绑定
+            const attachTooltipDelegation = () => {
+                const container = panel.querySelector('.batch-table-container');
+                if (!container) return;
+
+                // 创建（或复用）提示元素，使用内联样式，避免侵入全局 CSS
+                let tooltip = document.querySelector('.custom-tooltip');
+                if (!tooltip) {
+                    tooltip = document.createElement('div');
+                    tooltip.className = 'custom-tooltip';
+                    // 自定义提示样式：深色背景，白字，圆角，阴影；white-space: pre 以支持换行
+                    Object.assign(tooltip.style, {
+                        position: 'fixed',
+                        zIndex: '10001',
+                        padding: '8px 10px',
+                        borderRadius: '8px',
+                        background: 'rgba(17,24,39,0.92)',
+                        color: '#fff',
+                        fontSize: '12px',
+                        lineHeight: '1.4',
+                        boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+                        pointerEvents: 'none',
+                        whiteSpace: 'pre',
+                        transition: 'opacity .08s ease',
+                        opacity: '0'
+                    });
+                    document.body.appendChild(tooltip);
+                }
+
+                const showTooltip = (text, x, y) => {
+                    // 即显：不做延时，直接更新位置与内容
+                    tooltip.textContent = text;
+                    const offset = 12;
+                    tooltip.style.left = `${x + offset}px`;
+                    tooltip.style.top = `${y + offset}px`;
+                    tooltip.style.opacity = '1';
+                };
+                const hideTooltip = () => { tooltip.style.opacity = '0'; };
+
+                // 事件委托：mouseover/mousemove/mouseleave
+                const onOver = (e) => {
+                    const cell = e.target.closest('.profit-cell');
+                    if (!cell || !container.contains(cell)) return;
+                    const text = cell.getAttribute('data-tooltip');
+                    if (text) showTooltip(text, e.clientX, e.clientY);
+                };
+                const onMove = (e) => {
+                    const cell = e.target.closest('.profit-cell');
+                    if (!cell || !container.contains(cell)) return hideTooltip();
+                    const text = cell.getAttribute('data-tooltip');
+                    if (text) showTooltip(text, e.clientX, e.clientY);
+                };
+                const onLeave = () => hideTooltip();
+
+                container.addEventListener('mouseover', onOver);
+                container.addEventListener('mousemove', onMove);
+                container.addEventListener('mouseleave', onLeave);
+            };
+            attachTooltipDelegation();
+
+            // 输入框：修改进货价/实际售价后，延迟刷新矩阵，保持光标位置，并不改动主页面值（只影响本次推演）
+            const costInput = panel.querySelector('#batchCostPrice');
+            const actualInput = panel.querySelector('#batchActualPrice');
+            
+            // 防抖函数：延迟执行重算，只更新表格内容，保持输入框焦点
+            let debounceTimer = null;
+            const debouncedRecalculate = (base) => {
+                if (debounceTimer) clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    try {
+                        // 只更新表格内容，不重新渲染整个弹窗，保持输入框焦点
+                        const tableContainer = panel.querySelector('.batch-table-container');
+                        if (tableContainer) {
+                            const newTableContent = buildProfitTable(base);
+                            tableContainer.innerHTML = newTableContent;
+                        }
+                    } catch (_) {}
+                }, 500); // 500ms延迟，给用户足够时间完成输入
+            };
+            
+            const onInlineChange = () => {
+                const cost = parseFloat(costInput?.value || '');
+                const price = parseFloat(actualInput?.value || '');
+                if (!isFinite(cost) || cost <= 0 || !isFinite(price) || price <= 0) return;
+                
+                // 临时覆写基础参数，用以生成新矩阵
+                const base = getProfitBaseInputs();
+                base.costPrice = cost;
+                base.actualPrice = price;
+                
+                // 使用防抖重算，保持光标位置
+                debouncedRecalculate(base);
+            };
+            
+            if (costInput) costInput.addEventListener('input', onInlineChange);
+            if (actualInput) actualInput.addEventListener('input', onInlineChange);
+
+            // 免佣联动：与利润页顶部/费用设置中的免佣开关保持同步；切换后即时重算表格
+            const batchToggle = panel.querySelector('#batchPlatformFreeToggle');
+            if (batchToggle) {
+                try {
+                    const topToggle = document.getElementById('profitPlatformFreeToggleTop');
+                    const mainToggle = document.getElementById('profitPlatformFreeToggle');
+                    const currentOn = !!(topToggle?.checked || mainToggle?.checked);
+                    batchToggle.checked = currentOn;
+                } catch (_) {}
+                batchToggle.addEventListener('change', () => {
+                    try {
+                        const topToggle = document.getElementById('profitPlatformFreeToggleTop');
+                        const mainToggle = document.getElementById('profitPlatformFreeToggle');
+                        if (topToggle) {
+                            topToggle.checked = batchToggle.checked;
+                            topToggle.dispatchEvent(new Event('change', { bubbles: true }));
+                        } else if (mainToggle) {
+                            mainToggle.checked = batchToggle.checked;
+                            mainToggle.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                    } catch (_) {}
+                    // 切换后立即按最新参数重绘表格
+                    try { panel.innerHTML = buildPanelContent(); wireEvents(); } catch (_) {}
+                });
+            }
+        };
+        wireEvents();
     };
 
     const close = () => { if (overlay) overlay.style.display = 'none'; };
