@@ -1111,19 +1111,32 @@ button:hover {
 .lp-table thead th.lp-col-center { text-align: center; }
 .lp-table thead th.lp-col-left { text-align: left; }
 .lp-table tbody td {
-    padding: 12px 14px;
+    /* 压缩行距，提升信息密度与扫描效率 */
+    padding: 8px 10px;
     border-bottom: 1px solid #f1f5f9;
     color: #1f2937;
     vertical-align: middle;
 }
-.lp-table tbody tr:nth-child(odd) { background: #fcfcfd; }
-.lp-table tbody tr:hover { background: #f8fafc; }
+/* 纵向分隔线：弱化但提供列界限，降低横向误读 */
+.lp-table thead th + th, .lp-table tbody td + td { border-left: 1px solid #f3f4f6; }
+.lp-table tbody tr:nth-child(odd) { background: #f9fafb; }
+.lp-table tbody tr:hover { background: #f6faff; }
 .lp-col-left { text-align: left; }
 .lp-col-right { text-align: right; }
 .lp-col-center { text-align: center; }
 .lp-price { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
 .lp-strong { font-weight: 700; color: #0b63ce; }
 .lp-nowrap { white-space: nowrap; }
+
+/* 固定首列：横向滚动时让首列保持在视野内，避免行对不齐造成误读 */
+.lp-table thead th:first-child,
+.lp-table tbody td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: #fff;
+    box-shadow: 2px 0 0 rgba(0,0,0,0.02);
+}
 
 /* 状态徽章（精确/偏差） */
 .lp-badge {

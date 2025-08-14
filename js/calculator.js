@@ -1769,11 +1769,15 @@ function initBatchProfitScenario() {
         const tableHeader = `
             <tr>
                 <th style="position:sticky;left:0;background:#fff;z-index:2;border-bottom:1px solid #eee;text-align:left;padding:8px 10px;color:#666;font-weight:500;">退货率 \\ 付费占比</th>
-                ${adRates.map(a => `<th style="border-bottom:1px solid #eee;padding:8px 10px;color:#333;font-weight:600;">${(a*100).toFixed(0)}%</th>`).join('')}
+                ${adRates.map(a => `<th style=\"border-bottom:1px solid #eee;padding:8px 10px;color:#333;font-weight:600;\">${(a*100).toFixed(0)}%</th>`).join('')}
+                <!-- 新增列表头：每行（按退货率）对应的“保本ROI/保本推广占比”，与付费占比无关，仅受退货率影响 -->
+                <th style="border-bottom:1px solid #eee;padding:8px 10px;color:#333;font-weight:600; white-space:nowrap;">保本ROI/推广占比</th>
             </tr>`;
 
         const tableRows = rows.map(r => {
-            const firstCol = `<td style="position:sticky;left:0;background:#fff;z-index:1;border-right:1px solid #f2f2f2;padding:8px 10px;color:#333;">${(r.rr*100).toFixed(0)}%</td>`;
+            // 行首固定列：退货率
+            const firstCol = `<td style=\"position:sticky;left:0;background:#fff;z-index:1;border-right:1px solid #f2f2f2;padding:8px 10px;color:#333;\">${(r.rr*100).toFixed(0)}%</td>`;
+            // 单元格：不同付费占比下的利润率/利润
             const tds = r.cells.map(c => {
                 // 利润率与利润金额：主副两行展示，利率更醒目，金额次要小一号
                 const rate = (c.profitRate*100).toFixed(2);
@@ -1802,7 +1806,29 @@ function initBatchProfitScenario() {
                             <div style="font-size:12px;opacity:0.9;">${profitText}</div>
                         </td>`;
             }).join('');
-            return `<tr>${firstCol}${tds}</tr>`;
+            // 新增列：与付费占比无关，仅按本行退货率计算一次保本ROI与保本推广占比
+            // 中文注释：该列用于直观看到在当前退货率下，要想保本（利润=0）时的ROI阈值与对应的广告占比阈值
+            const rowBreakeven = (function(){
+                try{
+                    const res = calculateBreakevenROI({
+                        costPrice: base.costPrice,
+                        inputTaxRate: base.inputTaxRate,
+                        outputTaxRate: base.outputTaxRate,
+                        salesTaxRate: base.salesTaxRate,
+                        platformRate: base.platformRate,
+                        shippingCost: base.shippingCost,
+                        shippingInsurance: base.shippingInsurance,
+                        otherCost: base.otherCost,
+                        returnRate: r.rr,
+                        finalPrice: base.actualPrice
+                    });
+                    const roiText = isFinite(res.breakevenROI) ? res.breakevenROI.toFixed(2) : '∞';
+                    const adText = isFinite(res.breakevenAdRate) ? `${(res.breakevenAdRate*100).toFixed(2)}%` : '-';
+                    return {roiText, adText};
+                }catch(_){ return {roiText:'-', adText:'-'} }
+            })();
+            const extraCol = `<td style=\"padding:8px 10px;text-align:right;color:#333;\"><div style=\"font-weight:600;\">${rowBreakeven.roiText}</div><div style=\"font-size:12px;opacity:0.9;\">${rowBreakeven.adText}</div></td>`;
+            return `<tr>${firstCol}${tds}${extraCol}</tr>`;
         }).join('');
 
         const table = `
@@ -1864,11 +1890,15 @@ function initBatchProfitScenario() {
         const tableHeader = `
             <tr>
                 <th style="position:sticky;left:0;background:#fff;z-index:2;border-bottom:1px solid #eee;text-align:left;padding:8px 10px;color:#666;font-weight:500;">退货率 \\ 付费占比</th>
-                ${adRates.map(a => `<th style="border-bottom:1px solid #eee;padding:8px 10px;color:#333;font-weight:600;">${(a*100).toFixed(0)}%</th>`).join('')}
+                ${adRates.map(a => `<th style=\"border-bottom:1px solid #eee;padding:8px 10px;color:#333;font-weight:600;\">${(a*100).toFixed(0)}%</th>`).join('')}
+                <!-- 新增列表头（同步刷新版本）：保本ROI/保本推广占比 -->
+                <th style="border-bottom:1px solid #eee;padding:8px 10px;color:#333;font-weight:600; white-space:nowrap;">保本ROI/推广占比</th>
             </tr>`;
 
         const tableRows = rows.map(r => {
-            const firstCol = `<td style="position:sticky;left:0;background:#fff;z-index:1;border-right:1px solid #f2f2f2;padding:8px 10px;color:#333;">${(r.rr*100).toFixed(0)}%</td>`;
+            // 行首固定列：退货率
+            const firstCol = `<td style=\"position:sticky;left:0;background:#fff;z-index:1;border-right:1px solid #f2f2f2;padding:8px 10px;color:#333;\">${(r.rr*100).toFixed(0)}%</td>`;
+            // 单元格：不同付费占比下的利润率/利润
             const tds = r.cells.map(c => {
                 // 利润率与利润金额：主副两行展示，利率更醒目，金额次要小一号
                 const rate = (c.profitRate*100).toFixed(2);
@@ -1881,7 +1911,29 @@ function initBatchProfitScenario() {
                             <div style="font-size:12px;opacity:0.9;">${profitText}</div>
                         </td>`;
             }).join('');
-            return `<tr>${firstCol}${tds}</tr>`;
+            // 新增列（同步版本）：仅按本行退货率计算一次保本ROI/保本推广占比
+            // 中文注释：本列不依赖“付费占比”，数值随退货率变化
+            const rowBreakeven = (function(){
+                try{
+                    const res = calculateBreakevenROI({
+                        costPrice: base.costPrice,
+                        inputTaxRate: base.inputTaxRate,
+                        outputTaxRate: base.outputTaxRate,
+                        salesTaxRate: base.salesTaxRate,
+                        platformRate: base.platformRate,
+                        shippingCost: base.shippingCost,
+                        shippingInsurance: base.shippingInsurance,
+                        otherCost: base.otherCost,
+                        returnRate: r.rr,
+                        finalPrice: base.actualPrice
+                    });
+                    const roiText = isFinite(res.breakevenROI) ? res.breakevenROI.toFixed(2) : '∞';
+                    const adText = isFinite(res.breakevenAdRate) ? `${(res.breakevenAdRate*100).toFixed(2)}%` : '-';
+                    return {roiText, adText};
+                }catch(_){ return {roiText:'-', adText:'-'} }
+            })();
+            const extraCol = `<td style=\"padding:8px 10px;text-align:right;color:#333;\"><div style=\"font-weight:600;\">${rowBreakeven.roiText}</div><div style=\"font-size:12px;opacity:0.9;\">${rowBreakeven.adText}</div></td>`;
+            return `<tr>${firstCol}${tds}${extraCol}</tr>`;
         }).join('');
 
         return `
