@@ -281,26 +281,28 @@ function generateListPriceHtml({ targetFinalPrice, tiers, results }) {
                 <td class="lp-col-right"><span class="lp-badge warn">参数无解</span></td>
             </tr>`;
         }
-        const offText = item.off ? `<span class="lp-chip green">减 ¥${Number(item.off).toFixed(2)}</span>${item.thresholdUsed? ` <span class="lp-chip blue">触发满¥${Number(item.thresholdUsed).toFixed(2)}</span>` : ''}` : '<span class="lp-chip gray">无</span>';
+        // 提示优化：满减触发信息用 Chip 展示，维持次要色；金额保持统一格式
+        const offText = item.off ? `<span class="lp-chip green">减 ¥${Number(item.off).toFixed(2)}</span>${item.thresholdUsed? ` <span class=\"lp-chip blue\">触发满¥${Number(item.thresholdUsed).toFixed(2)}</span>` : ''}` : '<span class="lp-chip gray">无</span>';
         const isExact = Math.abs((item.finalPrice||0) - targetFinalPrice) < 0.005;
         const note = isExact ? '<span class="lp-badge ok">精确匹配</span>' : `<span class="lp-badge warn">偏差 ¥${Math.abs((item.finalPrice||0)-targetFinalPrice).toFixed(2)}</span>`;
         return `<tr class="lp-price-row" data-s="${Number(item.price).toFixed(2)}">
             <td class="lp-col-left" data-label="单品立减"><span class="lp-chip gray">${rPct}</span></td>
-            <td class="lp-col-right lp-price" data-label="建议标价"><span class="lp-strong">¥ ${Number(item.price).toFixed(2)}</span></td>
+            <td class="lp-col-right lp-price" data-label="建议标价">
+                <span class="lp-amount emphasis"><span class="currency">¥</span><span class="value">${Number(item.price).toFixed(2)}</span></span>
+            </td>
             <td class="lp-col-right lp-nowrap" data-label="满减触发">${offText}</td>
-            <td class="lp-col-right lp-price" data-label="叠加后到手价">¥ ${isFinite(item.finalPrice)? Number(item.finalPrice).toFixed(2) : '-'}</td>
+            <td class="lp-col-right lp-price" data-label="叠加后到手价">
+                ${isFinite(item.finalPrice)? `<span class=\"lp-amount\"><span class=\"currency\">¥</span><span class=\"value\">${Number(item.finalPrice).toFixed(2)}</span></span>` : '-'}
+            </td>
             <td class="lp-col-right" data-label="校验">${note}</td>
         </tr>`;
     }).join('');
 
+    // 说明：这里原本会渲染一个顶部“目标到手价”信息卡片（类名：final-price），
+    // 为满足“仅在标价计算页面隐藏该模块，不影响其他页面”的需求，
+    // 我们在此函数内直接移除该模块的模板字符串，仅保留下方的“标价建议与校验”表格区域。
+    // 其它页面的结果页仍然使用各自模板文件（如 generatePriceResultHtml / generateResultHtml），不会受此次修改影响。
     return `
-        <div class="final-price">
-            <div class="price-label">目标到手价</div>
-            <div class="price-value">¥ ${Number(targetFinalPrice).toFixed(2)}</div>
-            <div class="price-hint">下表展示不同“单品立减”档位下的建议页面标价；顺序为：先立减，再满减</div>
-            ${tierSummary}
-        </div>
-
         <div class="section calculation-process lp-card">
             <h3>标价建议与校验</h3>
             <div class="lp-table-wrapper">

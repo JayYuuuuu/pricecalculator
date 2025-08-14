@@ -1099,32 +1099,41 @@ button:hover {
 .lp-table thead th {
     position: sticky;
     top: 0;
-    background: #f8fafc;
+    background: #fafafa; /* 表头层级：比正文略浅 */
     color: #475569;
     text-align: left;
-    font-weight: 600;
+    font-weight: 500; /* 级别降低，避免喧宾夺主 */
     border-bottom: 1px solid #edf2f7;
-    padding: 12px 14px;
+    padding: 10px 14px; /* 字号略小、内边距略紧凑 */
+    font-size: 13px;
     white-space: nowrap;
 }
 .lp-table thead th.lp-col-right { text-align: right; }
 .lp-table thead th.lp-col-center { text-align: center; }
 .lp-table thead th.lp-col-left { text-align: left; }
 .lp-table tbody td {
-    /* 压缩行距，提升信息密度与扫描效率 */
-    padding: 8px 10px;
+    /* 行距适度放大，提升可读性 */
+    padding: 10px 12px;
     border-bottom: 1px solid #f1f5f9;
     color: #1f2937;
     vertical-align: middle;
 }
 /* 纵向分隔线：弱化但提供列界限，降低横向误读 */
 .lp-table thead th + th, .lp-table tbody td + td { border-left: 1px solid #f3f4f6; }
+/* 列间距：让数据块更独立 */
+.lp-table thead th + th { padding-left: 16px; }
+.lp-table tbody td + td { padding-left: 16px; }
 .lp-table tbody tr:nth-child(odd) { background: #f9fafb; }
 .lp-table tbody tr:hover { background: #f6faff; }
 .lp-col-left { text-align: left; }
 .lp-col-right { text-align: right; }
 .lp-col-center { text-align: center; }
 .lp-price { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+/* 数额展示：货币符号与数值分层，突出数字 */
+.lp-amount { display: inline-flex; align-items: baseline; gap: 4px; }
+.lp-amount .currency { color:#64748b; font-weight: 500; font-size: 0.9em; }
+.lp-amount .value { color:#111827; font-weight: 700; letter-spacing: 0.2px; }
+.lp-amount.emphasis .value { font-weight: 800; font-size: 1.05em; }
 .lp-strong { font-weight: 700; color: #0b63ce; }
 .lp-nowrap { white-space: nowrap; }
 
@@ -1147,8 +1156,10 @@ button:hover {
     line-height: 1;
     white-space: nowrap;
 }
-.lp-badge.ok { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+.lp-badge.ok { background: #f6fffb; color: #16a34a; border: 1px solid #d1fae5; }
 .lp-badge.warn { background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; }
+/* 徽章与紧邻数据的间距 */
+.lp-badge { margin-left: 8px; }
 
 /* 轻量“Chip”展示（比如立减/满减） */
 .lp-chip { display:inline-block; padding: 2px 8px; border-radius: 999px; background:#f3f4f6; color:#374151; font-size:12px; white-space: nowrap; }

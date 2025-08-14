@@ -1717,8 +1717,9 @@ function initBatchProfitScenario() {
         const base = overrideBase || getProfitBaseInputs();
 
         // 固定档位（按需求枚举）
-        // 付费占比扩充为 10%、15%、20%、25%、30%、35%（以小数表示，按从小到大排序）
-        const adRates = [0.10, 0.15, 0.20, 0.25, 0.30, 0.35];
+        // 新增 0%：观察“不投广告”情况下在不同退货率下的利润率
+        // 付费占比：0%、10%、15%、20%、25%、30%、35%（以小数表示，按从小到大排序）
+        const adRates = [0.00, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35];
         // 新增退货率 5% 与 28% 两档 → 共 8 档：5、8、12、15、18、20、25、28（以小数表示）
         const returnRates = [0.05, 0.08, 0.12, 0.15, 0.18, 0.20, 0.25, 0.28];
 
@@ -1784,6 +1785,11 @@ function initBatchProfitScenario() {
                 const profitText = `¥ ${c.profit.toFixed(2)}`;
                 const color = c.profitRate > 0 ? '#2ea44f' : (c.profitRate < 0 ? '#d32f2f' : '#555');
                 const bg = c.profitRate > 0 ? 'rgba(46,164,79,0.08)' : (c.profitRate < 0 ? 'rgba(211,47,47,0.08)' : 'transparent');
+                // 重点标注：当利润率处于 [9.5%, 10.5%]（含）范围内，视为“最优解候选”
+                // 视觉改为“前置小圆标”放在数字前，避免遮挡 %
+                const isTarget = (c.profitRate >= 0.095 && c.profitRate <= 0.105);
+                const targetStyle = '';
+                const targetPrefix = isTarget ? '<span style="display:inline-flex;width:16px;height:16px;border-radius:999px;background:#0ea5e9;color:#fff;align-items:center;justify-content:center;font-size:11px;line-height:1;">✓</span>' : '';
                 // 计算“保本 ROI / 保本付费占比”（受退货率影响）
                 const roiRes = calculateBreakevenROI({
                     costPrice: base.costPrice,
@@ -1801,9 +1807,12 @@ function initBatchProfitScenario() {
                 const breakevenAdRateText = isFinite(roiRes.breakevenAdRate) ? `${(roiRes.breakevenAdRate*100).toFixed(2)}%` : '-';
                 // 自定义悬浮提示：立即显示，无需等待浏览器 title 的延迟
                 const tooltipData = `广告占比 ${(c.adRate*100).toFixed(0)}%｜退货率 ${(c.returnRate*100).toFixed(0)}%\n利润 ${profitText}｜利润率 ${rate}%\n保本ROI ${breakevenROIText}｜保本付费占比 ${breakevenAdRateText}`;
-                return `<td class="profit-cell" data-tooltip="${tooltipData}" style="padding:8px 10px;text-align:right;color:${color};background:${bg};cursor:help;">
-                            <div style="font-weight:600;">${rate}%</div>
-                            <div style="font-size:12px;opacity:0.9;">${profitText}</div>
+                return `<td class="profit-cell" data-tooltip="${tooltipData}" style="padding:8px 10px;text-align:right;color:${color};background:${bg};cursor:help;${targetStyle}">
+                             <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end;">
+                                 ${targetPrefix}
+                                 <div style="font-weight:600;">${rate}%</div>
+                             </div>
+                             <div style="font-size:12px;opacity:0.9;">${profitText}</div>
                         </td>`;
             }).join('');
             // 新增列：与付费占比无关，仅按本行退货率计算一次保本ROI与保本推广占比
@@ -1867,8 +1876,9 @@ function initBatchProfitScenario() {
      */
     const buildProfitTable = (base) => {
         // 固定档位（按需求枚举）
-        // 付费占比扩充为 10%、15%、20%、25%、30%、35%（以小数表示，按从小到大排序）
-        const adRates = [0.10, 0.15, 0.20, 0.25, 0.30, 0.35];
+        // 新增 0%：观察“不投广告”情况下在不同退货率下的利润率
+        // 付费占比：0%、10%、15%、20%、25%、30%、35%（以小数表示，按从小到大排序）
+        const adRates = [0.00, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35];
         // 新增退货率 5% 与 28% 两档 → 共 8 档：5、8、12、15、18、20、25、28（以小数表示）
         const returnRates = [0.05, 0.08, 0.12, 0.15, 0.18, 0.20, 0.25, 0.28];
 
@@ -1905,9 +1915,16 @@ function initBatchProfitScenario() {
                 const profitText = `¥ ${c.profit.toFixed(2)}`;
                 const color = c.profitRate > 0 ? '#2ea44f' : (c.profitRate < 0 ? '#d32f2f' : '#555');
                 const bg = c.profitRate > 0 ? 'rgba(46,164,79,0.08)' : (c.profitRate < 0 ? 'rgba(211,47,47,0.08)' : 'transparent');
+                // 重点标注范围：[9.5%, 10.5%]（含），改为“数字前小圆标”避免遮挡
+                const isTarget = (c.profitRate >= 0.095 && c.profitRate <= 0.105);
+                const targetStyle = '';
+                const targetPrefix = isTarget ? '<span style="display:inline-flex;width:16px;height:16px;border-radius:999px;background:#0ea5e9;color:#fff;align-items:center;justify-content:center;font-size:11px;line-height:1;">✓</span>' : '';
                 const title = `广告占比 ${(c.adRate*100).toFixed(0)}%｜退货率 ${(c.returnRate*100).toFixed(0)}%\n利润 ${profitText}｜利润率 ${rate}%`;
-                return `<td title="${title}" style="padding:8px 10px;text-align:right;color:${color};background:${bg};">
-                            <div style="font-weight:600;">${rate}%</div>
+                return `<td title="${title}" style="padding:8px 10px;text-align:right;color:${color};background:${bg};${targetStyle}">
+                            <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end;">
+                                ${targetPrefix}
+                                <div style="font-weight:600;">${rate}%</div>
+                            </div>
                             <div style="font-size:12px;opacity:0.9;">${profitText}</div>
                         </td>`;
             }).join('');
