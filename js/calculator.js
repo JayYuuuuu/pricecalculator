@@ -2228,6 +2228,19 @@ function initPriceExploration() {
         } catch(_) { return price; }
     };
 
+    // 组合装适配：基于 state.combo2 对固定参数做一次性口径调整
+    // - 两件组合装：成本口径
+    //   • 进货价（含开票与商品进项税的基数）按 2 倍计
+    //   • 其他成本按 1.5 倍计
+    //   • 物流费、运费险不变（一个包裹）
+    const applyComboAdjustments = (fixed, state) => {
+        if (!state || !state.combo2) return fixed;
+        const adjusted = Object.assign({}, fixed);
+        adjusted.costPrice = fixed.costPrice * 2;
+        adjusted.otherCost = fixed.otherCost * 1.5;
+        return adjusted;
+    };
+
     // 计算某一组合：固定其他参数，给定售价S、退货率R、广告占比A，返回利润与利润率
     const computeProfitForPrice = (fixed, price, adRate, returnRate) => {
         // 复制固定参数，替换变化项
@@ -2245,7 +2258,8 @@ function initPriceExploration() {
     //   利润 P = S - TC = S*(1 - [ pr*(1-0.06) + st/(1+st) ]) - C0
     //   其中 C0 = 进货价 + 开票成本 - 商品进项税 + (物流费+运费险+其他成本)/e
     // 令 P = 0，可解得： S = C0 / (1 - [ pr*(1-0.06) + st/(1+st) ])
-    const computeLyingPrice = (fixed, returnRate) => {
+    // targetProfitRate 为目标利润率（小数，例如 0.05 表示 5%）
+    const computeLyingPrice = (fixed, returnRate, targetProfitRate = 0) => {
         try {
             // 有效销售率，避免除以0
             const effectiveRate = Math.max(1e-6, 1 - returnRate);
@@ -2265,7 +2279,8 @@ function initPriceExploration() {
             const pr = fixed.platformRate;
             const st = fixed.salesTaxRate;
             const a = pr * (1 - 0.06) + (st / (1 + st));
-            const denom = 1 - a;
+            const t = Math.max(0, Number(targetProfitRate) || 0);
+            const denom = 1 - a - t;
             if (!(denom > 0)) return Infinity; // 理论上无穷大/不可达保本
             const S = C0 / denom;
             return S;
@@ -2277,7 +2292,8 @@ function initPriceExploration() {
     // 构造：候选价 Chips HTML
     const buildPriceChipsHtml = (fixed, state) => {
         return state.prices.map((p,i)=>{
-            const mul = fixed.costPrice > 0 ? (p / fixed.costPrice) : NaN;
+            const denom = fixed.costPrice * (state && state.combo2 ? 2 : 1);
+            const mul = denom > 0 ? (p / denom) : NaN;
             const mulText = isFinite(mul) ? `${mul.toFixed(2)}倍` : '-';
             return `
             <label style="display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 14px;border:2px solid ${i===state.activeIndex?'#3b82f6':'#e5e7eb'};border-radius:999px;cursor:pointer;background:${i===state.activeIndex?'#3b82f6':'#f3f4f6'};color:${i===state.activeIndex?'#ffffff':'#1f2937'};font-size:14px;line-height:1;font-weight:${i===state.activeIndex?'600':'400'};box-shadow:${i===state.activeIndex?'0 2px 8px rgba(59,130,246,0.25)':'none'};">
@@ -2348,22 +2364,28 @@ function initPriceExploration() {
         return `<table style="border-collapse:separate;border-spacing:0;width:100%;min-width:520px;font-size:13px;"><thead style="position:sticky;top:0;background:#fff;">${thead}</thead><tbody>${rowsHtml}</tbody></table>`;
     };
 
-    // 构造：“躺卖价”表格 HTML（不投广告、仅固定成本+税费；行=退货率，列=保本售价与简单提示）
+    // 构造：“躺卖价”表格 HTML（不投广告；佣金遵循免佣开关；固定成本按有效销售率分摊）
     const buildLyingTableHtml = (fixed, state) => {
         const returnRates = state.returnRates;
+        const targets = [
+            { label: '保本(0%)', rate: 0.00 },
+            { label: '利润5%', rate: 0.05 },
+            { label: '利润10%', rate: 0.10 },
+            { label: '利润15%', rate: 0.15 },
+            { label: '利润20%', rate: 0.20 }
+        ];
         const thead = `
             <tr>
                 <th style="position:sticky;left:0;background:#fff;z-index:2;border-bottom:1px solid #eee;text-align:left;padding:8px 10px;color:#666;font-weight:500;">退货率</th>
-                <th style="border-bottom:1px solid #eee;padding:8px 10px;color:#333;font-weight:600;">躺卖价（保本）</th>
+                ${targets.map(t=>`<th style=\"border-bottom:1px solid #eee;padding:8px 10px;color:#333;font-weight:600;\">${t.label}</th>`).join('')}
                 <th style="border-bottom:1px solid #eee;padding:8px 10px;color:#333;font-weight:600; white-space:nowrap;">说明</th>
             </tr>`;
         const rowsHtml = returnRates.map(rr => {
-            const S = computeLyingPrice(fixed, rr);
-            const hasPrice = isFinite(S) && S > 0;
-            const priceText = hasPrice ? `¥ ${S.toFixed(2)}` : '—';
             const firstCol = `<td style="position:sticky;left:0;background:#fff;z-index:1;border-right:1px solid #f2f2f2;padding:8px 10px;color:#333;">${(rr*100).toFixed(0)}%</td>`;
-            let tooltipData = '';
-            if (hasPrice) {
+            const priceCols = targets.map(t => {
+                const S = computeLyingPrice(fixed, rr, t.rate);
+                const hasPrice = isFinite(S) && S > 0;
+                if (!hasPrice) return `<td style=\"padding:8px 10px;text-align:right;color:#999;\">—</td>`;
                 const effectiveRate = Math.max(1e-6, 1 - rr);
                 const invoiceCost = fixed.costPrice * fixed.inputTaxRate;
                 const purchaseCost = fixed.costPrice + invoiceCost;
@@ -2380,13 +2402,11 @@ function initPriceExploration() {
                 const actualVAT = outputVAT - totalVATDeduction;
                 const totalCost = purchaseCost + platformFee + adCostEffective + shippingCostEffective + insuranceCostEffective + otherCostEffective + actualVAT;
                 const profit = S - totalCost;
-                tooltipData = `保本售价：¥${S.toFixed(2)}\n退货率：${(rr*100).toFixed(0)}%\n\n成本明细：\n• 进货成本：¥${purchaseCost.toFixed(2)}\n• 平台佣金：¥${platformFee.toFixed(2)}\n• 广告费（分摊）：¥${adCostEffective.toFixed(2)}\n• 物流费（分摊）：¥${shippingCostEffective.toFixed(2)}\n• 运费险（分摊）：¥${insuranceCostEffective.toFixed(2)}\n• 其他成本（分摊）：¥${otherCostEffective.toFixed(2)}\n• 销项税：¥${outputVAT.toFixed(2)}\n• 进项抵扣：¥${totalVATDeduction.toFixed(2)}\n• 实际税负：¥${actualVAT.toFixed(2)}\n\n核对利润：¥${profit.toFixed(2)}`;
-            }
-            const priceCol = hasPrice
-                ? `<td class=\"price-exp-cell\" data-tooltip=\"${tooltipData}\" style=\"padding:8px 10px;text-align:right;color:#111;font-weight:700;cursor:help;\">${priceText}</td>`
-                : `<td style=\"padding:8px 10px;text-align:right;color:#999;\">${priceText}</td>`;
-            const tipCol = `<td style=\"padding:8px 10px;color:#666;\">不投广告；仅计算固定成本与税费口径；利润=0</td>`;
-            return `<tr>${firstCol}${priceCol}${tipCol}</tr>`;
+                const tooltipData = `目标利润率：${(t.rate*100).toFixed(0)}%\n售价：¥${S.toFixed(2)}\n退货率：${(rr*100).toFixed(0)}%\n\n成本明细：\n• 进货成本：¥${purchaseCost.toFixed(2)}\n• 平台佣金：¥${platformFee.toFixed(2)}\n• 广告费（分摊）：¥${adCostEffective.toFixed(2)}\n• 物流费（分摊）：¥${shippingCostEffective.toFixed(2)}\n• 运费险（分摊）：¥${insuranceCostEffective.toFixed(2)}\n• 其他成本（分摊）：¥${otherCostEffective.toFixed(2)}\n• 销项税：¥${outputVAT.toFixed(2)}\n• 进项抵扣：¥${totalVATDeduction.toFixed(2)}\n• 实际税负：¥${actualVAT.toFixed(2)}\n\n核对利润：¥${profit.toFixed(2)}（${((profit/S)*100).toFixed(2)}%）`;
+                return `<td class=\"price-exp-cell\" data-tooltip=\"${tooltipData}\" style=\"padding:8px 10px;text-align:right;color:#111;font-weight:700;cursor:help;\">¥ ${S.toFixed(2)}</td>`;
+            }).join('');
+            const tipCol = `<td style=\"padding:8px 10px;color:#666;\">不投广告；佣金遵循免佣开关；固定成本按有效销售率分摊</td>`;
+            return `<tr>${firstCol}${priceCols}${tipCol}</tr>`;
         }).join('');
         return `<table style="border-collapse:separate;border-spacing:0;width:100%;min-width:420px;font-size:13px;"><thead style="position:sticky;top:0;background:#fff;">${thead}</thead><tbody>${rowsHtml}</tbody></table>`;
     };
@@ -2395,7 +2415,8 @@ function initPriceExploration() {
     const buildPanelContent = (fixed, state) => {
         const chips = buildPriceChipsHtml(fixed, state);
         const isLying = state.mode === 'lying';
-        const tableHtml = isLying ? buildLyingTableHtml(fixed, state) : buildPriceTableHtml(fixed, state);
+        const adjustedFixed = applyComboAdjustments(fixed, state);
+        const tableHtml = isLying ? buildLyingTableHtml(adjustedFixed, state) : buildPriceTableHtml(adjustedFixed, state);
 
         return `
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
@@ -2414,11 +2435,16 @@ function initPriceExploration() {
                 </div>
             </div>
             <div style="margin-bottom:16px;display:flex;flex-direction:column;gap:12px;">
-                <div style="display:flex;align-items:center;gap:12px;">
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
                     <div style="display:inline-flex;align-items:center;gap:10px;background:#0b63ce;color:#fff;border-radius:999px;padding:6px 10px;">
                         <span style="font-weight:600;">进货价：</span>
                         <input type="number" id="priceExpCostPrice" value="${fixed.costPrice.toFixed(2)}" step="0.01" min="0.01" style="width:120px;padding:6px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.75);background:#eef2ff;color:#111;outline:none;font-weight:700;font-size:16px;">
                     </div>
+                    <label for="priceExpCombo2Toggle" class="switch-chip" style="display:inline-flex;align-items:center;gap:8px;background:${state.combo2?'#3b82f6':'#f3f4f6'};color:${state.combo2?'#fff':'#111'};border-radius:999px;padding:6px 10px;cursor:pointer;">
+                        <input type="checkbox" id="priceExpCombo2Toggle" ${state.combo2?'checked':''} style="width:16px;height:16px;margin:0;">
+                        <span style="font-weight:600;user-select:none;">两件组合装</span>
+                    </label>
+                    <span id="combo2CostText" class="batch-badge" style="display:${state.combo2?'inline-flex':'none'};">组合装进货价：¥${(fixed.costPrice*2).toFixed(2)}</span>
                 </div>
                 ${isLying ? '' : `
                 <div style="display:flex;align-items:center;gap:12px;">
@@ -2427,13 +2453,13 @@ function initPriceExploration() {
                 </div>`}
             </div>
             <div class="batch-badges" style="margin-bottom:12px;">
-                <span class="batch-badge" id="badgePlatformRate">平台佣金：${(fixed.platformRate*100).toFixed(1)}%</span>
-                <span class="batch-badge">销项税率：${(fixed.salesTaxRate*100).toFixed(1)}%</span>
-                <span class="batch-badge">开票成本：${(fixed.inputTaxRate*100).toFixed(1)}%</span>
-                <span class="batch-badge">商品进项税率：${(fixed.outputTaxRate*100).toFixed(1)}%</span>
-                <span class="batch-badge">物流费：¥${fixed.shippingCost.toFixed(2)}</span>
-                <span class="batch-badge">运费险：¥${fixed.shippingInsurance.toFixed(2)}</span>
-                <span class="batch-badge">其他成本：¥${fixed.otherCost.toFixed(2)}</span>
+                <span class="batch-badge" id="badgePlatformRate">平台佣金：${(adjustedFixed.platformRate*100).toFixed(1)}%</span>
+                <span class="batch-badge">销项税率：${(adjustedFixed.salesTaxRate*100).toFixed(1)}%</span>
+                <span class="batch-badge">开票成本：${(adjustedFixed.inputTaxRate*100).toFixed(1)}%</span>
+                <span class="batch-badge">商品进项税率：${(adjustedFixed.outputTaxRate*100).toFixed(1)}%</span>
+                <span class="batch-badge">物流费：¥${adjustedFixed.shippingCost.toFixed(2)}</span>
+                <span class="batch-badge">运费险：¥${adjustedFixed.shippingInsurance.toFixed(2)}</span>
+                <span class="batch-badge" id="badgeOtherCost">其他成本：¥${adjustedFixed.otherCost.toFixed(2)}</span>
             </div>
             <div id="priceExpTable" class="batch-table-container" style="overflow:auto;max-height:56vh;border:1px solid #eee;border-radius:8px;">${tableHtml}</div>
             <div style="margin-top:10px;color:#999;font-size:12px;">${isLying ? '说明：不投广告，仅固定成本与税费口径；每个退货率对应的售价为保本点。' : '提示：绿色为盈利，红色为亏损。切换上方售价Chip可对比不同定价下的盈亏区间。'}</div>
@@ -2500,7 +2526,7 @@ function initPriceExploration() {
         // 退货率/付费占比：沿用"批量利润率推演"弹窗的默认档位
         const adRates = [0.00, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35];
         const returnRates = [0.05, 0.08, 0.10, 0.12, 0.15, 0.18, 0.20, 0.25, 0.28];
-        const state = { prices, adRates, returnRates, activeIndex: 0, mode: 'matrix' };
+        const state = { prices, adRates, returnRates, activeIndex: 0, mode: 'matrix', combo2: false };
         panel.innerHTML = buildPanelContent(fixed, state);
 
         const wire = () => {
@@ -2529,12 +2555,17 @@ function initPriceExploration() {
                     const costInput = panel.querySelector('#priceExpCostPrice');
                     const currentCostPrice = costInput ? parseFloat(costInput.value) : fixed2.costPrice;
                     if (isFinite(currentCostPrice) && currentCostPrice > 0) fixed2.costPrice = currentCostPrice;
+                    // 不改动候选售价与当前选中，避免切换免佣导致选中Chip丢失
                     const chipsEl = panel.querySelector('#priceExpChips');
                     const tableEl = panel.querySelector('#priceExpTable');
-                    const badge = panel.querySelector('#badgePlatformRate');
-                    if (chipsEl) chipsEl.innerHTML = buildPriceChipsHtml(fixed2, state);
-                    if (tableEl) tableEl.innerHTML = (state.mode === 'lying' ? buildLyingTableHtml(fixed2, state) : buildPriceTableHtml(fixed2, state));
-                    if (badge) badge.textContent = `平台佣金：${(fixed2.platformRate*100).toFixed(1)}%`;
+                    const badgePlatform = panel.querySelector('#badgePlatformRate');
+                    const badgeOther = panel.querySelector('#badgeOtherCost');
+                    const combo2CostText = panel.querySelector('#combo2CostText');
+                    const adjusted = applyComboAdjustments(fixed2, state);
+                    if (tableEl) tableEl.innerHTML = (state.mode === 'lying' ? buildLyingTableHtml(adjusted, state) : buildPriceTableHtml(adjusted, state));
+                    if (badgePlatform) badgePlatform.textContent = `平台佣金：${(adjusted.platformRate*100).toFixed(1)}%`;
+                    if (badgeOther) badgeOther.textContent = `其他成本：¥${adjusted.otherCost.toFixed(2)}`;
+                    if (combo2CostText) combo2CostText.textContent = `组合装进货价：¥${(fixed2.costPrice*2).toFixed(2)}`;
                 });
             }
 
@@ -2557,9 +2588,49 @@ function initPriceExploration() {
                     // 局部更新 chips 与 表格
                     chipsWrap.innerHTML = buildPriceChipsHtml(fixed2, state);
                     const tableEl = panel.querySelector('#priceExpTable');
-                    if (tableEl) tableEl.innerHTML = (state.mode === 'lying' ? buildLyingTableHtml(fixed2, state) : buildPriceTableHtml(fixed2, state));
-                    const badge = panel.querySelector('#badgePlatformRate');
-                    if (badge) badge.textContent = `平台佣金：${(fixed2.platformRate*100).toFixed(1)}%`;
+                    const adjusted = applyComboAdjustments(fixed2, state);
+                    if (tableEl) tableEl.innerHTML = (state.mode === 'lying' ? buildLyingTableHtml(adjusted, state) : buildPriceTableHtml(adjusted, state));
+                    const badgePlatform = panel.querySelector('#badgePlatformRate');
+                    const badgeOther = panel.querySelector('#badgeOtherCost');
+                    if (badgePlatform) badgePlatform.textContent = `平台佣金：${(adjusted.platformRate*100).toFixed(1)}%`;
+                    if (badgeOther) badgeOther.textContent = `其他成本：¥${adjusted.otherCost.toFixed(2)}`;
+                });
+            }
+
+            // 组合装：开关联动计算
+            const comboToggle = panel.querySelector('#priceExpCombo2Toggle');
+            if (comboToggle) {
+                comboToggle.addEventListener('change', () => {
+                    state.combo2 = !!comboToggle.checked;
+                    // 读取弹窗内最新的进货价并带入
+                    const fixed2 = getProfitBaseInputs();
+                    const costInput = panel.querySelector('#priceExpCostPrice');
+                    const currentCostPrice = costInput ? parseFloat(costInput.value) : fixed2.costPrice;
+                    if (isFinite(currentCostPrice) && currentCostPrice > 0) fixed2.costPrice = currentCostPrice;
+
+                    // 更新徽章（其他成本可能因为组合装变为1.5倍）
+                    const adjusted = applyComboAdjustments(fixed2, state);
+                    const badgePlatform = panel.querySelector('#badgePlatformRate');
+                    const badgeOther = panel.querySelector('#badgeOtherCost');
+                    if (badgePlatform) badgePlatform.textContent = `平台佣金：${(adjusted.platformRate*100).toFixed(1)}%`;
+                    if (badgeOther) badgeOther.textContent = `其他成本：¥${adjusted.otherCost.toFixed(2)}`;
+                    const combo2CostText = panel.querySelector('#combo2CostText');
+                    if (combo2CostText) combo2CostText.style.display = state.combo2 ? 'inline-flex' : 'none';
+                    if (combo2CostText) combo2CostText.textContent = `组合装进货价：¥${(fixed2.costPrice*2).toFixed(2)}`;
+
+                    // 重新生成候选售价（按组合装成本口径：cost*2）
+                    const multipliers = [1.5, 1.8, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8];
+                    const baseCost = currentCostPrice * (state.combo2 ? 2 : 1);
+                    const derived = multipliers.map(m => baseCost * m).map(s => adjustToPsychPriceUp(s));
+                    const newPrices = Array.from(new Set(derived.map(v => Number(v.toFixed(1))))).sort((a,b)=>a-b);
+                    state.prices = newPrices;
+                    state.activeIndex = 0;
+
+                    // 局部更新 chips 与 表格
+                    const chipsEl = panel.querySelector('#priceExpChips');
+                    const tableEl = panel.querySelector('#priceExpTable');
+                    if (chipsEl) chipsEl.innerHTML = buildPriceChipsHtml(fixed2, state);
+                    if (tableEl) tableEl.innerHTML = (state.mode === 'lying' ? buildLyingTableHtml(adjusted, state) : buildPriceTableHtml(adjusted, state));
                 });
             }
 
@@ -2570,11 +2641,13 @@ function initPriceExploration() {
                     const rows = [];
                     if (state.mode === 'lying') {
                         // 躺卖价模式导出：退货率, 躺卖价（不投广告）
-                        const fixedCsv = getProfitBaseInputs();
+                        let fixedCsv = getProfitBaseInputs();
                         // 读取弹窗内最新进货价
                         const costInput = panel.querySelector('#priceExpCostPrice');
                         const currentCostPrice = costInput ? parseFloat(costInput.value) : fixedCsv.costPrice;
                         fixedCsv.costPrice = isFinite(currentCostPrice) && currentCostPrice > 0 ? currentCostPrice : fixedCsv.costPrice;
+                        // 应用组合装
+                        fixedCsv = applyComboAdjustments(fixedCsv, state);
                         rows.push(['退货率', '躺卖价（保本，未投广告）']);
                         state.returnRates.forEach(rr => {
                             const s = computeLyingPrice(fixedCsv, rr);
@@ -2588,10 +2661,11 @@ function initPriceExploration() {
                             line.push(state.prices[state.activeIndex].toFixed(2));
                             line.push((rr*100).toFixed(0)+'%');
                             state.adRates.forEach(ar => {
-                                const r = computeProfitForPrice(getProfitBaseInputs(), state.prices[state.activeIndex], ar, rr);
+                                const baseCsv = applyComboAdjustments(getProfitBaseInputs(), state);
+                                const r = computeProfitForPrice(baseCsv, state.prices[state.activeIndex], ar, rr);
                                 line.push(((r.profitRate*100)).toFixed(2)+'%');
                             });
-                            const fixedCsv = getProfitBaseInputs();
+                            const fixedCsv = applyComboAdjustments(getProfitBaseInputs(), state);
                             const roiRes = calculateBreakevenROI({
                                 costPrice: fixedCsv.costPrice,
                                 inputTaxRate: fixedCsv.inputTaxRate,
@@ -2632,7 +2706,9 @@ function initPriceExploration() {
                 const costInput = panel.querySelector('#priceExpCostPrice');
                 const currentCostPrice = costInput ? parseFloat(costInput.value) : fixed2.costPrice;
                 if (isFinite(currentCostPrice) && currentCostPrice > 0) fixed2.costPrice = currentCostPrice;
-                state.mode = state.mode === 'lying' ? 'matrix' : 'lying';
+                const nextMode = state.mode === 'lying' ? 'matrix' : 'lying';
+                // 保留 combo2 状态不变，仅切换模式
+                state.mode = nextMode;
                 panel.innerHTML = buildPanelContent(fixed2, state);
                 wire();
             });
@@ -2649,7 +2725,8 @@ function initPriceExploration() {
                         const fixed2 = getProfitBaseInputs();
                         fixed2.costPrice = newCost;
                         const multipliers = [1.5, 1.8, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8];
-                        const derived = multipliers.map(m => newCost * m).map(s => adjustToPsychPriceUp(s));
+                        const baseCost = newCost * (state.combo2 ? 2 : 1);
+                        const derived = multipliers.map(m => baseCost * m).map(s => adjustToPsychPriceUp(s));
                         const newPrices = Array.from(new Set(derived.map(v => Number(v.toFixed(1))))).sort((a,b)=>a-b);
                         state.prices = newPrices;
                         state.activeIndex = 0;
@@ -2658,8 +2735,11 @@ function initPriceExploration() {
                         const tableEl = panel.querySelector('#priceExpTable');
                         const badge = panel.querySelector('#badgePlatformRate');
                         if (chipsEl) chipsEl.innerHTML = buildPriceChipsHtml(fixed2, state);
-                        if (tableEl) tableEl.innerHTML = (state.mode === 'lying' ? buildLyingTableHtml(fixed2, state) : buildPriceTableHtml(fixed2, state));
-                        if (badge) badge.textContent = `平台佣金：${(fixed2.platformRate*100).toFixed(1)}%`;
+                        const adjusted = applyComboAdjustments(fixed2, state);
+                        if (tableEl) tableEl.innerHTML = (state.mode === 'lying' ? buildLyingTableHtml(adjusted, state) : buildPriceTableHtml(adjusted, state));
+                        if (badge) badge.textContent = `平台佣金：${(adjusted.platformRate*100).toFixed(1)}%`;
+                        const combo2CostText = panel.querySelector('#combo2CostText');
+                        if (combo2CostText) combo2CostText.textContent = `组合装进货价：¥${(newCost*2).toFixed(2)}`;
                     } catch(_) {}
                 };
                 costInput.addEventListener('input', () => {
