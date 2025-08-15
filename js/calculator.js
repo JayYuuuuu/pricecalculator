@@ -843,6 +843,11 @@ window.addEventListener('load', () => {
         initBatchProfitScenario();
     } catch (e) {}
 
+    // 初始化“价格推演”功能
+    try {
+        initPriceExploration();
+    } catch (e) {}
+
     // 为所有输入框添加实时计算功能
     document.querySelectorAll('input').forEach(input => {
         input.addEventListener('input', () => {
@@ -2186,6 +2191,293 @@ function initBatchProfitScenario() {
 
     btn.addEventListener('click', () => {
         // 仅当利润页激活时开放；避免切到“售价计算”页时的误操作
+        const profitTabActive = document.getElementById('profitTab')?.classList.contains('active');
+        if (!profitTabActive) { showToast('请先切换到“利润计算”页'); return; }
+        open();
+    });
+}
+
+/**
+ * 价格推演：在利润计算页，固定成本/税率/费率等参数，仅变动：
+ *   - 含税售价（候选集合或单值）
+ *   - 预计退货率（多档）
+ *   - 全店付费占比（多档）
+ * 以热力矩阵展示利润率与利润金额，并支持导出CSV。
+ */
+function initPriceExploration() {
+    const btn = document.getElementById('btnPriceExploration');
+    if (!btn) return;
+
+    // 懒创建弹窗节点
+    let overlay = null;
+    let panel = null;
+
+    // 工具：将任意价格“向上”调整为最接近的以 9.8 结尾的心理价（如 59.8、69.8、79.8、99.8…）
+    // 说明：
+    // - 非四舍五入，而是向上取整到最近的 x9.8
+    // - 避免出现 80、90 等整数价，优先让用户感知“低于整数位”
+    const adjustToPsychPriceUp = (price) => {
+        try {
+            const p = Math.max(0, Number(price) || 0);
+            const tens = Math.floor(p / 10);
+            const candidate = tens * 10 + 9.8;
+            if (p <= candidate) return candidate;
+            return (tens + 1) * 10 + 9.8;
+        } catch(_) { return price; }
+    };
+
+    // 计算某一组合：固定其他参数，给定售价S、退货率R、广告占比A，返回利润与利润率
+    const computeProfitForPrice = (fixed, price, adRate, returnRate) => {
+        // 复制固定参数，替换变化项
+        const base = Object.assign({}, fixed, { actualPrice: price });
+        return computeProfitScenario(base, adRate, returnRate);
+    };
+
+    // 构造或刷新弹窗内容
+    const buildPanelContent = (fixed, state) => {
+        const adRates = state.adRates;      // 小数数组
+        const returnRates = state.returnRates; // 小数数组
+        const priceCandidates = state.prices;  // 数字数组（含税）
+
+        // 价格选择器（Chip）：显示候选价与对应加价倍率，并保证内容在“胶囊气泡”内居中
+        const priceChips = priceCandidates.map((p,i)=>{
+            const mul = fixed.costPrice > 0 ? (p / fixed.costPrice) : NaN;
+            // 倍率展示：直接显示“多少倍”，例如 2.10倍
+            const mulText = isFinite(mul) ? `${mul.toFixed(2)}倍` : '-';
+            return `
+            <label style="display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 14px;border:1px solid #e5e7eb;border-radius:999px;cursor:pointer;background:${i===state.activeIndex?'#eaf1ff':'#f3f4f6'};color:${i===state.activeIndex?'#1f3a8a':'#1f2937'};font-size:14px;line-height:1;">
+                <input type="radio" name="expPrice" value="${p}" ${i===state.activeIndex?'checked':''} style="display:none;">
+                <span>¥${p.toFixed(2)}（${mulText}）</span>
+            </label>`;
+        }).join(' ');
+
+        // 表头
+        const thead = `
+            <tr>
+                <th style="position:sticky;left:0;background:#fff;z-index:2;border-bottom:1px solid #eee;text-align:left;padding:8px 10px;color:#666;font-weight:500;">退货率 \\ 付费占比</th>
+                ${adRates.map(a=>`<th style=\"border-bottom:1px solid #eee;padding:8px 10px;color:#333;font-weight:600;\">${(a*100).toFixed(0)}%</th>`).join('')}
+                <th style="border-bottom:1px solid #eee;padding:8px 10px;color:#333;font-weight:600; white-space:nowrap;">保本ROI/推广占比</th>
+            </tr>`;
+
+        // 行渲染
+        const rowsHtml = returnRates.map(rr => {
+            const firstCol = `<td style=\"position:sticky;left:0;background:#fff;z-index:1;border-right:1px solid #f2f2f2;padding:8px 10px;color:#333;\">${(rr*100).toFixed(0)}%</td>`;
+            const tds = adRates.map(ar => {
+                const r = computeProfitForPrice(fixed, priceCandidates[state.activeIndex], ar, rr);
+                const rate = (r.profitRate*100).toFixed(2);
+                const profitText = `¥ ${r.profit.toFixed(2)}`;
+                const color = r.profitRate > 0 ? '#2ea44f' : (r.profitRate < 0 ? '#d32f2f' : '#555');
+                const bg = r.profitRate > 0 ? 'rgba(46,164,79,0.08)' : (r.profitRate < 0 ? 'rgba(211,47,47,0.08)' : 'transparent');
+                return `<td style=\"padding:8px 10px;text-align:right;color:${color};background:${bg};\"><div style=\"font-weight:600;\">${rate}%</div><div style=\"font-size:12px;opacity:0.9;\">${profitText}</div></td>`;
+            }).join('');
+            // 保本阈值列：与付费占比无关，仅随退货率变化
+            const roiRes = calculateBreakevenROI({
+                costPrice: fixed.costPrice,
+                inputTaxRate: fixed.inputTaxRate,
+                outputTaxRate: fixed.outputTaxRate,
+                salesTaxRate: fixed.salesTaxRate,
+                platformRate: fixed.platformRate,
+                shippingCost: fixed.shippingCost,
+                shippingInsurance: fixed.shippingInsurance,
+                otherCost: fixed.otherCost,
+                returnRate: rr,
+                finalPrice: priceCandidates[state.activeIndex]
+            });
+            const roiText = isFinite(roiRes.breakevenROI) ? roiRes.breakevenROI.toFixed(2) : '∞';
+            const adText = isFinite(roiRes.breakevenAdRate) ? `${(roiRes.breakevenAdRate*100).toFixed(2)}%` : '-';
+            const extraCol = `<td style=\"padding:8px 10px;text-align:right;color:#333;\"><div style=\"font-weight:600;\">${roiText}</div><div style=\"font-size:12px;opacity:0.9;\">${adText}</div></td>`;
+            return `<tr>${firstCol}${tds}${extraCol}</tr>`;
+        }).join('');
+
+        const table = `
+            <div class="batch-table-container" style="overflow:auto;max-height:56vh;border:1px solid #eee;border-radius:8px;">
+                <table style="border-collapse:separate;border-spacing:0;width:100%;min-width:520px;font-size:13px;">
+                    <thead style="position:sticky;top:0;background:#fff;">${thead}</thead>
+                    <tbody>${rowsHtml}</tbody>
+                </table>
+            </div>`;
+
+        // 导出CSV按钮
+        const exportBtn = `<button id="btnPriceExplorationExport" class="batch-modal-btn" style="margin-left:8px;">导出CSV</button>`;
+
+        return `
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <div style="font-weight:600;">价格推演</div>
+                <div style="display:flex;gap:10px;align-items:center;">
+                    <div class="switch-wrapper switch-chip" title="与“费用设置-平台费用-免佣”联动">
+                        <span class="switch-label">免佣</span>
+                        <label class="switch">
+                            <input type="checkbox" id="priceExpPlatformFreeToggle">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    ${exportBtn}
+                    <button id="btnPriceExplorationClose" class="batch-modal-btn">关闭</button>
+                </div>
+            </div>
+            <div class="batch-badges" style="margin-bottom:8px;">
+                <span class="batch-badge emphasis">当前进货价：¥${fixed.costPrice.toFixed(2)}</span>
+            </div>
+            <div class="batch-badges" style="margin-bottom:8px;">
+                <span class="batch-badge emphasis">含税售价候选：</span>
+                ${priceChips}
+            </div>
+            <div class="batch-badges" style="margin-bottom:12px;">
+                <span class="batch-badge">平台佣金：${(fixed.platformRate*100).toFixed(1)}%</span>
+                <span class="batch-badge">销项税率：${(fixed.salesTaxRate*100).toFixed(1)}%</span>
+                <span class="batch-badge">开票成本：${(fixed.inputTaxRate*100).toFixed(1)}%</span>
+                <span class="batch-badge">商品进项税率：${(fixed.outputTaxRate*100).toFixed(1)}%</span>
+                <span class="batch-badge">物流费：¥${fixed.shippingCost.toFixed(2)}</span>
+                <span class="batch-badge">运费险：¥${fixed.shippingInsurance.toFixed(2)}</span>
+                <span class="batch-badge">其他成本：¥${fixed.otherCost.toFixed(2)}</span>
+            </div>
+            ${table}
+            <div style="margin-top:10px;color:#999;font-size:12px;">提示：绿色为盈利，红色为亏损。切换上方售价Chip可对比不同定价下的盈亏区间。</div>
+        `;
+    };
+
+    // 创建DOM（仅一次）
+    const ensureOverlay = () => {
+        if (overlay && panel) return;
+        overlay = document.createElement('div');
+        overlay.id = 'priceExplorationOverlay';
+        overlay.style.position = 'fixed';
+        overlay.style.left = '0';
+        overlay.style.top = '0';
+        overlay.style.right = '0';
+        overlay.style.bottom = '0';
+        overlay.style.background = 'rgba(0,0,0,0.35)';
+        overlay.style.zIndex = '10000';
+        overlay.style.display = 'none';
+
+        panel = document.createElement('div');
+        panel.style.position = 'fixed';
+        panel.style.left = '50%';
+        panel.style.top = '50%';
+        panel.style.transform = 'translate(-50%, -50%)';
+        panel.style.width = '92%';
+        panel.style.maxWidth = '860px';
+        panel.style.maxHeight = '80vh';
+        panel.style.overflow = 'auto';
+        panel.style.background = '#fff';
+        panel.style.borderRadius = '12px';
+        panel.style.boxShadow = '0 12px 36px rgba(0,0,0,0.18)';
+        panel.style.padding = '16px';
+        overlay.appendChild(panel);
+
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+        document.body.appendChild(overlay);
+    };
+
+    const open = () => {
+        ensureOverlay();
+        // 固定参数快照
+        const fixed = getProfitBaseInputs();
+        // 候选售价：按倍率从进货价推导并应用“9.8心理价”规则向上调整
+        // 倍率集合：1.5、1.8、2.0、2.1、2.2、2.3、2.4、2.5、2.6、2.7、2.8
+        const multipliers = [1.5, 1.8, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8];
+        const derived = multipliers
+            .map(m => fixed.costPrice * m)
+            .map(s => adjustToPsychPriceUp(s));
+        // 去重+升序
+        const prices = Array.from(new Set(derived.map(v => Number(v.toFixed(1)))))
+            .sort((a,b)=>a-b);
+        // 退货率/付费占比：沿用“批量利润率推演”弹窗的默认档位
+        const adRates = [0.00, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35];
+        const returnRates = [0.05, 0.08, 0.12, 0.15, 0.18, 0.20, 0.25, 0.28];
+        const state = { prices, adRates, returnRates, activeIndex: 0 };
+        panel.innerHTML = buildPanelContent(fixed, state);
+
+        const wire = () => {
+            const btnClose = panel.querySelector('#btnPriceExplorationClose');
+            if (btnClose) btnClose.addEventListener('click', close);
+
+            // 免佣联动：同步到利润页两个开关并触发重算
+            const toggle = panel.querySelector('#priceExpPlatformFreeToggle');
+            if (toggle) {
+                try {
+                    const topToggle = document.getElementById('profitPlatformFreeToggleTop');
+                    const mainToggle = document.getElementById('profitPlatformFreeToggle');
+                    const currentOn = !!(topToggle?.checked || mainToggle?.checked);
+                    toggle.checked = currentOn;
+                } catch (_) {}
+                toggle.addEventListener('change', () => {
+                    try {
+                        const topToggle = document.getElementById('profitPlatformFreeToggleTop');
+                        const mainToggle = document.getElementById('profitPlatformFreeToggle');
+                        if (topToggle) { topToggle.checked = toggle.checked; topToggle.dispatchEvent(new Event('change', { bubbles:true })); }
+                        else if (mainToggle) { mainToggle.checked = toggle.checked; mainToggle.dispatchEvent(new Event('change', { bubbles:true })); }
+                    } catch (_) {}
+                    // 同步后重绘（固定参数刷新）
+                    const fixed2 = getProfitBaseInputs();
+                    panel.innerHTML = buildPanelContent(fixed2, state);
+                    wire();
+                });
+            }
+
+            // 切换价格Chip重绘矩阵
+            panel.querySelectorAll('input[name="expPrice"]').forEach((r, idx) => {
+                r.addEventListener('change', () => {
+                    state.activeIndex = idx;
+                    const fixed2 = getProfitBaseInputs();
+                    panel.innerHTML = buildPanelContent(fixed2, state);
+                    wire();
+                });
+            });
+
+            // 导出CSV
+            const btnExport = panel.querySelector('#btnPriceExplorationExport');
+            if (btnExport) btnExport.addEventListener('click', () => {
+                try {
+                    const rows = [];
+                    // 表头
+                    rows.push(['价格', '退货率', ...state.adRates.map(a=>`付费${(a*100).toFixed(0)}%`), '保本ROI', '保本广告占比']);
+                    state.returnRates.forEach(rr => {
+                        const line = [];
+                        line.push(state.prices[state.activeIndex].toFixed(2));
+                        line.push((rr*100).toFixed(0)+'%');
+                        state.adRates.forEach(ar => {
+                            const r = computeProfitForPrice(getProfitBaseInputs(), state.prices[state.activeIndex], ar, rr);
+                            line.push(((r.profitRate*100)).toFixed(2)+'%');
+                        });
+                        const roiRes = calculateBreakevenROI({
+                            costPrice: fixed.costPrice,
+                            inputTaxRate: fixed.inputTaxRate,
+                            outputTaxRate: fixed.outputTaxRate,
+                            salesTaxRate: fixed.salesTaxRate,
+                            platformRate: fixed.platformRate,
+                            shippingCost: fixed.shippingCost,
+                            shippingInsurance: fixed.shippingInsurance,
+                            otherCost: fixed.otherCost,
+                            returnRate: rr,
+                            finalPrice: state.prices[state.activeIndex]
+                        });
+                        const roiText = isFinite(roiRes.breakevenROI) ? roiRes.breakevenROI.toFixed(2) : '∞';
+                        const adText = isFinite(roiRes.breakevenAdRate) ? (roiRes.breakevenAdRate*100).toFixed(2)+'%' : '-';
+                        line.push(roiText);
+                        line.push(adText);
+                        rows.push(line);
+                    });
+                    const csv = rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')).join('\n');
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = '价格推演.csv';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                } catch (e) { showToast(e && e.message ? e.message : '导出失败'); }
+            });
+        };
+        wire();
+        overlay.style.display = 'block';
+    };
+
+    const close = () => { if (overlay) overlay.style.display = 'none'; };
+
+    btn.addEventListener('click', () => {
         const profitTabActive = document.getElementById('profitTab')?.classList.contains('active');
         if (!profitTabActive) { showToast('请先切换到“利润计算”页'); return; }
         open();
