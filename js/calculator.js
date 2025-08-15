@@ -811,6 +811,8 @@ function calculate() {
 // 页面加载时的初始化
 window.addEventListener('load', () => {
     loadSavedInputs(); // 先加载保存的输入值
+    // 启动全局自动输入记忆（数字输入自动保存）
+    try { initAutoInputMemory(); } catch (e) { console.warn('初始化自动输入记忆失败:', e); }
     // 初始化免佣开关状态与事件
     try {
         initPlatformFreeToggles();
@@ -1725,8 +1727,8 @@ function initBatchProfitScenario() {
         // 新增 0%：观察"不投广告"情况下在不同退货率下的利润率
         // 付费占比：0%、10%、15%、20%、25%、30%、35%（以小数表示，按从小到大排序）
         const adRates = [0.00, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35];
-        // 新增退货率 5% 与 28% 两档 → 共 8 档：5、8、12、15、18、20、25、28（以小数表示）
-        const returnRates = [0.05, 0.08, 0.12, 0.15, 0.18, 0.20, 0.25, 0.28];
+        // 新增退货率 5%、8%、10%、12%、15%、18%、20%、25%、28（以小数表示）
+        const returnRates = [0.05, 0.08, 0.10, 0.12, 0.15, 0.18, 0.20, 0.25, 0.28];
 
         // 计算矩阵结果
         const rows = returnRates.map(rr => {
@@ -1884,8 +1886,8 @@ function initBatchProfitScenario() {
         // 新增 0%：观察"不投广告"情况下在不同退货率下的利润率
         // 付费占比：0%、10%、15%、20%、25%、30%、35%（以小数表示，按从小到大排序）
         const adRates = [0.00, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35];
-        // 新增退货率 5% 与 28% 两档 → 共 8 档：5、8、12、15、18、20、25、28（以小数表示）
-        const returnRates = [0.05, 0.08, 0.12, 0.15, 0.18, 0.20, 0.25, 0.28];
+        // 新增退货率 5%、8%、10%、12%、15%、18%、20%、25%、28（以小数表示）
+        const returnRates = [0.05, 0.08, 0.10, 0.12, 0.15, 0.18, 0.20, 0.25, 0.28];
 
         // 计算矩阵结果
         const rows = returnRates.map(rr => {
@@ -2233,33 +2235,69 @@ function initPriceExploration() {
         return computeProfitScenario(base, adRate, returnRate);
     };
 
-    // 构造或刷新弹窗内容
-    const buildPanelContent = (fixed, state) => {
-        const adRates = state.adRates;      // 小数数组
-        const returnRates = state.returnRates; // 小数数组
-        const priceCandidates = state.prices;  // 数字数组（含税）
+    // 计算“躺卖价”（保本最低售价）：仅考虑固定成本与税费，不投广告；
+    // 平台佣金按现有“免佣”开关决定是否计入（默认计入，免佣开启则为0）。
+    // 推导公式：
+    // 设有效销售率 e = 1 - R；平台佣金费率 pr，销项税率 st，平台佣金可抵扣进项税按 6% 抵扣
+    // 总成本 TC = 进货总成本(含开票成本) + 平台佣金 + 各项分摊固定成本 + 实缴税费
+    // 实缴税费 = 销项税 - (商品进项税 + 平台佣金进项税抵扣)
+    // 将售价 S 代入并整理，可得：
+    //   利润 P = S - TC = S*(1 - [ pr*(1-0.06) + st/(1+st) ]) - C0
+    //   其中 C0 = 进货价 + 开票成本 - 商品进项税 + (物流费+运费险+其他成本)/e
+    // 令 P = 0，可解得： S = C0 / (1 - [ pr*(1-0.06) + st/(1+st) ])
+    const computeLyingPrice = (fixed, returnRate) => {
+        try {
+            // 有效销售率，避免除以0
+            const effectiveRate = Math.max(1e-6, 1 - returnRate);
+            // 进货相关成本
+            const invoiceCost = fixed.costPrice * fixed.inputTaxRate;     // 开票成本
+            const purchaseVAT = fixed.costPrice * fixed.outputTaxRate;    // 商品进项税（可抵扣）
+            // 分摊固定成本（不可退回，需按有效销售率分摊）
+            const shippingCostEffective = fixed.shippingCost / effectiveRate;
+            const insuranceCostEffective = fixed.shippingInsurance / effectiveRate;
+            const otherCostEffective = fixed.otherCost / effectiveRate;
+            const fixedCostEffective = shippingCostEffective + insuranceCostEffective + otherCostEffective;
+            // 常数项 C0
+            const C0 = (fixed.costPrice + invoiceCost - purchaseVAT) + fixedCostEffective;
+            // 系数 a = pr*(1-0.06) + st/(1+st)
+            // 说明：与现有利润口径一致，平台佣金不按退货率分摊（可退回），但会产生6%进项税抵扣
+            // pr 取自固定参数（若免佣开关开启，则 pr 已为 0）
+            const pr = fixed.platformRate;
+            const st = fixed.salesTaxRate;
+            const a = pr * (1 - 0.06) + (st / (1 + st));
+            const denom = 1 - a;
+            if (!(denom > 0)) return Infinity; // 理论上无穷大/不可达保本
+            const S = C0 / denom;
+            return S;
+        } catch (_) {
+            return NaN;
+        }
+    };
 
-        // 价格选择器（Chip）：显示候选价与对应加价倍率，并保证内容在"胶囊气泡"内居中
-        const priceChips = priceCandidates.map((p,i)=>{
+    // 构造：候选价 Chips HTML
+    const buildPriceChipsHtml = (fixed, state) => {
+        return state.prices.map((p,i)=>{
             const mul = fixed.costPrice > 0 ? (p / fixed.costPrice) : NaN;
-            // 倍率展示：直接显示"多少倍"，例如 2.10倍
             const mulText = isFinite(mul) ? `${mul.toFixed(2)}倍` : '-';
             return `
-            <label style="display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 14px;border:2px solid ${i===state.activeIndex?'#3b82f6':'#e5e7eb'};border-radius:999px;cursor:pointer;background:${i===state.activeIndex?'#eff6ff':'#f3f4f6'};color:${i===state.activeIndex?'#1e40af':'#1f2937'};font-size:14px;line-height:1;font-weight:${i===state.activeIndex?'600':'400'};box-shadow:${i===state.activeIndex?'0 2px 8px rgba(59,130,246,0.15)':'none'};">
+            <label style="display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 14px;border:2px solid ${i===state.activeIndex?'#3b82f6':'#e5e7eb'};border-radius:999px;cursor:pointer;background:${i===state.activeIndex?'#3b82f6':'#f3f4f6'};color:${i===state.activeIndex?'#ffffff':'#1f2937'};font-size:14px;line-height:1;font-weight:${i===state.activeIndex?'600':'400'};box-shadow:${i===state.activeIndex?'0 2px 8px rgba(59,130,246,0.25)':'none'};">
                 <input type="radio" name="expPrice" value="${p}" ${i===state.activeIndex?'checked':''} style="display:none;">
                 <span>¥${p.toFixed(2)}（${mulText}）</span>
             </label>`;
         }).join(' ');
+    };
 
-        // 表头
+    // 构造：矩阵表格 HTML（仅表格内容，不含外层容器）
+    const buildPriceTableHtml = (fixed, state) => {
+        const adRates = state.adRates;
+        const returnRates = state.returnRates;
+        const priceCandidates = state.prices;
         const thead = `
             <tr>
                 <th style="position:sticky;left:0;background:#fff;z-index:2;border-bottom:1px solid #eee;text-align:left;padding:8px 10px;color:#666;font-weight:500;">退货率 \\ 付费占比</th>
                 ${adRates.map(a=>`<th style=\"border-bottom:1px solid #eee;padding:8px 10px;color:#333;font-weight:600;\">${(a*100).toFixed(0)}%</th>`).join('')}
                 <th style="border-bottom:1px solid #eee;padding:8px 10px;color:#333;font-weight:600; white-space:nowrap;">保本ROI/推广占比</th>
             </tr>`;
-
-        // 行渲染
         const rowsHtml = returnRates.map(rr => {
             const firstCol = `<td style=\"position:sticky;left:0;background:#fff;z-index:1;border-right:1px solid #f2f2f2;padding:8px 10px;color:#333;\">${(rr*100).toFixed(0)}%</td>`;
             const tds = adRates.map(ar => {
@@ -2269,10 +2307,10 @@ function initPriceExploration() {
                 const color = r.profitRate > 0 ? '#2ea44f' : (r.profitRate < 0 ? '#d32f2f' : '#555');
                 const bg = r.profitRate > 0 ? 'rgba(46,164,79,0.08)' : (r.profitRate < 0 ? 'rgba(211,47,47,0.08)' : 'transparent');
 
-                // 计算详细成本费用明细，用于 tooltip 展示（口径与计算逻辑保持一致）
+                // 计算明细：用于 tooltip 展示
                 const effectiveRate = 1 - rr;
-                const invoiceCost = fixed.costPrice * fixed.inputTaxRate; // 开票成本
-                const purchaseCost = fixed.costPrice + invoiceCost;       // 实际进货成本
+                const invoiceCost = fixed.costPrice * fixed.inputTaxRate;
+                const purchaseCost = fixed.costPrice + invoiceCost;
                 const platformFee = priceCandidates[state.activeIndex] * fixed.platformRate;
                 const adCost = priceCandidates[state.activeIndex] * ar;
                 const adCostEffective = adCost / effectiveRate;
@@ -2286,12 +2324,10 @@ function initPriceExploration() {
                 const totalVATDeduction = purchaseVAT + adVAT + (platformFee * 0.06);
                 const actualVAT = outputVAT - totalVATDeduction;
                 const totalCost = purchaseCost + platformFee + adCostEffective + shippingCostEffective + insuranceCostEffective + otherCostEffective + actualVAT;
-
                 const tooltipData = `售价：¥${priceCandidates[state.activeIndex].toFixed(2)}\n退货率：${(rr*100).toFixed(0)}%\n付费占比：${(ar*100).toFixed(0)}%\n\n成本明细：\n• 进货成本：¥${purchaseCost.toFixed(2)}\n• 平台佣金：¥${platformFee.toFixed(2)}\n• 广告费（分摊）：¥${adCostEffective.toFixed(2)}\n• 物流费（分摊）：¥${shippingCostEffective.toFixed(2)}\n• 运费险（分摊）：¥${insuranceCostEffective.toFixed(2)}\n• 其他成本（分摊）：¥${otherCostEffective.toFixed(2)}\n• 销项税：¥${outputVAT.toFixed(2)}\n• 进项抵扣：¥${totalVATDeduction.toFixed(2)}\n• 实际税负：¥${actualVAT.toFixed(2)}\n\n总成本：¥${totalCost.toFixed(2)}\n利润：¥${r.profit.toFixed(2)}\n利润率：${rate}%`;
 
-                return `<td class="price-exp-cell" data-tooltip="${tooltipData}" style="padding:8px 10px;text-align:right;color:${color};background:${bg};cursor:help;"><div style=\"font-weight:600;\">${rate}%</div><div style=\"font-size:12px;opacity:0.9;\">${profitText}</div></td>`;
+                return `<td class=\"price-exp-cell\" data-tooltip=\"${tooltipData}\" style=\"padding:8px 10px;text-align:right;color:${color};background:${bg};cursor:help;\"><div style=\\"font-weight:600;\\">${rate}%</div><div style=\\"font-size:12px;opacity:0.9;\\">${profitText}</div></td>`;
             }).join('');
-            // 保本阈值列：与付费占比无关，仅随退货率变化
             const roiRes = calculateBreakevenROI({
                 costPrice: fixed.costPrice,
                 inputTaxRate: fixed.inputTaxRate,
@@ -2309,21 +2345,61 @@ function initPriceExploration() {
             const extraCol = `<td style=\"padding:8px 10px;text-align:right;color:#333;\"><div style=\"font-weight:600;\">${roiText}</div><div style=\"font-size:12px;opacity:0.9;\">${adText}</div></td>`;
             return `<tr>${firstCol}${tds}${extraCol}</tr>`;
         }).join('');
+        return `<table style="border-collapse:separate;border-spacing:0;width:100%;min-width:520px;font-size:13px;"><thead style="position:sticky;top:0;background:#fff;">${thead}</thead><tbody>${rowsHtml}</tbody></table>`;
+    };
 
-        const table = `
-            <div class="batch-table-container" style="overflow:auto;max-height:56vh;border:1px solid #eee;border-radius:8px;">
-                <table style="border-collapse:separate;border-spacing:0;width:100%;min-width:520px;font-size:13px;">
-                    <thead style="position:sticky;top:0;background:#fff;">${thead}</thead>
-                    <tbody>${rowsHtml}</tbody>
-                </table>
-            </div>`;
+    // 构造：“躺卖价”表格 HTML（不投广告、仅固定成本+税费；行=退货率，列=保本售价与简单提示）
+    const buildLyingTableHtml = (fixed, state) => {
+        const returnRates = state.returnRates;
+        const thead = `
+            <tr>
+                <th style="position:sticky;left:0;background:#fff;z-index:2;border-bottom:1px solid #eee;text-align:left;padding:8px 10px;color:#666;font-weight:500;">退货率</th>
+                <th style="border-bottom:1px solid #eee;padding:8px 10px;color:#333;font-weight:600;">躺卖价（保本）</th>
+                <th style="border-bottom:1px solid #eee;padding:8px 10px;color:#333;font-weight:600; white-space:nowrap;">说明</th>
+            </tr>`;
+        const rowsHtml = returnRates.map(rr => {
+            const S = computeLyingPrice(fixed, rr);
+            const hasPrice = isFinite(S) && S > 0;
+            const priceText = hasPrice ? `¥ ${S.toFixed(2)}` : '—';
+            const firstCol = `<td style="position:sticky;left:0;background:#fff;z-index:1;border-right:1px solid #f2f2f2;padding:8px 10px;color:#333;">${(rr*100).toFixed(0)}%</td>`;
+            let tooltipData = '';
+            if (hasPrice) {
+                const effectiveRate = Math.max(1e-6, 1 - rr);
+                const invoiceCost = fixed.costPrice * fixed.inputTaxRate;
+                const purchaseCost = fixed.costPrice + invoiceCost;
+                const platformFee = S * fixed.platformRate;
+                const adCostEffective = 0;
+                const adVAT = 0;
+                const shippingCostEffective = fixed.shippingCost / effectiveRate;
+                const insuranceCostEffective = fixed.shippingInsurance / effectiveRate;
+                const otherCostEffective = fixed.otherCost / effectiveRate;
+                const netPrice = S / (1 + fixed.salesTaxRate);
+                const outputVAT = netPrice * fixed.salesTaxRate;
+                const purchaseVAT = fixed.costPrice * fixed.outputTaxRate;
+                const totalVATDeduction = purchaseVAT + adVAT + (platformFee * 0.06);
+                const actualVAT = outputVAT - totalVATDeduction;
+                const totalCost = purchaseCost + platformFee + adCostEffective + shippingCostEffective + insuranceCostEffective + otherCostEffective + actualVAT;
+                const profit = S - totalCost;
+                tooltipData = `保本售价：¥${S.toFixed(2)}\n退货率：${(rr*100).toFixed(0)}%\n\n成本明细：\n• 进货成本：¥${purchaseCost.toFixed(2)}\n• 平台佣金：¥${platformFee.toFixed(2)}\n• 广告费（分摊）：¥${adCostEffective.toFixed(2)}\n• 物流费（分摊）：¥${shippingCostEffective.toFixed(2)}\n• 运费险（分摊）：¥${insuranceCostEffective.toFixed(2)}\n• 其他成本（分摊）：¥${otherCostEffective.toFixed(2)}\n• 销项税：¥${outputVAT.toFixed(2)}\n• 进项抵扣：¥${totalVATDeduction.toFixed(2)}\n• 实际税负：¥${actualVAT.toFixed(2)}\n\n核对利润：¥${profit.toFixed(2)}`;
+            }
+            const priceCol = hasPrice
+                ? `<td class=\"price-exp-cell\" data-tooltip=\"${tooltipData}\" style=\"padding:8px 10px;text-align:right;color:#111;font-weight:700;cursor:help;\">${priceText}</td>`
+                : `<td style=\"padding:8px 10px;text-align:right;color:#999;\">${priceText}</td>`;
+            const tipCol = `<td style=\"padding:8px 10px;color:#666;\">不投广告；仅计算固定成本与税费口径；利润=0</td>`;
+            return `<tr>${firstCol}${priceCol}${tipCol}</tr>`;
+        }).join('');
+        return `<table style="border-collapse:separate;border-spacing:0;width:100%;min-width:420px;font-size:13px;"><thead style="position:sticky;top:0;background:#fff;">${thead}</thead><tbody>${rowsHtml}</tbody></table>`;
+    };
 
-        // 导出CSV按钮
-        const exportBtn = `<button id="btnPriceExplorationExport" class="batch-modal-btn" style="margin-left:8px;">导出CSV</button>`;
+    // 构造或刷新弹窗内容
+    const buildPanelContent = (fixed, state) => {
+        const chips = buildPriceChipsHtml(fixed, state);
+        const isLying = state.mode === 'lying';
+        const tableHtml = isLying ? buildLyingTableHtml(fixed, state) : buildPriceTableHtml(fixed, state);
 
         return `
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                <div style="font-weight:600;">价格推演</div>
+                <div style="font-weight:600;">${isLying ? '躺卖价（保本最低售价）' : '价格推演'}</div>
                 <div style="display:flex;gap:10px;align-items:center;">
                     <div class="switch-wrapper switch-chip" title="与"费用设置-平台费用-免佣"联动">
                         <span class="switch-label">免佣</span>
@@ -2332,23 +2408,26 @@ function initPriceExploration() {
                             <span class="slider"></span>
                         </label>
                     </div>
-                    ${exportBtn}
+                    <button id="btnPriceExpToggleLying" class="batch-modal-btn" style="margin-left:8px;">${isLying ? '返回矩阵' : '躺卖价'}</button>
+                    <button id="btnPriceExplorationExport" class="batch-modal-btn">导出CSV</button>
                     <button id="btnPriceExplorationClose" class="batch-modal-btn">关闭</button>
                 </div>
             </div>
-            <div style="margin-bottom:16px;">
-                <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-                    <span class="batch-badge emphasis" style="flex-shrink:0;">当前进货价：¥${fixed.costPrice.toFixed(2)}</span>
-                </div>
+            <div style="margin-bottom:16px;display:flex;flex-direction:column;gap:12px;">
                 <div style="display:flex;align-items:center;gap:12px;">
-                    <span class="batch-badge emphasis" style="flex-shrink:0;">含税售价候选：</span>
-                    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
-                        ${priceChips}
+                    <div style="display:inline-flex;align-items:center;gap:10px;background:#0b63ce;color:#fff;border-radius:999px;padding:6px 10px;">
+                        <span style="font-weight:600;">进货价：</span>
+                        <input type="number" id="priceExpCostPrice" value="${fixed.costPrice.toFixed(2)}" step="0.01" min="0.01" style="width:120px;padding:6px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.75);background:#eef2ff;color:#111;outline:none;font-weight:700;font-size:16px;">
                     </div>
                 </div>
+                ${isLying ? '' : `
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <span class="batch-badge emphasis" style="flex-shrink:0;">含税售价候选：</span>
+                    <div id="priceExpChips" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">${chips}</div>
+                </div>`}
             </div>
             <div class="batch-badges" style="margin-bottom:12px;">
-                <span class="batch-badge">平台佣金：${(fixed.platformRate*100).toFixed(1)}%</span>
+                <span class="batch-badge" id="badgePlatformRate">平台佣金：${(fixed.platformRate*100).toFixed(1)}%</span>
                 <span class="batch-badge">销项税率：${(fixed.salesTaxRate*100).toFixed(1)}%</span>
                 <span class="batch-badge">开票成本：${(fixed.inputTaxRate*100).toFixed(1)}%</span>
                 <span class="batch-badge">商品进项税率：${(fixed.outputTaxRate*100).toFixed(1)}%</span>
@@ -2356,8 +2435,8 @@ function initPriceExploration() {
                 <span class="batch-badge">运费险：¥${fixed.shippingInsurance.toFixed(2)}</span>
                 <span class="batch-badge">其他成本：¥${fixed.otherCost.toFixed(2)}</span>
             </div>
-            ${table}
-            <div style="margin-top:10px;color:#999;font-size:12px;">提示：绿色为盈利，红色为亏损。切换上方售价Chip可对比不同定价下的盈亏区间。</div>
+            <div id="priceExpTable" class="batch-table-container" style="overflow:auto;max-height:56vh;border:1px solid #eee;border-radius:8px;">${tableHtml}</div>
+            <div style="margin-top:10px;color:#999;font-size:12px;">${isLying ? '说明：不投广告，仅固定成本与税费口径；每个退货率对应的售价为保本点。' : '提示：绿色为盈利，红色为亏损。切换上方售价Chip可对比不同定价下的盈亏区间。'}</div>
         `;
     };
 
@@ -2398,6 +2477,17 @@ function initPriceExploration() {
         ensureOverlay();
         // 固定参数快照
         const fixed = getProfitBaseInputs();
+        // 优先使用已保存的弹窗进货价（记忆值），若不存在则使用利润页当前进货价
+        try {
+            const saved = localStorage.getItem('priceCalculatorInputs');
+            if (saved) {
+                const obj = JSON.parse(saved);
+                const remembered = parseFloat(obj.priceExpCostPrice);
+                if (isFinite(remembered) && remembered > 0) {
+                    fixed.costPrice = remembered;
+                }
+            }
+        } catch (_) {}
         // 候选售价：按倍率从进货价推导并应用"9.8心理价"规则向上调整
         // 倍率集合：1.5、1.8、2.0、2.1、2.2、2.3、2.4、2.5、2.6、2.7、2.8
         const multipliers = [1.5, 1.8, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8];
@@ -2409,8 +2499,8 @@ function initPriceExploration() {
             .sort((a,b)=>a-b);
         // 退货率/付费占比：沿用"批量利润率推演"弹窗的默认档位
         const adRates = [0.00, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35];
-        const returnRates = [0.05, 0.08, 0.12, 0.15, 0.18, 0.20, 0.25, 0.28];
-        const state = { prices, adRates, returnRates, activeIndex: 0 };
+        const returnRates = [0.05, 0.08, 0.10, 0.12, 0.15, 0.18, 0.20, 0.25, 0.28];
+        const state = { prices, adRates, returnRates, activeIndex: 0, mode: 'matrix' };
         panel.innerHTML = buildPanelContent(fixed, state);
 
         const wire = () => {
@@ -2433,22 +2523,150 @@ function initPriceExploration() {
                         if (topToggle) { topToggle.checked = toggle.checked; topToggle.dispatchEvent(new Event('change', { bubbles:true })); }
                         else if (mainToggle) { mainToggle.checked = toggle.checked; mainToggle.dispatchEvent(new Event('change', { bubbles:true })); }
                     } catch (_) {}
-                    // 同步后重绘（固定参数刷新）
+                    // 同步后根据最新参数，局部重绘 chips 与表格
+                    // 关键修复：若弹窗内手动改了进货价，需用弹窗内的最新值覆写，而不是回落到页面默认值
                     const fixed2 = getProfitBaseInputs();
-                    panel.innerHTML = buildPanelContent(fixed2, state);
-                    wire();
+                    const costInput = panel.querySelector('#priceExpCostPrice');
+                    const currentCostPrice = costInput ? parseFloat(costInput.value) : fixed2.costPrice;
+                    if (isFinite(currentCostPrice) && currentCostPrice > 0) fixed2.costPrice = currentCostPrice;
+                    const chipsEl = panel.querySelector('#priceExpChips');
+                    const tableEl = panel.querySelector('#priceExpTable');
+                    const badge = panel.querySelector('#badgePlatformRate');
+                    if (chipsEl) chipsEl.innerHTML = buildPriceChipsHtml(fixed2, state);
+                    if (tableEl) tableEl.innerHTML = (state.mode === 'lying' ? buildLyingTableHtml(fixed2, state) : buildPriceTableHtml(fixed2, state));
+                    if (badge) badge.textContent = `平台佣金：${(fixed2.platformRate*100).toFixed(1)}%`;
                 });
             }
 
-            // 切换价格Chip重绘矩阵
-            panel.querySelectorAll('input[name="expPrice"]').forEach((r, idx) => {
-                r.addEventListener('change', () => {
-                    state.activeIndex = idx;
+            // 候选价：使用事件委托，避免替换DOM导致监听丢失
+            const chipsWrap = panel.querySelector('#priceExpChips');
+            if (chipsWrap) {
+                chipsWrap.addEventListener('change', (e) => {
+                    const target = e.target;
+                    if (!(target && target.name === 'expPrice')) return;
+                    const value = parseFloat(target.value);
+                    const idx = state.prices.findIndex(p => Number(p.toFixed(2)) === Number(value.toFixed(2)));
+                    if (idx >= 0) state.activeIndex = idx;
+                    
+                    // 获取弹窗内最新的进货价，而不是页面上的默认值
+                    const costInput = panel.querySelector('#priceExpCostPrice');
+                    const currentCostPrice = costInput ? parseFloat(costInput.value) : fixed.costPrice;
                     const fixed2 = getProfitBaseInputs();
-                    panel.innerHTML = buildPanelContent(fixed2, state);
-                    wire();
+                    fixed2.costPrice = currentCostPrice; // 使用弹窗内的最新进货价
+                    
+                    // 局部更新 chips 与 表格
+                    chipsWrap.innerHTML = buildPriceChipsHtml(fixed2, state);
+                    const tableEl = panel.querySelector('#priceExpTable');
+                    if (tableEl) tableEl.innerHTML = (state.mode === 'lying' ? buildLyingTableHtml(fixed2, state) : buildPriceTableHtml(fixed2, state));
+                    const badge = panel.querySelector('#badgePlatformRate');
+                    if (badge) badge.textContent = `平台佣金：${(fixed2.platformRate*100).toFixed(1)}%`;
                 });
+            }
+
+            // 导出CSV
+            const btnExport = panel.querySelector('#btnPriceExplorationExport');
+            if (btnExport) btnExport.addEventListener('click', () => {
+                try {
+                    const rows = [];
+                    if (state.mode === 'lying') {
+                        // 躺卖价模式导出：退货率, 躺卖价（不投广告）
+                        const fixedCsv = getProfitBaseInputs();
+                        // 读取弹窗内最新进货价
+                        const costInput = panel.querySelector('#priceExpCostPrice');
+                        const currentCostPrice = costInput ? parseFloat(costInput.value) : fixedCsv.costPrice;
+                        fixedCsv.costPrice = isFinite(currentCostPrice) && currentCostPrice > 0 ? currentCostPrice : fixedCsv.costPrice;
+                        rows.push(['退货率', '躺卖价（保本，未投广告）']);
+                        state.returnRates.forEach(rr => {
+                            const s = computeLyingPrice(fixedCsv, rr);
+                            rows.push([(rr*100).toFixed(0)+'%', isFinite(s) ? s.toFixed(2) : '—']);
+                        });
+                    } else {
+                        // 矩阵模式导出
+                        rows.push(['价格', '退货率', ...state.adRates.map(a=>`付费${(a*100).toFixed(0)}%`), '保本ROI', '保本广告占比']);
+                        state.returnRates.forEach(rr => {
+                            const line = [];
+                            line.push(state.prices[state.activeIndex].toFixed(2));
+                            line.push((rr*100).toFixed(0)+'%');
+                            state.adRates.forEach(ar => {
+                                const r = computeProfitForPrice(getProfitBaseInputs(), state.prices[state.activeIndex], ar, rr);
+                                line.push(((r.profitRate*100)).toFixed(2)+'%');
+                            });
+                            const fixedCsv = getProfitBaseInputs();
+                            const roiRes = calculateBreakevenROI({
+                                costPrice: fixedCsv.costPrice,
+                                inputTaxRate: fixedCsv.inputTaxRate,
+                                outputTaxRate: fixedCsv.outputTaxRate,
+                                salesTaxRate: fixedCsv.salesTaxRate,
+                                platformRate: fixedCsv.platformRate,
+                                shippingCost: fixedCsv.shippingCost,
+                                shippingInsurance: fixedCsv.shippingInsurance,
+                                otherCost: fixedCsv.otherCost,
+                                returnRate: rr,
+                                finalPrice: state.prices[state.activeIndex]
+                            });
+                            const roiText = isFinite(roiRes.breakevenROI) ? roiRes.breakevenROI.toFixed(2) : '∞';
+                            const adText = isFinite(roiRes.breakevenAdRate) ? (roiRes.breakevenAdRate*100).toFixed(2)+'%' : '-';
+                            line.push(roiText);
+                            line.push(adText);
+                            rows.push(line);
+                        });
+                    }
+                    const csv = rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')).join('\n');
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = '价格推演.csv';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                } catch (e) { showToast(e && e.message ? e.message : '导出失败'); }
             });
+
+            // “躺卖价”切换按钮：一键切换矩阵/躺卖模式
+            const btnToggle = panel.querySelector('#btnPriceExpToggleLying');
+            if (btnToggle) btnToggle.addEventListener('click', () => {
+                // 读取弹窗内最新的进货价并带入
+                const fixed2 = getProfitBaseInputs();
+                const costInput = panel.querySelector('#priceExpCostPrice');
+                const currentCostPrice = costInput ? parseFloat(costInput.value) : fixed2.costPrice;
+                if (isFinite(currentCostPrice) && currentCostPrice > 0) fixed2.costPrice = currentCostPrice;
+                state.mode = state.mode === 'lying' ? 'matrix' : 'lying';
+                panel.innerHTML = buildPanelContent(fixed2, state);
+                wire();
+            });
+
+            // 进货价编辑：实时更新候选价与矩阵（防抖，且仅局部重绘，保证输入不失焦）
+            (function attachCostInputRealtime(){
+                const costInput = panel.querySelector('#priceExpCostPrice');
+                if (!costInput) return;
+                let timer = null;
+                const recalc = () => {
+                    try {
+                        const newCost = parseFloat(costInput.value);
+                        if (!isFinite(newCost) || newCost <= 0) return;
+                        const fixed2 = getProfitBaseInputs();
+                        fixed2.costPrice = newCost;
+                        const multipliers = [1.5, 1.8, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8];
+                        const derived = multipliers.map(m => newCost * m).map(s => adjustToPsychPriceUp(s));
+                        const newPrices = Array.from(new Set(derived.map(v => Number(v.toFixed(1))))).sort((a,b)=>a-b);
+                        state.prices = newPrices;
+                        state.activeIndex = 0;
+                        // 局部更新 chips 与 表格，避免输入框失焦
+                        const chipsEl = panel.querySelector('#priceExpChips');
+                        const tableEl = panel.querySelector('#priceExpTable');
+                        const badge = panel.querySelector('#badgePlatformRate');
+                        if (chipsEl) chipsEl.innerHTML = buildPriceChipsHtml(fixed2, state);
+                        if (tableEl) tableEl.innerHTML = (state.mode === 'lying' ? buildLyingTableHtml(fixed2, state) : buildPriceTableHtml(fixed2, state));
+                        if (badge) badge.textContent = `平台佣金：${(fixed2.platformRate*100).toFixed(1)}%`;
+                    } catch(_) {}
+                };
+                costInput.addEventListener('input', () => {
+                    if (timer) clearTimeout(timer);
+                    timer = setTimeout(recalc, 250);
+                });
+            })();
 
             // 悬浮提示：委托到表格容器，悬停即显
             (function attachTooltipDelegation(){
@@ -2505,52 +2723,6 @@ function initPriceExploration() {
                 container.addEventListener('mousemove', onMove);
                 container.addEventListener('mouseleave', onLeave);
             })();
-
-            // 导出CSV
-            const btnExport = panel.querySelector('#btnPriceExplorationExport');
-            if (btnExport) btnExport.addEventListener('click', () => {
-                try {
-                    const rows = [];
-                    // 表头
-                    rows.push(['价格', '退货率', ...state.adRates.map(a=>`付费${(a*100).toFixed(0)}%`), '保本ROI', '保本广告占比']);
-                    state.returnRates.forEach(rr => {
-                        const line = [];
-                        line.push(state.prices[state.activeIndex].toFixed(2));
-                        line.push((rr*100).toFixed(0)+'%');
-                        state.adRates.forEach(ar => {
-                            const r = computeProfitForPrice(getProfitBaseInputs(), state.prices[state.activeIndex], ar, rr);
-                            line.push(((r.profitRate*100)).toFixed(2)+'%');
-                        });
-                        const roiRes = calculateBreakevenROI({
-                            costPrice: fixed.costPrice,
-                            inputTaxRate: fixed.inputTaxRate,
-                            outputTaxRate: fixed.outputTaxRate,
-                            salesTaxRate: fixed.salesTaxRate,
-                            platformRate: fixed.platformRate,
-                            shippingCost: fixed.shippingCost,
-                            shippingInsurance: fixed.shippingInsurance,
-                            otherCost: fixed.otherCost,
-                            returnRate: rr,
-                            finalPrice: state.prices[state.activeIndex]
-                        });
-                        const roiText = isFinite(roiRes.breakevenROI) ? roiRes.breakevenROI.toFixed(2) : '∞';
-                        const adText = isFinite(roiRes.breakevenAdRate) ? (roiRes.breakevenAdRate*100).toFixed(2)+'%' : '-';
-                        line.push(roiText);
-                        line.push(adText);
-                        rows.push(line);
-                    });
-                    const csv = rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')).join('\n');
-                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = '价格推演.csv';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                } catch (e) { showToast(e && e.message ? e.message : '导出失败'); }
-            });
         };
         wire();
         overlay.style.display = 'block';
@@ -2733,4 +2905,35 @@ function initPlatformFreeToggles() {
             handleProfitToggleChange(toggleProfitTop.checked);
         });
     }
+}
+
+// 自动保存单个输入值到 localStorage（无提示版）
+function autoSaveSingleInput(inputId, value) {
+	try {
+		const key = 'priceCalculatorInputs';
+		let saved = localStorage.getItem(key);
+		let obj = {};
+		try { obj = saved ? JSON.parse(saved) : {}; } catch (_) { obj = {}; }
+		obj[inputId] = value;
+		localStorage.setItem(key, JSON.stringify(obj));
+	} catch (e) {
+		console.warn('自动保存失败:', inputId, e);
+	}
+}
+
+// 初始化全站输入记忆：
+// - 对所有 number 类型输入框进行自动保存（页面与弹窗都生效）
+// - 采用捕获阶段监听，保证对子节点与动态弹窗输入同样有效
+function initAutoInputMemory() {
+	const onNumberInput = (e) => {
+		const el = e.target;
+		if (!el || !(el.tagName === 'INPUT')) return;
+		if ((el.type || '').toLowerCase() !== 'number') return;
+		if (!el.id) return;
+		autoSaveSingleInput(el.id, el.value);
+	};
+	// input 事件：实时写入
+	document.addEventListener('input', onNumberInput, true);
+	// change 兜底：防止某些浏览器仅在 change 才更新值
+	document.addEventListener('change', onNumberInput, true);
 }
