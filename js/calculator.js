@@ -565,7 +565,7 @@ function calculatePrices(purchaseCost, salesCost, inputs) {
     
     // 分子：C（进货成本）- 商品进项税 + F_不可退回/(1-R)
     // 说明：商品进项税为与售价无关的固定抵扣，应在联立时作为常数项体现在分子，
-    // 否则会导致解出的建议售价在带入利润页时多出“进货不含税×商品税率”的利润。
+    // 否则会导致解出的建议售价在带入利润页时多出"进货不含税×商品税率"的利润。
     const numeratorFinal = purchaseCost.effectiveCost - purchaseCost.purchaseVAT + fixedCosts;
     // 分母：1 - 平台费 - 税占比 - 目标利润率 - 广告费分摊占比 + 广告费可抵扣进项税占比 + 平台佣金进项税抵扣占比
     const denominatorFinal = 1 - inputs.platformRate - taxFactorOnFinal - inputs.targetProfitRate - adFactorEffective + adVatCreditFactor + platformVatCreditFactor;
@@ -584,7 +584,7 @@ function calculatePrices(purchaseCost, salesCost, inputs) {
     
     // 6. 计算实际税负（销项税 - 进项税）
     // 实缴增值税口径：销项税 - (商品进项税 + 广告费进项税 + 平台佣金进项税)
-    // 注：虽然在联立分子里已经扣除了“商品进项税”作为常数项，但实际缴税仍需抵扣商品进项税，
+    // 注：虽然在联立分子里已经扣除了"商品进项税"作为常数项，但实际缴税仍需抵扣商品进项税，
     // 才能保证求解出的含税价在目标利润率下利润=F*t（t=0时利润为0）。
     const totalVATDeduction = purchaseCost.purchaseVAT + adVAT + (platformFee * VAT_RATE);
     const actualVAT = outputVAT - totalVATDeduction;
@@ -622,11 +622,11 @@ function calculatePrices(purchaseCost, salesCost, inputs) {
 }
 
 /**
- * 计算“保本ROI”阈值（GMV ÷ 广告费），在利润=0时所需的最低ROI。
+ * 计算"保本ROI"阈值（GMV ÷ 广告费），在利润=0时所需的最低ROI。
  *
  * 定义与假设（与本项目口径一致）：
  * - ROI 定义：GMV(含税售价) / 广告费（按全店付费占比计提的广告总额）
- * - 广告费在利润模型中视为“不可退回成本”，按有效销售率(1-退货率)分摊；
+ * - 广告费在利润模型中视为"不可退回成本"，按有效销售率(1-退货率)分摊；
  * - 广告费可获得 6% 进项税抵扣；平台佣金可获得 6% 进项税抵扣；
  * - 销项税占比 = 销项税率 / (1 + 销项税率)
  * - 利润=0 的联立：
@@ -833,17 +833,17 @@ window.addEventListener('load', () => {
         initBreakevenROITooltip();
     } catch (e) {}
 
-    // 初始化“费用设置”中的快速调整拉杆
+    // 初始化"费用设置"中的快速调整拉杆
     try {
         initQuickSliders();
     } catch (e) {}
 
-    // 初始化“批量利润率推演”功能
+    // 初始化"批量利润率推演"功能
     try {
         initBatchProfitScenario();
     } catch (e) {}
 
-    // 初始化“价格推演”功能
+    // 初始化"价格推演"功能
     try {
         initPriceExploration();
     } catch (e) {}
@@ -897,7 +897,7 @@ window.addEventListener('load', () => {
         });
     });
 
-    // 标价页：对内部新增元素使用事件委托，保证动态“满减档位行/勾选”等也能触发实时计算
+    // 标价页：对内部新增元素使用事件委托，保证动态"满减档位行/勾选"等也能触发实时计算
     try {
         const lpTab = document.getElementById('listpriceTab');
         if (lpTab) {
@@ -914,13 +914,13 @@ window.addEventListener('load', () => {
 
 /**
  * 标价计算核心逻辑
- * 目标：给定“目标到手价 P_final”，在可叠加优惠（单品立减 r、满减 T→O）下，反推页面标价 S。
+ * 目标：给定"目标到手价 P_final"，在可叠加优惠（单品立减 r、满减 T→O）下，反推页面标价 S。
  * 规则：
  * - 单品立减：按比例 r 对标价 S 打折，得到 S1 = S × (1 - r)
  * - 满减：对 S1 按可触发的最大档位扣减固定金额 off，使到手价 P = S1 - off
  * - 叠加顺序：先单品立减，再满减
  * - 反解：对于给定 r 与满减档集合 {(threshold_i, off_i)}，我们要找到 S 使得 P ≈ 目标价
- *   做法：对每个 r，枚举可能的“触发满减档位集合”，将 off 视为常数，解 S = (P + off) / (1 - r)，再检查是否满足 S1 >= threshold_i 的触发条件。
+ *   做法：对每个 r，枚举可能的"触发满减档位集合"，将 off 视为常数，解 S = (P + off) / (1 - r)，再检查是否满足 S1 >= threshold_i 的触发条件。
  *   取满足条件且 S>0 的解中，到手价误差最小的一个解，作为该 r 下的建议标价。
  */
 function calculateListPrice() {
@@ -1054,7 +1054,7 @@ function removeTierRow(btn) {
 }
 
 /**
- * 为“建议标价”列添加悬浮说明：展示给定标价在各立减档位下的到手价
+ * 为"建议标价"列添加悬浮说明：展示给定标价在各立减档位下的到手价
  * 档位固定为 [10%, 12%, 15%, 18%, 20%]
  */
 function initSuggestPriceTooltip(tiers) {
@@ -1110,7 +1110,7 @@ function initSuggestPriceTooltip(tiers) {
         const el = e.target.closest('.lp-price-row');
         if (!el || !container.contains(el)) return;
         const S = parseFloat(el.getAttribute('data-s'));
-        if (!isFinite(S) || S <= 0) return;
+        if (!isFinite(S) || S <= 0) return hide();
         show(buildHtml(S), e.clientX, e.clientY);
     };
     const onMove = (e) => {
@@ -1139,9 +1139,9 @@ function initSuggestPriceTooltip(tiers) {
 
 
 /**
- * 初始化“营销费用占比、预计退货率”的快速滑杆，支持与数值输入双向同步，并触发实时重算
+ * 初始化"营销费用占比、预计退货率"的快速滑杆，支持与数值输入双向同步，并触发实时重算
  * 设计要点：
- * - 两个滑杆仅在利润页“费用设置”模块内；与 `#profitAdRate`、`#profitReturnRate` 双向联动
+ * - 两个滑杆仅在利润页"费用设置"模块内；与 `#profitAdRate`、`#profitReturnRate` 双向联动
  * - 统一范围 0~100，步进 0.1；显示当前值百分比
  * - 变更后：更新对应 number 输入 → 保存到 localStorage → 触发利润实时计算
  */
@@ -1281,7 +1281,7 @@ function initShareButtons() {
             wrapper.appendChild(concWrap);
         }
 
-        // 剪裁结果详情中“步骤/详细成本分析”部分
+        // 剪裁结果详情中"步骤/详细成本分析"部分
         try {
             // 两个模式中，步骤区域都在 .calculation-steps 内，统一移除
             cloneResultOnly.querySelectorAll('.calculation-steps').forEach(node => node.remove());
@@ -1403,7 +1403,7 @@ function showToast(message) {
 }
 
 /**
- * 初始化“保本ROI”卡片的浮动说明窗（桌面端hover，移动端点击）
+ * 初始化"保本ROI"卡片的浮动说明窗（桌面端hover，移动端点击）
  * - 桌面端：悬停显示，移出隐藏
  * - 移动端：点击卡片打开，点击遮罩或关闭按钮关闭
  */
@@ -1465,11 +1465,11 @@ function initBreakevenROITooltip() {
 		// 服务业进项税率 v（本系统当前取 6%）；用于展示一般形式：(1 - v) 与 v×平台费
 		const v = 0.06;
 		const D = 1 - platformRate - tOnFinal + v * platformRate;
-		// 增补：在浮窗顶部给出“保本 ROI”的通俗定义，便于非技术同学理解
+		// 增补：在浮窗顶部给出"保本 ROI"的通俗定义，便于非技术同学理解
 		return (
 			'<div>'+
 			'<div style="margin-bottom:6px; color:#333;">保本 ROI 的含义是：在考虑退货、平台扣点、销项税、进项抵扣、固定成本之后，利润刚好为 0 时的 ROI。</div>'+
-			// 先给出一行“总公式”（一般形式，含税口径）：由 a* = (E/(1−v))×(D − B/P) 与 ROI* = E/a* 推得
+			// 先给出一行"总公式"（一般形式，含税口径）：由 a* = (E/(1−v))×(D − B/P) 与 ROI* = E/a* 推得
 			'<div style="margin-bottom:4px; color:#111;">通用计算公式（含税售价 P）：</div>'+
 			'<div style="margin-left:12px; margin-bottom:8px;">ROI* = (1 − v) ÷ ( D − B / P )</div>'+
 			'<div style="margin-bottom:6px; color:#111;">公式与中间量（ROI=有效GMV÷广告费）：</div>'+
@@ -1650,7 +1650,7 @@ function collectShareContext() {
         const hintEl = document.querySelector('.final-price + .calculation-process');
         const profitRateDisplay = (function(){
             try {
-                // 在价格构成分析卡片里查找“预期利润”区块百分比
+                // 在价格构成分析卡片里查找"预期利润"区块百分比
                 const profitPercent = hintEl?.querySelector('.composition-item.profit .item-percent')?.textContent?.trim();
                 return profitPercent ? `预期利润率 ${profitPercent}` : '';
             } catch(_) { return ''; }
@@ -1702,7 +1702,7 @@ function collectShareContext() {
 /**
  * 批量利润率推演：初始化入口按钮与浮窗
  * 功能目标：
- * - 在“利润计算”页基于当前参数，批量推演不同“全店付费占比×预计退货率”组合下的利润率
+ * - 在"利润计算"页基于当前参数，批量推演不同"全店付费占比×预计退货率"组合下的利润率
  * - 仅枚举两类档位：
  *   • 全店付费占比：15%、20%、25%、30%
  *   • 预计退货率：8%、12%、15%、18%、20%、25%
@@ -1722,7 +1722,7 @@ function initBatchProfitScenario() {
         const base = overrideBase || getProfitBaseInputs();
 
         // 固定档位（按需求枚举）
-        // 新增 0%：观察“不投广告”情况下在不同退货率下的利润率
+        // 新增 0%：观察"不投广告"情况下在不同退货率下的利润率
         // 付费占比：0%、10%、15%、20%、25%、30%、35%（以小数表示，按从小到大排序）
         const adRates = [0.00, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35];
         // 新增退货率 5% 与 28% 两档 → 共 8 档：5、8、12、15、18、20、25、28（以小数表示）
@@ -1743,7 +1743,7 @@ function initBatchProfitScenario() {
         });
 
         // 渲染表格（使用内联样式，避免侵入全局CSS）
-        // 价格相关即时指标：加价倍率、毛利率（按“仅基于价格”的直观口径计算）
+        // 价格相关即时指标：加价倍率、毛利率（按"仅基于价格"的直观口径计算）
         const markup = (base.costPrice > 0 && base.actualPrice > 0) ? (base.actualPrice / base.costPrice) : NaN;
         const grossMargin = (base.actualPrice > 0 && base.costPrice > 0) ? ((base.actualPrice - base.costPrice) / base.actualPrice) : NaN;
         const markupText = isFinite(markup) ? markup.toFixed(2) : '-';
@@ -1776,7 +1776,7 @@ function initBatchProfitScenario() {
             <tr>
                 <th style="position:sticky;left:0;background:#fff;z-index:2;border-bottom:1px solid #eee;text-align:left;padding:8px 10px;color:#666;font-weight:500;">退货率 \\ 付费占比</th>
                 ${adRates.map(a => `<th style=\"border-bottom:1px solid #eee;padding:8px 10px;color:#333;font-weight:600;\">${(a*100).toFixed(0)}%</th>`).join('')}
-                <!-- 新增列表头：每行（按退货率）对应的“保本ROI/保本推广占比”，与付费占比无关，仅受退货率影响 -->
+                <!-- 新增列表头：每行（按退货率）对应的"保本ROI/保本推广占比"，与付费占比无关，仅受退货率影响 -->
                 <th style="border-bottom:1px solid #eee;padding:8px 10px;color:#333;font-weight:600; white-space:nowrap;">保本ROI/推广占比</th>
             </tr>`;
 
@@ -1790,12 +1790,12 @@ function initBatchProfitScenario() {
                 const profitText = `¥ ${c.profit.toFixed(2)}`;
                 const color = c.profitRate > 0 ? '#2ea44f' : (c.profitRate < 0 ? '#d32f2f' : '#555');
                 const bg = c.profitRate > 0 ? 'rgba(46,164,79,0.08)' : (c.profitRate < 0 ? 'rgba(211,47,47,0.08)' : 'transparent');
-                // 重点标注：当利润率处于 [9.5%, 10.5%]（含）范围内，视为“最优解候选”
-                // 视觉改为“前置小圆标”放在数字前，避免遮挡 %
+                // 重点标注：当利润率处于 [9.5%, 10.5%]（含）范围内，视为"最优解候选"
+                // 视觉改为"前置小圆标"放在数字前，避免遮挡 %
                 const isTarget = (c.profitRate >= 0.095 && c.profitRate <= 0.105);
                 const targetStyle = '';
                 const targetPrefix = isTarget ? '<span style="display:inline-flex;width:16px;height:16px;border-radius:999px;background:#0ea5e9;color:#fff;align-items:center;justify-content:center;font-size:11px;line-height:1;">✓</span>' : '';
-                // 计算“保本 ROI / 保本付费占比”（受退货率影响）
+                // 计算"保本 ROI / 保本付费占比"（受退货率影响）
                 const roiRes = calculateBreakevenROI({
                     costPrice: base.costPrice,
                     inputTaxRate: base.inputTaxRate,
@@ -1857,7 +1857,7 @@ function initBatchProfitScenario() {
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
                 <div style="font-weight:600;">批量利润率推演</div>
                 <div style="display:flex;gap:10px;align-items:center;">
-                    <div class="switch-wrapper switch-chip" title="与“费用设置-平台费用-免佣”联动">
+                    <div class="switch-wrapper switch-chip" title="与"费用设置-平台费用-免佣"联动">
                         <span class="switch-label">免佣</span>
                         <label class="switch">
                             <input type="checkbox" id="batchPlatformFreeToggle">
@@ -1868,7 +1868,7 @@ function initBatchProfitScenario() {
                     <button id="btnBatchScenarioClose" class="batch-modal-btn">关闭</button>
                 </div>
             </div>
-            <div style="color:#666;font-size:12px;margin-bottom:6px;">仅变动“全店付费占比”与“预计退货率”，其余参数沿用当前利润页设置：</div>
+            <div style="color:#666;font-size:12px;margin-bottom:6px;">仅变动"全店付费占比"与"预计退货率"，其余参数沿用当前利润页设置：</div>
             ${headerBadges}
             ${table}
             <div style="margin-top:10px;color:#999;font-size:12px;">提示：绿色为盈利，红色为亏损。单元格悬停可查看对应组合的利润金额与利润率。</div>
@@ -1881,7 +1881,7 @@ function initBatchProfitScenario() {
      */
     const buildProfitTable = (base) => {
         // 固定档位（按需求枚举）
-        // 新增 0%：观察“不投广告”情况下在不同退货率下的利润率
+        // 新增 0%：观察"不投广告"情况下在不同退货率下的利润率
         // 付费占比：0%、10%、15%、20%、25%、30%、35%（以小数表示，按从小到大排序）
         const adRates = [0.00, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35];
         // 新增退货率 5% 与 28% 两档 → 共 8 档：5、8、12、15、18、20、25、28（以小数表示）
@@ -1920,7 +1920,7 @@ function initBatchProfitScenario() {
                 const profitText = `¥ ${c.profit.toFixed(2)}`;
                 const color = c.profitRate > 0 ? '#2ea44f' : (c.profitRate < 0 ? '#d32f2f' : '#555');
                 const bg = c.profitRate > 0 ? 'rgba(46,164,79,0.08)' : (c.profitRate < 0 ? 'rgba(211,47,47,0.08)' : 'transparent');
-                // 重点标注范围：[9.5%, 10.5%]（含），改为“数字前小圆标”避免遮挡
+                // 重点标注范围：[9.5%, 10.5%]（含），改为"数字前小圆标"避免遮挡
                 const isTarget = (c.profitRate >= 0.095 && c.profitRate <= 0.105);
                 const targetStyle = '';
                 const targetPrefix = isTarget ? '<span style="display:inline-flex;width:16px;height:16px;border-radius:999px;background:#0ea5e9;color:#fff;align-items:center;justify-content:center;font-size:11px;line-height:1;">✓</span>' : '';
@@ -1934,7 +1934,7 @@ function initBatchProfitScenario() {
                         </td>`;
             }).join('');
             // 新增列（同步版本）：仅按本行退货率计算一次保本ROI/保本推广占比
-            // 中文注释：本列不依赖“付费占比”，数值随退货率变化
+            // 中文注释：本列不依赖"付费占比"，数值随退货率变化
             const rowBreakeven = (function(){
                 try{
                     const res = calculateBreakevenROI({
@@ -2013,7 +2013,7 @@ function initBatchProfitScenario() {
             const btnRefresh = panel.querySelector('#btnBatchScenarioRefresh');
             if (btnRefresh) btnRefresh.addEventListener('click', () => {
                 try {
-                    // 刷新时优先保留弹窗里的“进货价/实际售价”输入，不回退到外部输入
+                    // 刷新时优先保留弹窗里的"进货价/实际售价"输入，不回退到外部输入
                     const base = getProfitBaseInputs();
                     const ci = panel.querySelector('#batchCostPrice');
                     const ai = panel.querySelector('#batchActualPrice');
@@ -2091,7 +2091,7 @@ function initBatchProfitScenario() {
             const costInput = panel.querySelector('#batchCostPrice');
             const actualInput = panel.querySelector('#batchActualPrice');
             
-            // 即时更新“加价倍率/毛利率”徽章（仅更新文本，不重绘DOM，保证不失焦）
+            // 即时更新"加价倍率/毛利率"徽章（仅更新文本，不重绘DOM，保证不失焦）
             const updateHeaderMetrics = () => {
                 try {
                     const cost = parseFloat(costInput?.value || '');
@@ -2128,7 +2128,7 @@ function initBatchProfitScenario() {
             };
             
             const onInlineChange = () => {
-                // 先即时更新头部“加价倍率/毛利率”展示
+                // 先即时更新头部"加价倍率/毛利率"展示
                 updateHeaderMetrics();
                 const cost = parseFloat(costInput?.value || '');
                 const price = parseFloat(actualInput?.value || '');
@@ -2169,7 +2169,7 @@ function initBatchProfitScenario() {
                             mainToggle.dispatchEvent(new Event('change', { bubbles: true }));
                         }
                     } catch (_) {}
-                    // 切换后立即按最新参数重绘内容：优先保留弹窗内的“进货价/实际售价”
+                    // 切换后立即按最新参数重绘内容：优先保留弹窗内的"进货价/实际售价"
                     try {
                         const base = getProfitBaseInputs();
                         const ci = panel.querySelector('#batchCostPrice');
@@ -2190,9 +2190,9 @@ function initBatchProfitScenario() {
     const close = () => { if (overlay) overlay.style.display = 'none'; };
 
     btn.addEventListener('click', () => {
-        // 仅当利润页激活时开放；避免切到“售价计算”页时的误操作
+        // 仅当利润页激活时开放；避免切到"售价计算"页时的误操作
         const profitTabActive = document.getElementById('profitTab')?.classList.contains('active');
-        if (!profitTabActive) { showToast('请先切换到“利润计算”页'); return; }
+        if (!profitTabActive) { showToast('请先切换到"利润计算"页'); return; }
         open();
     });
 }
@@ -2212,10 +2212,10 @@ function initPriceExploration() {
     let overlay = null;
     let panel = null;
 
-    // 工具：将任意价格“向上”调整为最接近的以 9.8 结尾的心理价（如 59.8、69.8、79.8、99.8…）
+    // 工具：将任意价格"向上"调整为最接近的以 9.8 结尾的心理价（如 59.8、69.8、79.8、99.8…）
     // 说明：
     // - 非四舍五入，而是向上取整到最近的 x9.8
-    // - 避免出现 80、90 等整数价，优先让用户感知“低于整数位”
+    // - 避免出现 80、90 等整数价，优先让用户感知"低于整数位"
     const adjustToPsychPriceUp = (price) => {
         try {
             const p = Math.max(0, Number(price) || 0);
@@ -2239,13 +2239,13 @@ function initPriceExploration() {
         const returnRates = state.returnRates; // 小数数组
         const priceCandidates = state.prices;  // 数字数组（含税）
 
-        // 价格选择器（Chip）：显示候选价与对应加价倍率，并保证内容在“胶囊气泡”内居中
+        // 价格选择器（Chip）：显示候选价与对应加价倍率，并保证内容在"胶囊气泡"内居中
         const priceChips = priceCandidates.map((p,i)=>{
             const mul = fixed.costPrice > 0 ? (p / fixed.costPrice) : NaN;
-            // 倍率展示：直接显示“多少倍”，例如 2.10倍
+            // 倍率展示：直接显示"多少倍"，例如 2.10倍
             const mulText = isFinite(mul) ? `${mul.toFixed(2)}倍` : '-';
             return `
-            <label style="display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 14px;border:1px solid #e5e7eb;border-radius:999px;cursor:pointer;background:${i===state.activeIndex?'#eaf1ff':'#f3f4f6'};color:${i===state.activeIndex?'#1f3a8a':'#1f2937'};font-size:14px;line-height:1;">
+            <label style="display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 14px;border:2px solid ${i===state.activeIndex?'#3b82f6':'#e5e7eb'};border-radius:999px;cursor:pointer;background:${i===state.activeIndex?'#eff6ff':'#f3f4f6'};color:${i===state.activeIndex?'#1e40af':'#1f2937'};font-size:14px;line-height:1;font-weight:${i===state.activeIndex?'600':'400'};box-shadow:${i===state.activeIndex?'0 2px 8px rgba(59,130,246,0.15)':'none'};">
                 <input type="radio" name="expPrice" value="${p}" ${i===state.activeIndex?'checked':''} style="display:none;">
                 <span>¥${p.toFixed(2)}（${mulText}）</span>
             </label>`;
@@ -2268,7 +2268,28 @@ function initPriceExploration() {
                 const profitText = `¥ ${r.profit.toFixed(2)}`;
                 const color = r.profitRate > 0 ? '#2ea44f' : (r.profitRate < 0 ? '#d32f2f' : '#555');
                 const bg = r.profitRate > 0 ? 'rgba(46,164,79,0.08)' : (r.profitRate < 0 ? 'rgba(211,47,47,0.08)' : 'transparent');
-                return `<td style=\"padding:8px 10px;text-align:right;color:${color};background:${bg};\"><div style=\"font-weight:600;\">${rate}%</div><div style=\"font-size:12px;opacity:0.9;\">${profitText}</div></td>`;
+
+                // 计算详细成本费用明细，用于 tooltip 展示（口径与计算逻辑保持一致）
+                const effectiveRate = 1 - rr;
+                const invoiceCost = fixed.costPrice * fixed.inputTaxRate; // 开票成本
+                const purchaseCost = fixed.costPrice + invoiceCost;       // 实际进货成本
+                const platformFee = priceCandidates[state.activeIndex] * fixed.platformRate;
+                const adCost = priceCandidates[state.activeIndex] * ar;
+                const adCostEffective = adCost / effectiveRate;
+                const adVAT = adCostEffective * 0.06;
+                const shippingCostEffective = fixed.shippingCost / effectiveRate;
+                const insuranceCostEffective = fixed.shippingInsurance / effectiveRate;
+                const otherCostEffective = fixed.otherCost / effectiveRate;
+                const netPrice = priceCandidates[state.activeIndex] / (1 + fixed.salesTaxRate);
+                const outputVAT = netPrice * fixed.salesTaxRate;
+                const purchaseVAT = fixed.costPrice * fixed.outputTaxRate;
+                const totalVATDeduction = purchaseVAT + adVAT + (platformFee * 0.06);
+                const actualVAT = outputVAT - totalVATDeduction;
+                const totalCost = purchaseCost + platformFee + adCostEffective + shippingCostEffective + insuranceCostEffective + otherCostEffective + actualVAT;
+
+                const tooltipData = `售价：¥${priceCandidates[state.activeIndex].toFixed(2)}\n退货率：${(rr*100).toFixed(0)}%\n付费占比：${(ar*100).toFixed(0)}%\n\n成本明细：\n• 进货成本：¥${purchaseCost.toFixed(2)}\n• 平台佣金：¥${platformFee.toFixed(2)}\n• 广告费（分摊）：¥${adCostEffective.toFixed(2)}\n• 物流费（分摊）：¥${shippingCostEffective.toFixed(2)}\n• 运费险（分摊）：¥${insuranceCostEffective.toFixed(2)}\n• 其他成本（分摊）：¥${otherCostEffective.toFixed(2)}\n• 销项税：¥${outputVAT.toFixed(2)}\n• 进项抵扣：¥${totalVATDeduction.toFixed(2)}\n• 实际税负：¥${actualVAT.toFixed(2)}\n\n总成本：¥${totalCost.toFixed(2)}\n利润：¥${r.profit.toFixed(2)}\n利润率：${rate}%`;
+
+                return `<td class="price-exp-cell" data-tooltip="${tooltipData}" style="padding:8px 10px;text-align:right;color:${color};background:${bg};cursor:help;"><div style=\"font-weight:600;\">${rate}%</div><div style=\"font-size:12px;opacity:0.9;\">${profitText}</div></td>`;
             }).join('');
             // 保本阈值列：与付费占比无关，仅随退货率变化
             const roiRes = calculateBreakevenROI({
@@ -2304,7 +2325,7 @@ function initPriceExploration() {
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
                 <div style="font-weight:600;">价格推演</div>
                 <div style="display:flex;gap:10px;align-items:center;">
-                    <div class="switch-wrapper switch-chip" title="与“费用设置-平台费用-免佣”联动">
+                    <div class="switch-wrapper switch-chip" title="与"费用设置-平台费用-免佣"联动">
                         <span class="switch-label">免佣</span>
                         <label class="switch">
                             <input type="checkbox" id="priceExpPlatformFreeToggle">
@@ -2315,12 +2336,16 @@ function initPriceExploration() {
                     <button id="btnPriceExplorationClose" class="batch-modal-btn">关闭</button>
                 </div>
             </div>
-            <div class="batch-badges" style="margin-bottom:8px;">
-                <span class="batch-badge emphasis">当前进货价：¥${fixed.costPrice.toFixed(2)}</span>
-            </div>
-            <div class="batch-badges" style="margin-bottom:8px;">
-                <span class="batch-badge emphasis">含税售价候选：</span>
-                ${priceChips}
+            <div style="margin-bottom:16px;">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+                    <span class="batch-badge emphasis" style="flex-shrink:0;">当前进货价：¥${fixed.costPrice.toFixed(2)}</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <span class="batch-badge emphasis" style="flex-shrink:0;">含税售价候选：</span>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+                        ${priceChips}
+                    </div>
+                </div>
             </div>
             <div class="batch-badges" style="margin-bottom:12px;">
                 <span class="batch-badge">平台佣金：${(fixed.platformRate*100).toFixed(1)}%</span>
@@ -2373,7 +2398,7 @@ function initPriceExploration() {
         ensureOverlay();
         // 固定参数快照
         const fixed = getProfitBaseInputs();
-        // 候选售价：按倍率从进货价推导并应用“9.8心理价”规则向上调整
+        // 候选售价：按倍率从进货价推导并应用"9.8心理价"规则向上调整
         // 倍率集合：1.5、1.8、2.0、2.1、2.2、2.3、2.4、2.5、2.6、2.7、2.8
         const multipliers = [1.5, 1.8, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8];
         const derived = multipliers
@@ -2382,7 +2407,7 @@ function initPriceExploration() {
         // 去重+升序
         const prices = Array.from(new Set(derived.map(v => Number(v.toFixed(1)))))
             .sort((a,b)=>a-b);
-        // 退货率/付费占比：沿用“批量利润率推演”弹窗的默认档位
+        // 退货率/付费占比：沿用"批量利润率推演"弹窗的默认档位
         const adRates = [0.00, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35];
         const returnRates = [0.05, 0.08, 0.12, 0.15, 0.18, 0.20, 0.25, 0.28];
         const state = { prices, adRates, returnRates, activeIndex: 0 };
@@ -2424,6 +2449,62 @@ function initPriceExploration() {
                     wire();
                 });
             });
+
+            // 悬浮提示：委托到表格容器，悬停即显
+            (function attachTooltipDelegation(){
+                const container = panel.querySelector('.batch-table-container');
+                if (!container) return;
+
+                let tooltip = document.querySelector('.price-exp-tooltip');
+                if (!tooltip) {
+                    tooltip = document.createElement('div');
+                    tooltip.className = 'price-exp-tooltip';
+                    Object.assign(tooltip.style, {
+                        position: 'fixed',
+                        zIndex: '10001',
+                        padding: '8px 10px',
+                        borderRadius: '8px',
+                        background: 'rgba(17,24,39,0.92)',
+                        color: '#fff',
+                        fontSize: '12px',
+                        lineHeight: '1.4',
+                        boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+                        pointerEvents: 'none',
+                        whiteSpace: 'pre',
+                        transition: 'opacity .08s ease',
+                        opacity: '0',
+                        maxWidth: '360px'
+                    });
+                    document.body.appendChild(tooltip);
+                }
+
+                const showTooltip = (text, x, y) => {
+                    tooltip.textContent = text;
+                    const offset = 12;
+                    tooltip.style.left = `${x + offset}px`;
+                    tooltip.style.top = `${y + offset}px`;
+                    tooltip.style.opacity = '1';
+                };
+                const hideTooltip = () => { tooltip.style.opacity = '0'; };
+
+                const onOver = (e) => {
+                    const cell = e.target.closest('.price-exp-cell');
+                    if (!cell || !container.contains(cell)) return;
+                    const text = cell.getAttribute('data-tooltip');
+                    if (text) showTooltip(text, e.clientX, e.clientY);
+                };
+                const onMove = (e) => {
+                    const cell = e.target.closest('.price-exp-cell');
+                    if (!cell || !container.contains(cell)) return hideTooltip();
+                    const text = cell.getAttribute('data-tooltip');
+                    if (text) showTooltip(text, e.clientX, e.clientY);
+                };
+                const onLeave = () => hideTooltip();
+
+                container.addEventListener('mouseover', onOver);
+                container.addEventListener('mousemove', onMove);
+                container.addEventListener('mouseleave', onLeave);
+            })();
 
             // 导出CSV
             const btnExport = panel.querySelector('#btnPriceExplorationExport');
@@ -2479,7 +2560,7 @@ function initPriceExploration() {
 
     btn.addEventListener('click', () => {
         const profitTabActive = document.getElementById('profitTab')?.classList.contains('active');
-        if (!profitTabActive) { showToast('请先切换到“利润计算”页'); return; }
+        if (!profitTabActive) { showToast('请先切换到"利润计算"页'); return; }
         open();
     });
 }
@@ -2504,7 +2585,7 @@ function getProfitBaseInputs() {
 }
 
 /**
- * 基于利润页口径，计算给定“广告占比/退货率”组合下的利润与利润率（复用 calculateProfit 的口径）
+ * 基于利润页口径，计算给定"广告占比/退货率"组合下的利润与利润率（复用 calculateProfit 的口径）
  * 参数：
  * - base：getProfitBaseInputs() 返回的固定参数
  * - adRate：全店付费占比（0~1 小数）
@@ -2546,7 +2627,7 @@ function computeProfitScenario(base, adRate, returnRate) {
 }
 
 /**
- * 初始化“平台免佣”开关，并与输入框联动
+ * 初始化"平台免佣"开关，并与输入框联动
  * 功能说明：
  * 1. 两个开关分别作用于售价页(platformRate)与利润页(profitPlatformRate)
  * 2. 开关开启时，将对应输入值置为0，禁用输入框；关闭时恢复到上次的非零值（本地记忆），并解禁输入框
