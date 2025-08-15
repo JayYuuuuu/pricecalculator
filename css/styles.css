@@ -1090,11 +1090,12 @@ button:hover {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
-    min-width: 680px;
+    /* 移除固定最小宽度，便于列宽动态适配内容 */
     font-size: 14px;
     background: #fff;
     border-radius: 10px;
     overflow: hidden;
+    table-layout: auto; /* 动态列宽 */
 }
 .lp-table thead th {
     position: sticky;
@@ -1117,6 +1118,7 @@ button:hover {
     border-bottom: 1px solid #f1f5f9;
     color: #1f2937;
     vertical-align: middle;
+    line-height: 1.5; /* 行间距：1.5倍行高 */
 }
 /* 纵向分隔线：弱化但提供列界限，降低横向误读 */
 .lp-table thead th + th, .lp-table tbody td + td { border-left: 1px solid #f3f4f6; }

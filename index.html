@@ -16,6 +16,7 @@
                 <button class="tab" onclick="switchTab('price')">售价计算</button>
                 <button class="tab active" onclick="switchTab('profit')">利润计算</button>
                 <button class="tab" onclick="switchTab('listprice')">标价计算</button>
+                <button class="tab" onclick="switchTab('catalog')">商品清单</button>
             </div>
         </div>
 
@@ -506,6 +507,31 @@
             <!-- 操作区：强引导只保留一个主按钮 -->
             <div style="display:flex; justify-content:flex-end; gap:8px;">
                 <button onclick="calculateListPrice()">计算标价</button>
+            </div>
+        </div>
+
+        <!-- 商品清单tab -->
+        <div id="catalogTab" class="tab-content">
+            <div class="section">
+                <h3 style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                    商品清单
+                    <span style="font-size:12px; color:#666; font-weight:500;">多商品多平台批量计算（利润/利润率/保本ROI/保本广告占比）</span>
+                </h3>
+                <!-- 工具栏 -->
+                <div id="catalogToolbar" style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:12px;">
+                    <button id="btnCatalogAddRow" class="header-btn" style="margin:0;">新增一行</button>
+                    <input id="catalogImportFile" type="file" accept=".csv" style="display:none;" />
+                    <button id="btnCatalogImport" class="header-btn" style="margin:0;">导入 CSV</button>
+                    <button id="btnCatalogExport" class="header-btn" style="margin:0;">导出 CSV 模板</button>
+                    <button id="btnCatalogDeleteSelected" class="header-btn" style="margin:0; background:#ef4444; border-color:#ef4444;">批量删除所选</button>
+                    <button id="btnCatalogRecomputeAll" class="header-btn" style="margin:0;">一键重算</button>
+                    <button id="btnCatalogExamples" class="header-btn" style="margin:0; background:#10b981; border-color:#10b981;">插入示例</button>
+                    <button id="btnCatalogUndoImport" class="header-btn" style="margin:0; display:none;">撤销上次导入</button>
+                </div>
+                <!-- 表格容器 -->
+                <div id="catalogTableContainer" class="lp-card" style="padding:0; overflow:auto;"></div>
+                <!-- 状态区 -->
+                <div id="catalogStatus" style="margin-top:10px; color:#666; font-size:0.9rem;">共 0 条，0 条异常</div>
             </div>
         </div>
 
