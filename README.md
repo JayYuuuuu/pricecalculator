@@ -1,248 +1,324 @@
-E-commerce Rational Pricing Calculator (Tax-Compliant Edition)
+# E-commerce Rational Pricing Calculator (Tax-Compliant Edition)
 
-System Overview
+## System Overview
 
 This is a professional e-commerce pricing tool designed for online sellers. It helps calculate rational product prices, analyze profit structure, plan pricing strategies, and manage products in bulk. The system fully accounts for tax compliance, including input tax deductions, output tax calculations, and platform commission input tax, ensuring accurate and compliant pricing strategies.
 
-Core Functional Modules
+## Core Functional Modules
 
-1. Price Calculation Module
+### 1. Price Calculation Module
 
-Objective: Calculate rational prices that meet business goals based on target profit margins
+**Objective**: Calculate rational prices that meet business goals based on target profit margins
 
-Key Features:
-	•	Factor in return rates and distribute non-refundable costs across valid orders
-	•	Accurately calculate tax, including input tax deductions and output tax
-	•	Support commission-free models on platforms
-	•	Real-time calculation of breakeven ROI and breakeven ad spend ratio
+**Key Features**:
+- Consider return rates and allocate non-refundable costs to valid orders
+- Accurately calculate taxes, including input tax deductions and output tax
+- Support commission-free models on platforms
+- Real-time calculation of breakeven ROI and breakeven advertising cost ratio
 
-2. Profit Analysis Module
+### 2. Profit Analysis Module
 
-Objective: Analyze operating profit and cost structure based on actual selling price
+**Objective**: Analyze operating profit and cost structure based on actual selling price
 
-Key Features:
-	•	Real-time profit calculation with dynamic parameter adjustment
-	•	Detailed cost breakdown, including base cost, selling expenses, and tax analysis
-	•	Display of key pricing metrics: markup multiple, gross margin, breakeven ROI, breakeven ad spend ratio
-	•	Profit analysis under commission-free models
+**Key Features**:
+- Real-time profit calculation with dynamic parameter adjustment
+- Detailed cost breakdown, including base cost, selling expenses, and tax analysis
+- Display of key pricing metrics: markup multiple, gross margin, breakeven ROI, breakeven advertising cost ratio
+- Profit analysis under commission-free models
 
-3. List Price Module
+### 3. List Price Calculation Module
 
-Objective: Back-calculate suggested list price based on target take-home price
+**Objective**: Calculate suggested list price through reverse engineering based on target take-home price
 
-Key Features:
-	•	Support instant discount (10%, 12%, 15%, 18% tiers)
-	•	Support full-discount rules (multiple tiers configurable)
-	•	Stacked discounts: apply instant discount before full-discount
-	•	Real-time validation to ensure take-home price matches target
+**Key Features**:
+- Support instant discount tiers (10%, 12%, 15%, 18%)
+- Support threshold-based discount rules (multiple tiers configurable)
+- Discount stacking: apply instant discount first, then threshold-based discount
+- Real-time validation to ensure take-home price matches target
 
-4. Product List Module
+### 4. Product Catalog Module
 
-Objective: Manage multiple products in bulk, with CSV import/export
+**Objective**: Manage multiple products in bulk, with CSV import/export support
 
-Key Features:
-	•	Batch calculation of profits/profit margins
-	•	CSV import/export for large-scale data management
-	•	Platform-specific settings for commission rates
-	•	Full-screen display optimized for large table viewing
+**Key Features**:
+- Batch calculation of profits/profit margins for multiple products
+- CSV import/export for large-scale data management
+- Platform-specific settings for commission rates
+- Full-screen display optimized for large table viewing
 
-Field Details
+## System Field Details
 
-Base Cost Fields
+### Base Cost Fields
 
-Purchase Price (excl. tax)
-	•	Definition: Supplier’s quoted price, tax excluded
-	•	Unit: RMB
-	•	Range: 0.01 – 1,000,000
-	•	Note: Fundamental cost, excludes all tax
+#### Purchase Price (excl. tax)
+- **Definition**: Supplier's quoted price, tax excluded
+- **Unit**: RMB (¥)
+- **Range**: 0.01 – 1,000,000
+- **Note**: This is the fundamental cost of goods, excluding all taxes
 
-Invoice Fee (%)
-	•	Definition: Extra fee charged by suppliers for issuing invoices
-	•	Unit: %
-	•	Default: 6%
-	•	Range: 0 – 100
-	•	Note: Typically 6%, counted into actual purchase cost
+#### Invoice Cost (%)
+- **Definition**: Extra fee charged by suppliers for issuing invoices
+- **Unit**: Percentage (%)
+- **Default**: 6%
+- **Range**: 0 – 100
+- **Note**: Typically 6%, this fee is included in actual purchase cost
 
-Input Tax Rate (%)
-	•	Definition: Input VAT rate, deductible from output VAT
-	•	Unit: %
-	•	Default: 13%
-	•	Range: 0 – 100
-	•	Note: Apparel category typically 13%, deductible
+#### Input Tax Rate (%)
+- **Definition**: Input VAT rate, deductible from output VAT
+- **Unit**: Percentage (%)
+- **Default**: 13%
+- **Range**: 0 – 100
+- **Note**: Apparel category typically 13%, this tax is deductible
 
-Selling Cost Fields
+### Sales Process Cost Fields
 
-Platform Commission (%)
-	•	Definition: Transaction fee charged by platform
-	•	Unit: %
-	•	Default: 5.5%
-	•	Range: 0 – 100
-	•	Note: Calculated on tax-inclusive sales price; invoiced at 6% VAT deductible
+#### Platform Commission Rate (%)
+- **Definition**: Transaction fee charged by e-commerce platform
+- **Unit**: Percentage (%)
+- **Default**: 5.5%
+- **Range**: 0 – 100
+- **Note**: Calculated on tax-inclusive final selling price; platform issues 6% VAT invoice for input tax deduction
 
-Logistics Fee (RMB/order)
-	•	Definition: Courier cost per order
-	•	Default: 2.8
-	•	Range: 0 – 10,000
-	•	Note: Non-refundable, allocated by return rate
+#### Logistics Cost (¥/order)
+- **Definition**: Courier cost per order
+- **Unit**: RMB per order
+- **Default**: 2.8
+- **Range**: 0 – 10,000
+- **Note**: Non-refundable cost, allocated by return rate
 
-Shipping Insurance (RMB/order)
-	•	Definition: Buyer shipping insurance per order
-	•	Default: 1.5
-	•	Range: 0 – 100
-	•	Note: Non-refundable, allocated by return rate
+#### Shipping Insurance (¥/order)
+- **Definition**: Shipping insurance cost per order
+- **Unit**: RMB per order
+- **Default**: 1.5
+- **Range**: 0 – 100
+- **Note**: Non-refundable cost, allocated by return rate
 
-Paid Ads Share (%)
-	•	Definition: Share of ads in final sales price
-	•	Default: 30%
-	•	Range: 0 – 100
-	•	Note: Advertising invoices at 6% VAT deductible, non-refundable
+#### Advertising Cost Ratio (%)
+- **Definition**: Advertising cost as a percentage of final selling price
+- **Unit**: Percentage (%)
+- **Default**: 30%
+- **Range**: 0 – 100
+- **Note**: Advertising service providers issue 6% VAT invoices for input tax deduction; non-refundable cost requiring allocation
 
-Other Costs (RMB/order)
-	•	Definition: Packaging, materials, indirect expenses
-	•	Default: 2.5
-	•	Range: 0 – 10,000
-	•	Note: Estimated, covers packaging, consumables, overhead
+#### Other Costs (¥/order)
+- **Definition**: Packaging materials and other fixed costs
+- **Unit**: RMB per order
+- **Default**: 2.5
+- **Range**: 0 – 10,000
+- **Note**: Estimated costs covering packaging materials, consumables, and overhead expenses not separately accounted for
 
-Output Tax Rate (%)
-	•	Definition: VAT rate on sales
-	•	Default: 13%
-	•	Range: 0 – 100
-	•	Note: Typically same as input VAT rate
+#### Output Tax Rate (%)
+- **Definition**: VAT rate applied to sales
+- **Unit**: Percentage (%)
+- **Default**: 13%
+- **Range**: 0 – 100
+- **Note**: Usually same as input VAT rate, used to calculate output VAT payable
 
-Target Settings
+### Target Setting Fields
 
-Target Profit Margin (%)
-	•	Definition: Desired profit margin, based on sales price
-	•	Default: 5%
-	•	Range: 0 – 100
-	•	Note: 5% = 5 RMB profit per 100 RMB sales price
+#### Target Profit Margin (%)
+- **Definition**: Desired profit margin, calculated based on final selling price
+- **Unit**: Percentage (%)
+- **Default**: 5%
+- **Range**: 0 – 100
+- **Note**: 5% means ¥5 profit for every ¥100 of selling price
 
-Expected Return Rate (%)
-	•	Definition: Estimated returns ratio, affects cost allocation
-	•	Default: 20%
-	•	Range: 0 – 100
-	•	Note: Only accounts for return/refund orders
+#### Expected Return Rate (%)
+- **Definition**: Estimated return rate affecting cost allocation
+- **Unit**: Percentage (%)
+- **Default**: 20%
+- **Range**: 0 – 100
+- **Note**: Only includes return and refund orders, excludes partial refunds
 
-Core Calculation Logic
+## Core Calculation Logic
 
-1. Price Calculation Logic
+### 1. Price Calculation Logic
 
-Base Cost
+#### Base Cost Calculation
+```
+Actual Purchase Cost = Purchase Price + Invoice Cost
+Input Tax Credit = Purchase Price × Input Tax Rate (deductible)
+```
 
-Actual Purchase Cost = Purchase Price + Invoice Fee
-Input Tax Credit = Purchase Price × Input Tax Rate
-
-Sales Cost (with returns)
-
+#### Sales Cost Calculation (considering return rate)
+```
 Effective Sales Rate = 1 - Return Rate
 Non-refundable Cost Allocation = Original Cost ÷ Effective Sales Rate
-Refundable Cost = Original Cost (e.g., commission)
+Refundable Cost = Original Cost (e.g., platform commission)
+```
 
-Final Price
-
-Tax-inclusive Price = (Actual Purchase Cost - Input Tax Credit + Fixed Costs ÷ Effective Sales Rate) ÷
-                     (1 - Commission Rate - Output Tax Share - Target Profit Margin - Ad Cost Share 
-                      + Ad Tax Credit + Commission Tax Credit)
+#### Final Price Calculation
+```
+Tax-inclusive Price = (Actual Purchase Cost - Input Tax Credit + Non-refundable Fixed Costs ÷ Effective Sales Rate) ÷ 
+                     (1 - Platform Commission Rate - Output Tax Share - Target Profit Margin - Advertising Cost Allocation + Advertising Tax Credit + Commission Tax Credit)
 
 Where:
 - Output Tax Share = Output Tax Rate ÷ (1 + Output Tax Rate)
-- Ad Cost Share = Ad Share ÷ Effective Sales Rate
-- Ad Tax Credit = Ad Cost Share × 6%
-- Commission Tax Credit = Commission Rate × 6%
+- Advertising Cost Allocation = Advertising Cost Ratio ÷ Effective Sales Rate
+- Advertising Tax Credit = Advertising Cost Allocation × 6%
+- Commission Tax Credit = Platform Commission Rate × 6%
+```
 
-2. Profit Calculation Logic
+### 2. Profit Calculation Logic
 
-Profit
-
-Profit = Tax-inclusive Price - Total Costs
-Total Costs = Actual Purchase Cost + Commission + Allocated Ads + Allocated Fixed Costs + Tax Payable
-
-Tax Payable = Output VAT - Total Input VAT Credits
-Total Input VAT Credits = Product Input VAT + Ads Input VAT + Commission Input VAT
-
-Profit Margin
-
-Profit Margin = Profit ÷ Sales Price × 100%
-
-3. List Price Logic
-
-Discount Order
-	1.	Instant Discount
-	2.	Full Discount Check
-	3.	Final Take-home Price = Discounted Price - Full Discount
-
-Reverse Calculation
-
-Suggested List Price = (Target Take-home Price + Full Discount Amount) ÷ (1 - Instant Discount Rate)
-
-4. Breakeven ROI
-
-Breakeven Ad Share
-
-Breakeven Ad Share = (1 - Return Rate) ÷ (1 - 6%) × (D - B/P)
+#### Actual Profit Calculation
+```
+Actual Profit = Tax-inclusive Price - Total Cost
+Total Cost = Actual Purchase Cost + Platform Commission + Allocated Advertising Cost + Allocated Fixed Costs + Actual Tax Payable
 
 Where:
-D = 1 - Commission Rate - Output Tax Share + 6% × Commission Rate
-B = Actual Purchase Cost - Input Tax Credit + Fixed Costs ÷ Effective Sales Rate
-P = Sales Price
+- Actual Tax Payable = Output VAT - Total Input VAT Credits
+- Total Input VAT Credits = Product Input VAT + Advertising Input VAT + Commission Input VAT
+```
 
-Breakeven ROI
+#### Profit Margin Calculation
+```
+Profit Margin = Actual Profit ÷ Tax-inclusive Price × 100%
+```
 
-Breakeven ROI = Effective Sales Rate ÷ Breakeven Ad Share
+### 3. List Price Calculation Logic
 
-Technical Architecture
+#### Discount Stacking Order
+1. **Instant Discount**: List Price × (1 - Discount Rate)
+2. **Threshold-based Discount**: Check if discounted price triggers any discount tiers
+3. **Final Take-home Price**: Discounted Price - Maximum Discount Amount
 
-Frontend: HTML5, CSS3 (Grid, Flexbox, responsive design), ES6+ JavaScript
-Core Algorithms:
-	•	calculatePurchaseCost()
-	•	calculateSalesCost()
-	•	calculatePrices()
-	•	calculateBreakevenROI()
-	•	calculateListPrice()
+#### List Price Reverse Calculation
+```
+Suggested List Price = (Target Take-home Price + Discount Amount) ÷ (1 - Instant Discount Rate)
+```
 
-Data Handling:
-	•	LocalStorage for auto-saving inputs
-	•	CSV import/export
-	•	Real-time recalculation
+### 4. Breakeven ROI Calculation Logic
 
-Usage Guide
-	•	Open index.html in a browser
-	•	Choose module (Price/Profit/List Price/Product List)
-	•	Enter parameters
-	•	Click calculate
+#### Breakeven Advertising Cost Ratio Calculation
+```
+Breakeven Advertising Cost Ratio = (1 - Return Rate) ÷ (1 - 6%) × (D - B/P)
 
-Supports:
-	•	Price planning by cost → sales price
-	•	Profit analysis by sales price → margin breakdown
-	•	List price reverse calculation for promotions
-	•	Batch product management via CSV
+Where:
+- D = 1 - Platform Commission Rate - Output Tax Share + 6% × Platform Commission Rate
+- B = Actual Purchase Cost - Input Tax Credit + Fixed Costs ÷ Effective Sales Rate
+- P = Tax-inclusive Selling Price
+```
 
-Advanced Features
-	•	Commission-free toggle
-	•	Batch profit simulations with ad/return combinations
-	•	Scenario analysis of price, ads, returns
-	•	Export/share results as images
+#### Breakeven ROI Calculation
+```
+Breakeven ROI = Effective Sales Rate ÷ Breakeven Advertising Cost Ratio
+```
 
-Notes
-	•	All base inputs are tax-exclusive
-	•	Input tax deductions are built-in
-	•	Return rate only applies to refund orders
-	•	Non-refundable costs allocated by effective sales rate
-	•	Calculation precision: two decimals, VAT-compliant
+## Technical Architecture
 
-Roadmap
-	•	Bulk calculation optimizations
-	•	Preset tax rates by category
-	•	History tracking
-	•	Multi-currency support
-	•	Data visualization
-	•	API access
-	•	Mobile app
+### Frontend Technology Stack
+- **HTML5**: Semantic tags, mobile-friendly support
+- **CSS3**: Grid layout, Flexbox, CSS variables, responsive design
+- **JavaScript ES6+**: Modular design, event delegation, asynchronous processing
 
-⸻
+### Core Algorithm Modules
+- **`calculatePurchaseCost()`**: Purchase cost calculation
+- **`calculateSalesCost()`**: Sales cost calculation
+- **`calculatePrices()`**: Final price calculation
+- **`calculateBreakevenROI()`**: Breakeven ROI calculation
+- **`calculateListPrice()`**: List price reverse calculation
 
-Version: v2.0
-Release: 2024
-Compatibility: Modern browsers, mobile-friendly
+### Data Persistence
+- **localStorage**: Automatic user input parameter saving
+- **CSV Import/Export**: Support for bulk data management
+- **Real-time Calculation**: Automatic recalculation on input changes
 
-⸻
+## Usage Guide
+
+### 1. Basic Usage
+1. Open `index.html` file directly in a web browser
+2. Select appropriate functional module (Price Calculation/Profit Analysis/List Price Calculation/Product Catalog)
+3. Input relevant parameters
+4. Click calculate button to view results
+
+### 2. Price Calculation Process
+1. Input base costs (purchase price, invoice cost, input tax rate)
+2. Set sales process costs (platform commission, logistics cost, advertising cost, etc.)
+3. Define targets (target profit margin, expected return rate)
+4. Click "Calculate Price" to get suggested selling price
+
+### 3. Profit Analysis Process
+1. Input basic information (purchase price, actual selling price)
+2. Set cost parameters (marketing costs, platform costs, logistics costs, etc.)
+3. System calculates profit and profit margin in real-time
+4. View detailed cost structure analysis
+
+### 4. List Price Calculation Process
+1. Set target take-home price
+2. Select instant discount tiers
+3. Configure threshold-based discount rules
+4. System calculates suggested list price through reverse engineering
+
+### 5. Product Catalog Management
+1. Add product rows or import CSV files
+2. Set parameters for each product
+3. Recalculate all products with one click
+4. Export calculation results
+
+## Advanced Features
+
+### 1. Commission-Free Mode
+- Support platform commission-free toggle
+- Commission-free mode calculates platform commission at 0%
+- Applicable to self-owned platforms or special partnership models
+
+### 2. Batch Profit Margin Simulation
+- Support batch calculation for different advertising cost and return rate combinations
+- Matrix display for easy selection of optimal parameter combinations
+- Real-time parameter adjustment with immediate result updates
+
+### 3. Price Scenario Analysis
+- Fix other parameters while varying tax-inclusive price, return rate, and advertising cost ratio
+- Help understand the impact of each parameter on profit
+- Support multi-scenario comparative analysis
+
+### 4. Share and Export
+- Support saving calculation results as images
+- Copy images to clipboard
+- System sharing functionality (for browsers supporting file sharing)
+
+## Important Notes
+
+### 1. Tax Compliance
+- All monetary inputs are tax-exclusive prices
+- System has built-in input tax deduction calculations, ensuring accurate tax calculations
+- Support for different product category tax rates
+
+### 2. Return Rate Setting
+- Only count return and refund orders, exclude partial refunds
+- Return rate affects allocation of non-refundable costs
+- Recommend adjustment based on actual operational data
+
+### 3. Cost Allocation
+- Non-refundable costs allocated by effective sales rate
+- Refundable costs (such as platform commission) do not participate in allocation
+- Advertising costs as non-refundable costs require allocation
+
+### 4. Calculation Precision
+- System supports two decimal place precision
+- Tax calculations follow national tax regulations
+- Recommend regular verification of calculation results against actual operational data
+
+## Development Roadmap
+
+- [ ] Optimize batch calculation functionality
+- [ ] Support preset tax rates by product category
+- [ ] Add historical calculation record functionality
+- [ ] Support multi-currency calculations
+- [ ] Add data visualization charts
+- [ ] Support API interface calls
+- [ ] Mobile app development
+
+## Technical Support
+
+For questions or suggestions, please contact through the following methods:
+- Review code comments to understand detailed implementation logic
+- Check browser console for debug output
+- Refer to built-in help tips and explanations
+
+---
+
+**Version**: v2.0  
+**Release Date**: 2024  
+**Compatibility**: Supports modern browsers, mobile-friendly
