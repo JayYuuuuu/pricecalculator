@@ -49,6 +49,12 @@ body {
     padding-left: max(1rem, env(safe-area-inset-left));
     padding-right: max(1rem, env(safe-area-inset-right));
 }
+
+/* 全局CSS变量：卡片最小宽度（用于三列卡片自适应换行） */
+:root {
+    /* 控制单张卡片的最小宽度；在更窄的屏幕上不足以容纳三列时，会自动换成两列或一列 */
+    --card-min-width: 280px; /* 可按需在不同页面覆盖此变量 */
+}
 .container {
     background: white;
     padding: 2.5rem;
@@ -80,7 +86,11 @@ h2 {
 }
 .input-groups-container {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    /* 自适应列数布局：尽量排成3列；当容器宽度不足时，自动降为2列或1列
+       - auto-fit 会根据容器宽度自动决定列数
+       - minmax(最小宽度, 1fr) 保证卡片不小于最小宽度，且可平分剩余空间
+       - min(100%, var(--card-min-width)) 避免在极窄屏下最小宽度大于容器造成强制溢出 */
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--card-min-width)), 1fr));
     gap: 1.5rem;
 }
 .input-group {
