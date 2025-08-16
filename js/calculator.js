@@ -3314,11 +3314,42 @@ function renderCatalogRow(index) {
 }
 
 // 价格验证弹窗：展示该行各档进货价的详细计算拆解
+// 样式注入（仅一次）
+(function injectStyles(){
+	if (document.getElementById('pv-styles')) return;
+	const style = document.createElement('style'); style.id = 'pv-styles';
+	style.textContent = `
+	.pv-mask{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:9999}
+	.pv-modal{width:860px;max-width:94vw;max-height:88vh;overflow:auto;background:#fff;border-radius:14px;box-shadow:0 12px 34px rgba(0,0,0,.18)}
+	.pv-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #f1f5f9}
+	.pv-title{font-weight:700;font-size:16px;color:#111827}
+	.pv-close{margin:0}
+	.pv-body{padding:14px 16px}
+	.pv-meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+	.pv-badge{background:#f3f4f6;border:1px solid #e5e7eb;color:#374151;padding:3px 8px;border-radius:999px;font-size:12px}
+	.pv-grid{display:grid;grid-template-columns:160px 1fr;gap:8px}
+	@media (max-width:600px){.pv-grid{grid-template-columns:130px 1fr}}
+	.pv-group{background:#f9fafb;border:1px solid #f3f4f6;border-radius:10px;padding:10px 12px;margin:10px 0}
+	.pv-group h4{margin:0 0 8px 0;color:#111827}
+	.pv-k{color:#6b7280}
+	.pv-v{text-align:right;color:#111827}
+	.pv-conclusion{background:#0f172a;color:white;border-radius:12px;padding:12px 12px;margin-top:10px}
+	.pv-conclusion .pv-grid{grid-template-columns:160px 1fr}
+	.pv-pill{display:inline-block;padding:2px 8px;border-radius:999px;margin-left:8px;font-size:12px}
+	.pv-pill.good{background:#16a34a;color:#fff}
+	.pv-pill.warn{background:#f59e0b;color:#111}
+	.pv-pill.bad{background:#ef4444;color:#fff}
+	`;
+	document.head.appendChild(style);
+})();
+
 function showPriceCheckModal(row) {
 	const globals = getGlobalDefaultsForCatalog();
 	const std = mergeGlobalsWithRow(row, globals);
 	const tiers = Array.isArray(row.costTiers) ? row.costTiers.filter(v => isFinite(Number(v)) && Number(v) >= 0).map(Number) : [];
 	let sections = [];
+	const P = std.salePrice;
+	const VAT_RATE = 0.06;
 	const buildOne = (label, cost) => {
 		const inputs = { costPrice:cost, inputTaxRate:std.inputTaxRate, outputTaxRate:std.outputTaxRate, salesTaxRate:std.salesTaxRate, platformRate:std.platformRate, shippingCost:std.shippingCost, shippingInsurance:std.shippingInsurance, otherCost:std.otherCost, adRate:std.adRate, returnRate:std.returnRate, finalPrice:std.salePrice, targetProfitRate:0 };
 		const purchaseCost = calculatePurchaseCost(inputs);
@@ -3341,26 +3372,116 @@ function showPriceCheckModal(row) {
 		const fixedSplitSum = shipSplit + insureSplit + otherSplit;
 		const adSplitCost = adCost / salesCost.effectiveRate;
 		return `
-			<div style="padding:10px 0; border-bottom:1px solid #f1f5f9;">
-				<div style="font-weight:600; margin-bottom:6px;">成本：¥ ${Number(cost).toFixed(2)}（${label}）</div>
-				<div style="display:grid; grid-template-columns: 160px 1fr; gap:8px; font-size:13px;">
-					<div>采购有效成本</div><div>¥ ${Number(purchaseCost.effectiveCost).toFixed(2)}（进项税：¥ ${Number(purchaseCost.purchaseVAT).toFixed(2)}）</div>
-					<div>含税售价P / 不含税</div><div>¥ ${P.toFixed(2)} / ¥ ${netPrice.toFixed(2)}</div>
-					<div>销项税</div><div>¥ ${outputVAT.toFixed(2)}</div>
-					<div>进项税抵扣-商品</div><div>¥ ${purchaseCost.purchaseVAT.toFixed(2)}</div>
-					<div>进项税抵扣-广告(分摊)</div><div>¥ ${adVAT.toFixed(2)}</div>
-					<div>进项税抵扣-平台佣金</div><div>¥ ${platformVAT.toFixed(2)}</div>
-					<div>进项税抵扣合计</div><div>¥ ${totalVATDeduction.toFixed(2)}</div>
-					<div>实缴增值税</div><div>¥ ${actualVAT.toFixed(2)}</div>
-					<div>平台佣金</div><div>¥ ${platformFee.toFixed(2)}</div>
-					<div>广告费(含税)/分摊计入</div><div>¥ ${adCost.toFixed(2)} / ¥ ${adSplitCost.toFixed(2)}</div>
-					<div>固定费用分摊-物流</div><div>¥ ${shipSplit.toFixed(2)}（原始：¥ ${inputs.shippingCost.toFixed(2)}）</div>
-					<div>固定费用分摊-运费险</div><div>¥ ${insureSplit.toFixed(2)}（原始：¥ ${inputs.shippingInsurance.toFixed(2)}）</div>
-					<div>固定费用分摊-其他</div><div>¥ ${otherSplit.toFixed(2)}（原始：¥ ${inputs.otherCost.toFixed(2)}）</div>
-					<div>固定费用分摊合计</div><div>¥ ${fixedSplitSum.toFixed(2)}（有效销售率：${(salesCost.effectiveRate*100).toFixed(2)}%）</div>
-					<div>保本ROI</div><div>${isFinite(roiRes.breakevenROI)? roiRes.breakevenROI.toFixed(2) : '∞'}</div>
-					<div>保本广告占比</div><div>${isFinite(roiRes.breakevenAdRate)? (roiRes.breakevenAdRate*100).toFixed(2)+'%' : '-'}</div>
-					<div>利润</div><div>¥ ${Number(comp.profit).toFixed(2)}（利润率：${(comp.profitRate*100).toFixed(2)}%）</div>
+			<div style="margin-bottom:20px;">
+				<div style="font-weight:600; margin-bottom:12px;">成本：¥ ${Number(cost).toFixed(2)}（${label}）</div>
+				<div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:12px;">
+					<div style="background:#f8fafc; border-radius:8px; padding:12px;">
+						<div style="font-weight:600; margin-bottom:8px;">采购成本</div>
+						<div style="display:flex; flex-direction:column; gap:8px; font-size:13px;">
+							<div style="display:flex; justify-content:space-between; align-items:baseline;">
+								<span style="color:#64748b">采购有效成本</span>
+								<span>¥ ${Number(purchaseCost.effectiveCost).toFixed(2)}</span>
+							</div>
+							<div style="display:flex; justify-content:space-between; align-items:baseline;">
+								<span style="color:#64748b">进项税</span>
+								<span>¥ ${Number(purchaseCost.purchaseVAT).toFixed(2)}</span>
+							</div>
+							<div style="display:flex; justify-content:space-between; align-items:baseline;">
+								<span style="color:#64748b">含税售价P</span>
+								<span>¥ ${P.toFixed(2)}</span>
+							</div>
+							<div style="display:flex; justify-content:space-between; align-items:baseline;">
+								<span style="color:#64748b">不含税净价</span>
+								<span>¥ ${netPrice.toFixed(2)}</span>
+							</div>
+							<div style="display:flex; justify-content:space-between; align-items:baseline;">
+								<span style="color:#64748b">有效销售率</span>
+								<span>${(salesCost.effectiveRate*100).toFixed(2)}%</span>
+							</div>
+						</div>
+					</div>
+
+					<div style="background:#f8fafc; border-radius:8px; padding:12px;">
+						<div style="font-weight:600; margin-bottom:8px;">税费明细</div>
+						<div style="display:flex; flex-direction:column; gap:8px; font-size:13px;">
+							<div style="display:flex; justify-content:space-between; align-items:baseline;">
+								<span style="color:#64748b">销项税</span>
+								<span>¥ ${outputVAT.toFixed(2)}</span>
+							</div>
+							<div style="display:flex; justify-content:space-between; align-items:baseline;">
+								<span style="color:#64748b">进项抵扣-商品</span>
+								<span>¥ ${purchaseCost.purchaseVAT.toFixed(2)}</span>
+							</div>
+							<div style="display:flex; justify-content:space-between; align-items:baseline;">
+								<span style="color:#64748b">进项抵扣-广告</span>
+								<span>¥ ${adVAT.toFixed(2)}</span>
+							</div>
+							<div style="display:flex; justify-content:space-between; align-items:baseline;">
+								<span style="color:#64748b">进项抵扣-平台</span>
+								<span>¥ ${platformVAT.toFixed(2)}</span>
+							</div>
+							<div style="display:flex; justify-content:space-between; align-items:baseline;">
+								<span style="color:#64748b">进项抵扣合计</span>
+								<span>¥ ${totalVATDeduction.toFixed(2)}</span>
+							</div>
+							<div style="display:flex; justify-content:space-between; align-items:baseline;">
+								<span style="color:#64748b">实缴增值税</span>
+								<span>¥ ${actualVAT.toFixed(2)}</span>
+							</div>
+						</div>
+					</div>
+
+					<div style="background:#f8fafc; border-radius:8px; padding:12px;">
+						<div style="font-weight:600; margin-bottom:8px;">费用分摊</div>
+						<div style="display:flex; flex-direction:column; gap:8px; font-size:13px;">
+							<div style="display:flex; justify-content:space-between; align-items:baseline;">
+								<span style="color:#64748b">平台佣金</span>
+								<span>¥ ${platformFee.toFixed(2)}</span>
+							</div>
+							<div style="display:flex; justify-content:space-between; align-items:baseline;">
+								<span style="color:#64748b">广告费（分摊）</span>
+								<span>¥ ${adSplitCost.toFixed(2)}</span>
+							</div>
+							<div style="display:flex; justify-content:space-between; align-items:baseline;">
+								<span style="color:#64748b">物流（分摊）</span>
+								<span>¥ ${shipSplit.toFixed(2)}</span>
+							</div>
+							<div style="display:flex; justify-content:space-between; align-items:baseline;">
+								<span style="color:#64748b">运费险（分摊）</span>
+								<span>¥ ${insureSplit.toFixed(2)}</span>
+							</div>
+							<div style="display:flex; justify-content:space-between; align-items:baseline;">
+								<span style="color:#64748b">其他（分摊）</span>
+								<span>¥ ${otherSplit.toFixed(2)}</span>
+							</div>
+							<div style="display:flex; justify-content:space-between; align-items:baseline;">
+								<span style="color:#64748b">固定费用分摊合计</span>
+								<span>¥ ${fixedSplitSum.toFixed(2)}</span>
+							</div>
+						</div>
+					</div>
+
+					<div style="background:#1e293b; color:white; border-radius:8px; padding:12px;">
+						<div style="font-weight:600; margin-bottom:8px;">结论</div>
+						<div style="display:flex; flex-direction:column; gap:8px; font-size:13px;">
+							<div style="display:flex; justify-content:space-between; align-items:baseline;">
+								<span style="color:#94a3b8">利润</span>
+								<span>¥ ${Number(comp.profit).toFixed(2)}</span>
+							</div>
+							<div style="display:flex; justify-content:space-between; align-items:baseline;">
+								<span style="color:#94a3b8">利润率</span>
+								<span>${(comp.profitRate*100).toFixed(2)}%</span>
+							</div>
+							<div style="display:flex; justify-content:space-between; align-items:baseline;">
+								<span style="color:#94a3b8">保本ROI</span>
+								<span>${isFinite(roiRes.breakevenROI)? roiRes.breakevenROI.toFixed(2) : '∞'}</span>
+							</div>
+							<div style="display:flex; justify-content:space-between; align-items:baseline;">
+								<span style="color:#94a3b8">保本广告占比</span>
+								<span>${isFinite(roiRes.breakevenAdRate)? (roiRes.breakevenAdRate*100).toFixed(2)+'%' : '-'}</span>
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>`;
 	};
@@ -3373,16 +3494,21 @@ function showPriceCheckModal(row) {
 		if (isFinite(cmax) && Math.abs(cmax-cmin)>1e-9) sections.push(buildOne('区间上限', cmax));
 	}
 	const html = `
-		<div style="position:fixed; inset:0; background:rgba(0,0,0,0.35); display:flex; align-items:center; justify-content:center; z-index:9999;">
-			<div style="width:720px; max-width:92vw; max-height:80vh; overflow:auto; background:#fff; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.15);">
-				<div style="display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid #f1f5f9;">
-					<div style="font-weight:700; font-size:16px;">价格验证 - ${row.name||''}（${row.sku||''}）</div>
-					<button id="catalogPriceCheckClose" class="batch-modal-btn" style="margin:0;">关闭</button>
+		<div class="pv-mask">
+			<div class="pv-modal">
+				<div class="pv-hd">
+					<div class="pv-title">价格验证 - ${row.name||''}（${row.sku||''}）</div>
+					<button id="catalogPriceCheckClose" class="batch-modal-btn pv-close">关闭</button>
 				</div>
-				<div style="padding:12px 16px;">
-					<div style="color:#6b7280; font-size:13px; margin-bottom:8px;">含税售价P：¥ ${Number(std.salePrice).toFixed(2)}，退货率：${(std.returnRate*100).toFixed(2)}%，付费占比：${(std.adRate*100).toFixed(2)}%</div>
+				<div class="pv-body">
+					<div class="pv-meta">
+						<span class="pv-badge">售价 ¥ ${(Number(std.salePrice)||0).toFixed(2)}</span>
+						<span class="pv-badge">退货率 ${((std.returnRate||0)*100).toFixed(2)}%</span>
+						<span class="pv-badge">佣金 ${((std.platformRate||0)*100).toFixed(2)}%</span>
+						<span class="pv-badge">销项税 ${((std.salesTaxRate||0)*100).toFixed(2)}%</span>
+						<span class="pv-badge">付费占比 ${((std.adRate||0)*100).toFixed(2)}%</span>
+					</div>
 					${sections.join('') || '<div style="color:#ef4444;">未找到可计算的成本，请先填写成本或多档价格。</div>'}
-				</div>
 			</div>
 		</div>`;
 	const wrapper = document.createElement('div'); wrapper.innerHTML = html; document.body.appendChild(wrapper);
