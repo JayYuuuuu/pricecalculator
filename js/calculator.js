@@ -3041,6 +3041,87 @@ const catalogState = {
 	version: 1
 };
 
+// 平台预设：用于在清单中选择平台时，自动应用对应的默认佣金（平台费率）
+function getPlatformPresets() {
+	const wanted = [
+		{ name: '淘宝', rate: 0.00 },
+		{ name: '天猫', rate: 0.055 },
+		{ name: '抖音', rate: 0.05 }
+	];
+	try {
+		const raw = localStorage.getItem('priceCalculatorPlatformPresets');
+		if (raw) {
+			const list = JSON.parse(raw);
+			if (Array.isArray(list)) {
+				let changed = false;
+				wanted.forEach(w => {
+					const idx = list.findIndex(x => x && x.name === w.name);
+					if (idx >= 0) {
+						const r = Number(list[idx].rate);
+						if (!isFinite(r) || Math.abs(r - w.rate) > 1e-9) { list[idx].rate = w.rate; changed = true; }
+					} else { list.push({ name: w.name, rate: w.rate }); changed = true; }
+				});
+				if (changed) savePlatformPresets(list);
+				return list;
+			}
+		}
+	} catch (_) {}
+	// 没有存储时返回内置默认
+	return wanted;
+}
+function savePlatformPresets(list) { try { localStorage.setItem('priceCalculatorPlatformPresets', JSON.stringify(list||[])); } catch (_) {} }
+function getPlatformRateByName(name) {
+	if (!name) return NaN;
+	const list = getPlatformPresets();
+	const item = list.find(x => x && x.name === name);
+	return item && isFinite(Number(item.rate)) ? Number(item.rate) : NaN;
+}
+
+// 平台设置弹窗（简单版）：可增删改平台与默认佣金
+function openPlatformSettingsModal() {
+	const presets = getPlatformPresets();
+	const overlay = document.createElement('div');
+	overlay.style.position='fixed'; overlay.style.inset='0'; overlay.style.background='rgba(0,0,0,.35)'; overlay.style.zIndex='9999'; overlay.style.display='flex'; overlay.style.alignItems='center'; overlay.style.justifyContent='center';
+	const panel = document.createElement('div');
+	panel.style.background='#fff'; panel.style.borderRadius='12px'; panel.style.width='520px'; panel.style.maxWidth='94vw'; panel.style.maxHeight='88vh'; panel.style.overflow='auto'; panel.style.boxShadow='0 12px 34px rgba(0,0,0,.18)'; panel.style.padding='16px';
+	panel.innerHTML = `
+		<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+			<div style="font-weight:700; font-size:16px;">平台设置</div>
+			<button id="platClose" class="batch-modal-btn">关闭</button>
+		</div>
+		<div id="platBody"></div>
+		<div style="margin-top:10px; display:flex; gap:8px;">
+			<button id="platAdd" class="batch-modal-btn">新增平台</button>
+			<button id="platSave" class="batch-modal-btn primary">保存</button>
+		</div>
+	`;
+	overlay.appendChild(panel); document.body.appendChild(overlay);
+	const render = () => {
+		const body = panel.querySelector('#platBody');
+		body.innerHTML = presets.map((p,i)=>`
+			<div style="display:flex; align-items:center; gap:8px; margin:6px 0;">
+				<input type="text" value="${p.name}" data-i="${i}" data-k="name" style="flex:1; padding:6px 8px; border:1px solid #e5e7eb; border-radius:8px; background:#fafafa;">
+				<input type="number" min="0" step="0.01" value="${(Number(p.rate)*100).toFixed(2)}" data-i="${i}" data-k="rate" style="width:120px; padding:6px 8px; border:1px solid #e5e7eb; border-radius:8px; background:#fafafa;">%
+				<button class="batch-modal-btn" data-i="${i}" data-k="del" style="background:#fee2e2; border-color:#fecaca; color:#ef4444;">删除</button>
+			</div>
+		`).join('');
+		body.querySelectorAll('input').forEach(inp=>{
+			inp.addEventListener('input', (e)=>{
+				const i = Number(e.target.getAttribute('data-i')); const k = e.target.getAttribute('data-k');
+				if (k==='name') presets[i].name = e.target.value || '';
+				if (k==='rate') presets[i].rate = Math.max(0, Number(e.target.value||'0'))/100;
+			});
+		});
+		body.querySelectorAll('button[data-k="del"]').forEach(btn=>{
+			btn.addEventListener('click', (e)=>{ const i = Number(btn.getAttribute('data-i')); presets.splice(i,1); render(); });
+		});
+	};
+	render();
+	panel.querySelector('#platAdd').addEventListener('click', ()=>{ presets.push({ name:'', rate:0 }); render(); });
+	panel.querySelector('#platSave').addEventListener('click', ()=>{ savePlatformPresets(presets); showToast && showToast('平台预设已保存'); try { renderCatalogTable(); } catch(_){} document.body.removeChild(overlay); });
+	panel.querySelector('#platClose').addEventListener('click', ()=>{ try { document.body.removeChild(overlay); } catch(_){} });
+}
+
 // 解析百分比为[0,1]
 function parsePercent(val) {
 	if (val === null || val === undefined) return NaN;
@@ -3083,7 +3164,6 @@ function mergeGlobalsWithRow(row, globals) {
 		inputTaxRate: globals.inputTaxRate,
 		outputTaxRate: globals.outputTaxRate,
 		salesTaxRate: globals.salesTaxRate,
-		platformRate: globals.platformRate,
 		shippingCost: globals.shippingCost,
 		shippingInsurance: globals.shippingInsurance,
 		otherCost: globals.otherCost,
@@ -3096,7 +3176,11 @@ function mergeGlobalsWithRow(row, globals) {
 		inputTaxRate: forceGlobal.inputTaxRate,
 		outputTaxRate: forceGlobal.outputTaxRate,
 		salesTaxRate: forceGlobal.salesTaxRate,
-		platformRate: forceGlobal.platformRate,
+		// 平台佣金：优先使用行内（平台选择自动写入或CSV导入指定），否则回退全局
+		platformRate: (function(){
+			const p = parsePercent(row.platformRate);
+			return isFinite(p) ? p : globals.platformRate;
+		})(),
 		shippingCost: forceGlobal.shippingCost,
 		shippingInsurance: forceGlobal.shippingInsurance,
 		otherCost: forceGlobal.otherCost,
@@ -3174,34 +3258,19 @@ function computeRow(row) {
 		return { __result: { list, errors: [] } };
 	}
 
-	// 如果只有成本区间或多档成本
+	// 如果只有多档成本（按逐档展示）
 	if (costTiers.length > 0) {
 		if (errors.length) return { __result: { errors } };
-		// 当仅有多档成本时，仍按逐档展示
-		// 但若行中存在 costMin/costMax（历史数据），则仍按区间展示
-		if (costTiers.length && (!isFinite(std.costMin) && !isFinite(std.costMax))) {
-			const list = costTiers.map(cost => { const r = computeRowWithCost(std, cost); return { cost, ...r }; });
-			return { __result: { list, errors: [] } };
-		}
-		const cmin2 = Math.min(...costTiers);
-		const cmax2 = Math.max(...costTiers);
-		const resMin2 = computeRowWithCost(std, cmin2);
-		const resMax2 = computeRowWithCost(std, cmax2);
-		return { __result: { ...computeRangeResults(resMin2, resMax2), isRange: Math.abs(cmin2-cmax2)>1e-9, errors: [] } };
+		const list = costTiers.map(cost => { const r = computeRowWithCost(std, cost); return { cost, ...r }; });
+		return { __result: { list, errors: [] } };
 	}
 
-	// 退回到区间成本（下限/上限）逻辑：单一售价下，两端点分别作为两条记录展示
-	if (!isFinite(std.costMin) && !isFinite(std.costMax)) errors.push('需填写costMin或costMax');
-	const cmin = isFinite(std.costMin) ? std.costMin : std.costMax;
-	const cmax = isFinite(std.costMax) ? std.costMax : std.costMin;
-	if (errors.length) return { __result: { errors } };
-	if (isFinite(cmin) && isFinite(cmax) && Math.abs(cmin - cmax) > 1e-9) {
-		const r1 = computeRowWithCost(std, cmin);
-		const r2 = computeRowWithCost(std, cmax);
-		return { __result: { list: [{ cost:cmin, ...r1 }, { cost:cmax, ...r2 }], errors: [] } };
-	}
-	const r = computeRowWithCost(std, cmin);
-	return { __result: { list: [{ cost:cmin, ...r }], errors: [] } };
+	// 新规则：进货价必填且为单值；不再支持上下限区间
+	if (!isFinite(std.costMin) && !isFinite(std.costMax)) errors.push('进货价为必填');
+	const singleCost = isFinite(std.costMin) ? std.costMin : std.costMax;
+	if (!isFinite(singleCost)) return { __result: { errors } };
+	const r = computeRowWithCost(std, singleCost);
+	return { __result: { list: [{ cost: singleCost, ...r }], errors: [] } };
 }
 
 // 辅助函数：计算区间结果
@@ -3226,7 +3295,7 @@ function renderCatalogTable() {
 	const thead = '<thead><tr>'+
 		'<th style="width:36px; text-align:center;"><input id="catalogCheckAll" type="checkbox"></th>'+
 		'<th style="width:120px;">商品名称</th><th style="width:100px;">货号</th><th style="width:80px;">平台</th><th class="lp-col-right" style="width:80px;">含税售价P</th><th class="lp-col-right" style="width:180px;">含税售价（多档）</th>'+
-		'<th class="lp-col-right" style="width:70px;">退货率</th><th class="lp-col-right" style="width:140px;">进货价（多档）</th>'+
+		'<th class="lp-col-right" style="width:140px;">进货价（多档）</th><th class="lp-col-right" style="width:70px;">退货率</th>'+
 		'<th class="lp-col-right" style="width:80px;">付费占比%</th>'+
 		'<th class="lp-col-right" style="width:120px; white-space:nowrap;">利润</th><th class="lp-col-right" style="width:100px; white-space:nowrap;">利润率</th><th class="lp-col-right" style="width:100px; white-space:nowrap;">保本ROI</th><th class="lp-col-right" style="width:120px; white-space:nowrap;">保本广告占比</th>'+
 		'<th class="lp-col-center" style="width:100px;">操作</th>'+
@@ -3239,12 +3308,27 @@ function renderCatalogTable() {
 		let width = '80px';
 		if (key === 'name') width = '120px';      // 商品名称稍宽
 		if (key === 'sku') width = '100px';       // SKU适中
-		if (key === 'platform') width = '80px';   // 平台名称
+		if (key === 'platform') width = '120px';   // 平台名称
 		if (key === 'salePrice') width = '80px';  // 售价
 		if (key === 'returnRate') width = '70px'; // 退货率
 		if (key === 'adRate') width = '70px';     // 付费占比
 		// 当已使用“售价（多档）”时，单一售价可选但不必填，为避免误解将其置为可视但禁用输入
 		const disabled = (key==='salePrice' && Array.isArray(row.salePriceTiers) && row.salePriceTiers.length>0) ? ' disabled title="已填写多档售价时，单一售价仅作参考，可留空"' : '';
+		// 为禁用的售价输入框添加明显的视觉提示
+		if (key === 'salePrice' && Array.isArray(row.salePriceTiers) && row.salePriceTiers.length > 0) {
+			return `<div style="display:flex; flex-direction:column; gap:4px;">
+				<input data-key="${key}" class="${cls}" type="${type}" value="${val === undefined ? '' : String(val)}" placeholder="${placeholder||''}"${step} disabled style="width:${width}; background-color:#f3f4f6; border-color:#d1d5db; color:#9ca3af; cursor:not-allowed; opacity:0.6;" title="已启用多档售价，此输入框禁用">
+				<div style="color:#6b7280; font-size:11px; font-style:italic; text-align:center; background:#f9fafb; padding:2px 4px; border-radius:4px; border:1px dashed #d1d5db;">已启用多档售价，此输入框禁用</div>
+			</div>`;
+		}
+		// 平台字段改为下拉选择，选中后自动应用默认佣金
+		if (key === 'platform') {
+			const presets = getPlatformPresets();
+			const opts = presets.map(p=>`<option value="${p.name}"${String(val||'')===p.name?' selected':''}>${p.name}</option>`).join('');
+			return `<select data-key="platform" class="${cls}" style="width:${width};">`+
+				`<option value=""${!val?' selected':''}>请选择平台</option>`+opts+
+			`</select>`;
+		}
 		return `<input data-key="${key}" class="${cls}" type="${type}" value="${val === undefined ? '' : String(val)}" placeholder="${placeholder||''}"${step}${disabled} style="width:${width};">`; 
 	};
 	const fmtRange = (v, asPercent, asMoney, clampZero) => {
@@ -3304,17 +3388,17 @@ function renderCatalogTable() {
 		return `<div style="position:relative; display:inline-block;">${text}<span title="需≥100%付费占比才保本" style="position:absolute; right:-8px; top:-4px; width:6px; height:6px; background:#ef4444; border-radius:50%;"></span></div>`;
 	};
 	const tbody = '<tbody>' + rows.map((row, idx) => {
-		const res = row.__result || {}; const err = (res.errors||[]).length ? `<div style=\"color:#e11d48; font-size:12px; margin-top:4px;\">${res.errors.join('；')}</div>` : '';
+		const res = row.__result || {};
 		const roiText = String(fmtRange(res.breakevenROI,false,false)).replace('Infinity','∞');
 		return `<tr data-index=\"${idx}\">`+
 			`<td class=\"lp-col-center\"><input type=\"checkbox\" class=\"catalog-check\"></td>`+
-			`<td>${buildCellInput(row,'name','text','名称')}${err}</td>`+
+			`<td>${buildCellInput(row,'name','text','名称')}<div class=\"catalog-error\" style=\"color:#e11d48; font-size:12px; margin-top:4px; display:none;\"></div></td>`+
 			`<td>${buildCellInput(row,'sku','text','SKU')}</td>`+
 			`<td>${buildCellInput(row,'platform','text','平台')}</td>`+
 			`<td class=\"lp-col-right\">${buildCellInput(row,'salePrice','number','P')}</td>`+
 			`<td class=\"lp-col-right\">${buildPriceTiers(row)}</td>`+
-			`<td class=\"lp-col-right\">${buildCellInput(row,'returnRate','text','12%')}</td>`+
 			`<td class=\"lp-col-right\">${buildCostTiers(row)}</td>`+
+			`<td class=\"lp-col-right\">${buildCellInput(row,'returnRate','text','12%')}</td>`+
 			`<td class=\"lp-col-right\">${buildCellInput(row,'adRate','text','20%')}</td>`+
 			`<td class=\"lp-col-right\" style=\"white-space:nowrap;\">${(function(){
 				if (Array.isArray(res.list)) return res.list.map(x=>`<div>${formatMoney(x.profit)}</div>`).join('');
@@ -3346,11 +3430,35 @@ function renderCatalogTable() {
 	}).join('') + '</tbody>';
 	container.innerHTML = `<table class=\"lp-table\">${thead}${tbody}</table>`;
 	const checkAll = document.getElementById('catalogCheckAll'); if (checkAll) checkAll.addEventListener('change', ()=>{ container.querySelectorAll('.catalog-check').forEach(cb=>cb.checked=checkAll.checked); });
-	container.querySelectorAll('.catalog-input').forEach(input => {
+	// 输入节流：避免每次输入都重建整行导致焦点丢失
+	let inputDebounceTimer = null;
+	container.querySelectorAll('.catalog-input, select.catalog-input').forEach(input => {
 		input.addEventListener('input', (e) => {
-			const tr = e.target.closest('tr'); const index = Number(tr.getAttribute('data-index')); const key = e.target.getAttribute('data-key'); const value = e.target.value; const row = catalogState.rows[index] || {};
+			const el = e.target;
+			const tr = el.closest('tr'); const index = Number(tr.getAttribute('data-index'));
+			const key = el.getAttribute('data-key'); const value = el.value; const row = catalogState.rows[index] || {};
 			row[key] = value; catalogState.rows[index] = row; catalogState.dirty = true;
-			const computed = computeRow(row); catalogState.rows[index].__result = computed.__result; saveCatalogToStorage(); renderCatalogRow(index); updateCatalogStatus();
+			// 立即计算缓存，但仅更新行展示的非输入单元格，避免重建输入框
+			const computed = computeRow(row); catalogState.rows[index].__result = computed.__result; saveCatalogToStorage();
+			// 使用 120ms 节流合并频繁输入，降低 render 频率，且仅调用 renderCatalogRow（不会重建输入框）
+			clearTimeout(inputDebounceTimer);
+			inputDebounceTimer = setTimeout(() => { renderCatalogRow(index); updateCatalogStatus(); }, 120);
+		});
+	});
+	// 平台选择变更时，自动填充默认佣金（覆盖至全局佣金字段）并提示
+	container.querySelectorAll('select[data-key="platform"]').forEach(sel => {
+		sel.addEventListener('change', (e) => {
+			const el = e.target; const tr = el.closest('tr'); const index = Number(tr.getAttribute('data-index'));
+			const name = el.value; const rate = getPlatformRateByName(name);
+			if (isFinite(rate)) {
+				const row = catalogState.rows[index] || {};
+				row.platform = name; // 已在通用 input 处理逻辑中覆盖
+				// 行内覆盖平台佣金：后续 mergeGlobalsWithRow 会优先取行内值
+				row.platformRate = rate;
+				catalogState.rows[index] = row;
+				const computed = computeRow(row); catalogState.rows[index].__result = computed.__result; saveCatalogToStorage(); renderCatalogRow(index); updateCatalogStatus();
+				showToast && showToast(`已按平台“${name}”设置佣金为 ${(rate*100).toFixed(2)}%`);
+			}
 		});
 	});
 	// 事件：新增/删除/编辑 多档进货价
@@ -3462,8 +3570,15 @@ function renderCatalogRow(index) {
 			tds[AD_COL].innerHTML = over1 ? `<div style="position:relative; display:inline-block;">${text}<span title="需≥100%付费占比才保本" style="position:absolute; right:-8px; top:-4px; width:6px; height:6px; background:#ef4444; border-radius:50%;"></span></div>` : text;
 		}
 	}
-	if ((res.errors||[]).length) {
-		const nameCell = tds[1]; if (nameCell) { const input = nameCell.querySelector('input'); nameCell.innerHTML=''; if (input) nameCell.appendChild(input); const div = document.createElement('div'); div.style.color='#e11d48'; div.style.fontSize='12px'; div.style.marginTop='4px'; div.textContent = res.errors.join('；'); nameCell.appendChild(div); }
+	// 在不打断输入焦点的前提下显示错误提示：不重建单元格内容，仅更新占位容器
+	const nameCell = tds[1];
+	if (nameCell) {
+		let errDiv = nameCell.querySelector('.catalog-error');
+		const hasErr = (res.errors||[]).length>0;
+		if (errDiv) {
+			errDiv.textContent = hasErr ? res.errors.join('；') : '';
+			errDiv.style.display = hasErr ? '' : 'none';
+		}
 	}
 }
 
@@ -3710,15 +3825,12 @@ function exportCatalogToCSV() {
 	const toPercent = (v) => { const p = parsePercent(v); return isFinite(p) ? (p*100).toFixed(2)+'%' : ''; };
 	const toMoney = (v) => { const n = Number(v); return isFinite(n) ? n.toFixed(2) : ''; };
 	const toCostTiers = (r) => {
+		// 新规则：仅导出单值或多档；不再导出 costMin/costMax 区间表达
 		if (Array.isArray(r.costTiers) && r.costTiers.length) {
 			return r.costTiers.filter(x=>x!==''&&x!==null&&x!==undefined).map(Number).filter(n=>isFinite(n)).map(n=>n.toFixed(2)).join(';');
 		}
-		// 兼容旧数据：若存在 costMin/costMax 两端不同，导出为两档分号分隔，确保导回能识别为两档
-		const cmin = Number(r.costMin); const cmax = Number(r.costMax);
-		if (isFinite(cmin) && isFinite(cmax) && Math.abs(cmin-cmax)>1e-9) return `${cmin.toFixed(2)};${cmax.toFixed(2)}`;
-		if (isFinite(cmin)) return cmin.toFixed(2);
-		if (isFinite(cmax)) return cmax.toFixed(2);
-		return '';
+		const c = Number(isFinite(Number(r.costMin)) ? r.costMin : r.costMax);
+		return isFinite(c) ? c.toFixed(2) : '';
 	};
 	const toPriceTiers = (r) => {
 		if (Array.isArray(r.salePriceTiers) && r.salePriceTiers.length) {
@@ -3766,6 +3878,7 @@ async function importCatalogFromCSV(file) {
 			case 'returnRate': case '退货率': return 'returnRate';
 			case 'costTiers': case '进货价（多档）': return 'costTiers';
 			case 'adRate': case '付费占比%': return 'adRate';
+			case 'platformRate': case '平台佣金%': return 'platformRate';
 			case 'costMin': return 'costMin';
 			case 'costMax': return 'costMax';
 			case 'inputTaxRate': return 'inputTaxRate';
@@ -3796,11 +3909,11 @@ async function importCatalogFromCSV(file) {
 				row.salePrice = salePrice;
 				row.returnRate = parsePercent(get('returnRate'));
 				row.adRate = parsePercent(get('adRate'));
-				// 解析多档进货价：支持 19;29;39 或 19~29 或用空格/逗号/竖线等分隔
+				// 解析多档进货价：支持 19;29;39 或用空格/逗号/竖线等分隔（不再支持上下限区间写法）
 				const rawCosts = String(get('costTiers')||'').trim();
 				let tiers = [];
 				if (rawCosts) {
-					const parts = rawCosts.includes('~') ? rawCosts.split('~') : rawCosts.split(/[;|，,\/\s]+/);
+					const parts = rawCosts.split(/[;|，,\/\s]+/);
 					tiers = parts.map(s=>Number(s)).filter(n=>isFinite(n) && n>=0);
 				}
 				// 放宽限制：如果模板提供了售价多档但未提供成本多档，不强制要求成本多档
@@ -3820,17 +3933,17 @@ async function importCatalogFromCSV(file) {
 				}
 				const computed = computeRow(row); row.__result = computed.__result; okRows.push(row);
 			} else {
-				// 兼容旧模板
+				// 兼容旧模板，但成本区间已废弃：若出现 costMin/costMax，将合并为单值
 				const cols = ['name','sku','platform','salePrice','returnRate','costMin','costMax','inputTaxRate','outputTaxRate','salesTaxRate','platformRate','shippingCost','shippingInsurance','otherCost','adRate'];
 				const row = {}; cols.forEach(k => { row[k] = get(k); });
 				const salePrice = Number(row.salePrice); const costMin = row.costMin===''?NaN:Number(row.costMin); const costMax = row.costMax===''?NaN:Number(row.costMax);
 				if (!row.name || !row.sku || !row.platform) throw new Error('name/sku/platform 必填');
 				if (!isFinite(salePrice) || salePrice <= 0) throw new Error('salePrice 必须>0');
-				if (!isFinite(costMin) && !isFinite(costMax)) throw new Error('costMin 与 costMax 至少填一个');
+				if (!isFinite(costMin) && !isFinite(costMax)) throw new Error('成本（进货价）为必填');
 				if (!isNaN(costMin) && costMin < 0) throw new Error('costMin 不得为负');
 				if (!isNaN(costMax) && costMax < 0) throw new Error('costMax 不得为负');
 				['returnRate','inputTaxRate','outputTaxRate','salesTaxRate','platformRate','adRate'].forEach(k => { const p = parsePercent(row[k]); row[k] = isFinite(p) ? p : ''; });
-				row.salePrice = salePrice; row.costMin = isFinite(costMin)?costMin:''; row.costMax = isFinite(costMax)?costMax:'';
+				row.salePrice = salePrice; const mergedCost = isFinite(costMin) ? costMin : costMax; row.costMin = isFinite(mergedCost) ? mergedCost : ''; row.costMax = '';
 				const computed = computeRow(row); row.__result = computed.__result; okRows.push(row);
 			}
 		} catch (e) {
@@ -3854,17 +3967,67 @@ function initCatalogTab() {
 	const btnRecompute = document.getElementById('btnCatalogRecomputeAll');
 	const btnExamples = document.getElementById('btnCatalogExamples');
 	const btnUndo = document.getElementById('btnCatalogUndoImport');
+	const btnPlat = document.getElementById('btnPlatformSettings');
+	const btnFullscreen = document.getElementById('btnCatalogFullscreen');
 	if (btnAdd) btnAdd.addEventListener('click', () => { catalogState.rows.push({ name:'', sku:'', platform:'', salePrice:'', returnRate:'', costMin:'', costMax:'' }); renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); });
 	if (btnImport && fileInput) { btnImport.addEventListener('click', () => fileInput.click()); fileInput.addEventListener('change', async () => { const f = fileInput.files && fileInput.files[0]; if (!f) return; try { await importCatalogFromCSV(f); } finally { fileInput.value=''; } }); }
 	if (btnExport) btnExport.addEventListener('click', exportCatalogToCSV);
 	if (btnDelete) btnDelete.addEventListener('click', () => { const container = document.getElementById('catalogTableContainer'); const checks = Array.from(container.querySelectorAll('.catalog-check')); const remain = []; checks.forEach(cb => { const tr = cb.closest('tr'); const idx = Number(tr.getAttribute('data-index')); if (!cb.checked) remain.push(catalogState.rows[idx]); }); catalogState.rows = remain; renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); });
 	if (btnRecompute) btnRecompute.addEventListener('click', recomputeAllCatalogRows);
 	if (btnExamples) btnExamples.addEventListener('click', () => { const samples = [
-		{ name:'纯棉薄款内衣', sku:'NB001', platform:'淘宝', salePrice:79.80, returnRate:'12%', costMin:38, costMax:'', inputTaxRate:'6', outputTaxRate:'13', salesTaxRate:'13', platformRate:'5', shippingCost:5.00, shippingInsurance:0.30, otherCost:0.80, adRate:'20%' },
-		{ name:'莫代尔套装', sku:'MD002', platform:'天猫', salePrice:99.80, returnRate:'10%', costMin:42, costMax:48, inputTaxRate:'6', outputTaxRate:'13', salesTaxRate:'13', platformRate:'5', shippingCost:5.50, shippingInsurance:0.30, otherCost:0.80, adRate:'25%' },
-		{ name:'冰丝短袖', sku:'IS003', platform:'拼多多', salePrice:59.80, returnRate:'15%', costMin:28, costMax:'', inputTaxRate:'6', outputTaxRate:'13', salesTaxRate:'13', platformRate:'4', shippingCost:4.50, shippingInsurance:0.30, otherCost:0.60, adRate:'18%' }
+		// 示例1：单一售价 + 单一进货价（基础情况）
+		{ name:'纯棉薄款内衣', sku:'NB001', platform:'淘宝', salePrice:79.80, returnRate:'12%', costMin:38, inputTaxRate:'6', outputTaxRate:'13', salesTaxRate:'13', platformRate:'0', shippingCost:5.00, shippingInsurance:0.30, otherCost:0.80, adRate:'20%' },
+		// 示例2：单一售价 + 多档进货价（逐档多行显示）
+		{ name:'莫代尔套装', sku:'MD002', platform:'天猫', salePrice:99.80, returnRate:'10%', costTiers:[42, 45, 48], inputTaxRate:'6', outputTaxRate:'13', salesTaxRate:'13', platformRate:'5.5', shippingCost:5.50, shippingInsurance:0.30, otherCost:0.80, adRate:'25%' },
+		// 示例3：多档售价 + 多档进货价（1:1配对显示）
+		{ name:'冰丝短袖', sku:'IS003', platform:'抖音', salePrice:59.80, returnRate:'15%', salePriceTiers:[59.80, 69.80, 79.80], costTiers:[28, 32, 36], inputTaxRate:'6', outputTaxRate:'13', salesTaxRate:'13', platformRate:'5', shippingCost:4.50, shippingInsurance:0.30, otherCost:0.60, adRate:'18%' },
+		// 示例4：多档售价 + 多档进货价（档数一致，正常显示）
+		{ name:'运动套装', sku:'SP004', platform:'拼多多', salePrice:89.80, returnRate:'8%', salePriceTiers:[89.80, 99.80], costTiers:[45, 50], inputTaxRate:'6', outputTaxRate:'13', salesTaxRate:'13', platformRate:'4', shippingCost:6.00, shippingInsurance:0.40, otherCost:1.00, adRate:'22%' },
+		// 示例5：单一售价 + 多档进货价（逐档多行显示）
+		{ name:'休闲裤装', sku:'LX005', platform:'京东', salePrice:129.80, returnRate:'6%', costTiers:[65, 70, 75], inputTaxRate:'6', outputTaxRate:'13', salesTaxRate:'13', platformRate:'3', shippingCost:7.00, shippingInsurance:0.50, otherCost:1.20, adRate:'28%' }
 	]; samples.forEach(s => { const c = computeRow(s); s.__result = c.__result; }); catalogState.rows = (catalogState.rows||[]).concat(samples); renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); });
 	if (btnUndo) btnUndo.addEventListener('click', () => { if (!catalogState.lastImportBackup) return; catalogState.rows = catalogState.lastImportBackup; catalogState.lastImportBackup = null; btnUndo.style.display='none'; renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); });
+	if (btnPlat) btnPlat.addEventListener('click', () => openPlatformSettingsModal());
+
+	// 全屏：将表格容器临时移动到全屏弹窗中显示，关闭时移回原位
+	if (btnFullscreen) {
+		const overlay = document.getElementById('catalogFullscreenOverlay');
+		const body = document.getElementById('catalogFullscreenBody');
+		const closeBtn = document.getElementById('btnCatalogFullscreenClose');
+		const recomputeBtn = document.getElementById('btnCatalogFullscreenRecompute');
+		const addRowBtn = document.getElementById('btnCatalogFullscreenAddRow');
+		const delBtn = document.getElementById('btnCatalogFullscreenDeleteSelected');
+		const container = document.getElementById('catalogTableContainer');
+		// 占位符：用于关闭时把容器放回原处
+		const placeholder = document.createElement('div');
+		placeholder.id = 'catalogTablePlaceholder';
+		btnFullscreen.addEventListener('click', () => {
+			if (!overlay || !body || !container) return;
+			if (!container.parentElement || container.parentElement.id !== 'catalogTablePlaceholder') {
+				container.after(placeholder);
+			}
+			body.appendChild(container);
+			overlay.style.display = 'flex';
+			// 全屏时再渲染一次，确保宽度自适应
+			try { renderCatalogTable(); } catch (_) {}
+		});
+		const exitFullscreen = () => {
+			if (!overlay) return;
+			overlay.style.display = 'none';
+			const ph = document.getElementById('catalogTablePlaceholder');
+			const cont = document.getElementById('catalogTableContainer');
+			if (ph && cont) ph.replaceWith(cont);
+			// 退出后恢复一次渲染，适配原容器宽度
+			try { renderCatalogTable(); } catch (_) {}
+		};
+		if (closeBtn) closeBtn.addEventListener('click', exitFullscreen);
+		if (overlay) overlay.addEventListener('click', (e) => { if (e.target === overlay) exitFullscreen(); });
+		if (recomputeBtn) recomputeBtn.addEventListener('click', recomputeAllCatalogRows);
+		if (addRowBtn) addRowBtn.addEventListener('click', () => { catalogState.rows.push({ name:'', sku:'', platform:'', salePrice:'', returnRate:'', costMin:'', costMax:'' }); renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); });
+		if (delBtn) delBtn.addEventListener('click', () => { const cont = document.getElementById('catalogTableContainer'); const checks = Array.from(cont.querySelectorAll('.catalog-check')); const remain = []; checks.forEach(cb => { const tr = cb.closest('tr'); const idx = Number(tr.getAttribute('data-index')); if (!cb.checked) remain.push(catalogState.rows[idx]); }); catalogState.rows = remain; renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); });
+		// ESC 关闭
+		window.addEventListener('keydown', (e) => { if (overlay && overlay.style.display !== 'none' && e.key === 'Escape') { exitFullscreen(); } });
+	}
 }
 
 // 页面加载：预初始化 Catalog，避免首次切换迟缓

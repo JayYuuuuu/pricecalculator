@@ -113,6 +113,23 @@ input {
     background-color: #fafafa;
     margin-right: 0; /* 与 .input-wrapper 的 gap 保持一致，不再使用外边距分隔 */
 }
+/* 统一 select 与 input 的样式 */
+select {
+    width: auto;
+    padding: 0.5rem;
+    border: 1px solid #d2d2d7;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    background-color: #fafafa;
+    margin-right: 0;
+}
+select:focus {
+    border-color: #0066cc;
+    outline: none;
+    background-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(0,102,204,0.15);
+}
 .compact-number {
     width: 120px;
     min-width: 100px;

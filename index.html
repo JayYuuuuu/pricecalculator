@@ -526,10 +526,27 @@
                     <button id="btnCatalogDeleteSelected" class="header-btn" style="margin:0; background:#ef4444; border-color:#ef4444;">批量删除所选</button>
                     <button id="btnCatalogRecomputeAll" class="header-btn" style="margin:0;">一键重算</button>
                     <button id="btnCatalogExamples" class="header-btn" style="margin:0; background:#10b981; border-color:#10b981;">插入示例</button>
+                    <button id="btnPlatformSettings" class="header-btn" style="margin:0;">平台设置</button>
+                    <button id="btnCatalogFullscreen" class="header-btn" style="margin:0;">全屏显示</button>
                     <button id="btnCatalogUndoImport" class="header-btn" style="margin:0; display:none;">撤销上次导入</button>
                 </div>
                 <!-- 表格容器 -->
                 <div id="catalogTableContainer" class="lp-card" style="padding:0; overflow:auto;"></div>
+                <!-- 全屏弹窗：初始隐藏，打开时将表格容器临时移动到此处 -->
+                <div id="catalogFullscreenOverlay" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
+                    <div role="dialog" aria-modal="true" aria-label="商品清单全屏" style="background:#fff; width:96vw; height:92vh; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.2); display:flex; flex-direction:column; overflow:hidden;">
+                        <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid #e5e7eb;">
+                            <div style="font-weight:600; color:#111827;">商品清单（全屏）</div>
+                            <div style="display:flex; gap:8px; align-items:center;">
+                                <button id="btnCatalogFullscreenAddRow" class="header-btn" style="margin:0;">新增一行</button>
+                                <button id="btnCatalogFullscreenDeleteSelected" class="header-btn" style="margin:0; background:#ef4444; border-color:#ef4444;">批量删除所选</button>
+                                <button id="btnCatalogFullscreenRecompute" class="header-btn" style="margin:0;">一键重算</button>
+                                <button id="btnCatalogFullscreenClose" class="header-btn" style="margin:0;">退出全屏</button>
+                            </div>
+                        </div>
+                        <div id="catalogFullscreenBody" style="flex:1; overflow:auto; background:#f9fafb; padding:12px;"></div>
+                    </div>
+                </div>
                 <!-- 状态区 -->
                 <div id="catalogStatus" style="margin-top:10px; color:#666; font-size:0.9rem;">共 0 条，0 条异常</div>
             </div>
