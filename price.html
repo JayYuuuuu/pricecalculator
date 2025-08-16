@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>简化版利润计算器</title>
+    <title>利润计算器（税务合规版）</title>
     <style>
         * {
             margin: 0;
@@ -259,7 +259,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>简化版利润计算器</h1>
+            <h1>利润计算器（税务合规版）</h1>
             <p>快速计算商品利润和关键指标</p>
         </div>
 
@@ -278,7 +278,7 @@
                     </div>
                     <div class="input-group">
                         <label>你的售价（含税）</label>
-                        <input type="number" id="sellingPrice" placeholder="请输入商品售价" step="0.01" value="99">
+                        <input type="number" id="sellingPrice" placeholder="请输入商品售价" step="0.01" value="89">
                     </div>
                     <div class="input-group">
                         <label>你的利润</label>
@@ -355,14 +355,6 @@
                         <div class="metric-value" id="grossMargin">0%</div>
                         <div class="metric-label">毛利润</div>
                     </div>
-                    <div class="metric-card">
-                        <div class="metric-value" id="breakevenROI">0</div>
-                        <div class="metric-label">保本ROI</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value" id="breakevenAdRate">0%</div>
-                        <div class="metric-label">保本付费占比</div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -405,9 +397,10 @@
 
                 // 计算销售相关费用（考虑退货率）
                 const platformFeeAmount = sellingPrice * (platformFee / 100); // 平台佣金（可退回）
+                const SERVICE_VAT = 0.06;
                 const adCost = sellingPrice * (marketingCost / 100); // 广告费（不可退回，需分摊）
                 const adCostEffective = adCost / effectiveSalesRate; // 分摊后的广告费
-                const adVAT = adCostEffective * 0.06; // 广告费可抵扣进项税（6%）
+                const adVAT = adCostEffective * (SERVICE_VAT / (1 + SERVICE_VAT)); // 广告费可抵扣进项税（含税×6%/1.06）
 
                 // 运营成本（不可退回，需分摊）
                 const logisticsCostEffective = logisticsCost / effectiveSalesRate;
@@ -419,7 +412,7 @@
                 const outputVAT = netPrice * (outputTaxRate / 100);
 
                 // 计算总可抵扣进项税
-                const totalVATDeduction = purchaseVAT + adVAT + (platformFeeAmount * 0.06); // 商品+广告+平台佣金的进项税
+                const totalVATDeduction = purchaseVAT + adVAT + (platformFeeAmount * (SERVICE_VAT / (1 + SERVICE_VAT))); // 商品+广告+平台佣金的进项税（平台佣金为含税→进项=含税×6%/1.06）
                 const actualVAT = outputVAT - totalVATDeduction; // 实际应缴税额
 
                 // 计算总成本（按原系统逻辑）
@@ -430,44 +423,9 @@
                 const profit = sellingPrice - totalCost;
                 const profitRate = (profit / sellingPrice * 100).toFixed(2);
 
-                // 计算保本ROI和保本付费占比（按原系统完整逻辑）
-                // 关键中间量计算
-                const effectiveCost = costPrice + actualInvoiceCost; // 实际进货成本 C = 进货价 + 开票成本
-                const fixedCosts = (logisticsCost + shippingInsurance + otherCost) / effectiveSalesRate; // 不可退回固定成本按有效销售率分摊
-                const taxFactorOnFinal = outputTaxRate / (1 + outputTaxRate / 100); // 销项税占比
-                const v = 0.06; // 服务业进项税率（用于广告与平台佣金的进项抵扣）
 
-                // 分子常数项 B = C - 商品进项税 + 固定成本/E
-                const B = effectiveCost - purchaseVAT + fixedCosts;
-                
-                // 分母常数项 D = 1 - 平台费率 - 销项税占比 + v/(1+v) × 平台费率
-                // 注意：原系统使用小数形式的平台费率，这里需要转换
-                const platformRateDecimal = platformFee / 100; // 转换为小数形式
-                const D = 1 - platformRateDecimal - taxFactorOnFinal + (v / (1 + v)) * platformRateDecimal;
 
-                // 保本付费占比 a* = E/(1-v) × (D - B/P)
-                const term = D - (B / sellingPrice);
-                const breakevenAdRate = (effectiveSalesRate / (1 - v)) * term;
 
-                // 保本ROI = E/a*
-                let breakevenROI;
-                if (breakevenAdRate <= 0) {
-                    breakevenROI = '∞'; // 无需广告也能保本
-                } else if (!isFinite(breakevenAdRate) || breakevenAdRate >= 1) {
-                    breakevenROI = '-'; // 参数异常或需要广告占比≥100%
-                } else {
-                    breakevenROI = (effectiveSalesRate / breakevenAdRate).toFixed(2);
-                }
-
-                // 调试输出保本计算过程
-                console.log('保本计算调试:', {
-                    effectiveSalesRate,
-                    breakevenAdRate,
-                    breakevenROI,
-                    B,
-                    D,
-                    term
-                });
 
                 // 更新显示结果
                 document.getElementById('profit').value = `¥${profit.toFixed(2)}`;
@@ -475,17 +433,7 @@
                 document.getElementById('profitRate').textContent = `${profitRate}%`;
                 document.getElementById('markupRatio').textContent = `${markupRatio}倍`;
                 document.getElementById('grossMargin').textContent = `${grossMargin}%`;
-                document.getElementById('breakevenROI').textContent = breakevenROI;
-                // 格式化保本付费占比显示
-                let breakevenAdRateDisplay;
-                if (breakevenAdRate <= 0) {
-                    breakevenAdRateDisplay = '0%';
-                } else if (!isFinite(breakevenAdRate) || breakevenAdRate >= 1) {
-                    breakevenAdRateDisplay = '-';
-                } else {
-                    breakevenAdRateDisplay = (breakevenAdRate * 100).toFixed(2) + '%';
-                }
-                document.getElementById('breakevenAdRate').textContent = breakevenAdRateDisplay;
+
 
                 // 设置利润状态
                 const profitStatus = document.getElementById('profitStatus');
@@ -512,53 +460,7 @@
                 // 显示结果区域
                 document.getElementById('results').style.display = 'block';
 
-                // 调试输出（可选）
-                console.log('简化版计算详情:', {
-                    输入参数: {
-                        进价: costPrice,
-                        开票成本比例: invoiceCost,
-                        售价: sellingPrice,
-                        付费占比: marketingCost,
-                        退货率: riskRate,
-                        进项税率: inputTaxRate,
-                        销项税率: outputTaxRate,
-                        平台佣金: platformFee,
-                        物流费: logisticsCost,
-                        运费险: shippingInsurance,
-                        其他费用: otherCost
-                    },
-                    计算过程: {
-                        开票费用: actualInvoiceCost,
-                        总进货成本: totalPurchaseCost,
-                        有效销售率: effectiveSalesRate,
-                        广告费分摊: adCostEffective,
-                        物流费分摊: logisticsCostEffective,
-                        运费险分摊: shippingInsuranceEffective,
-                        其他费用分摊: otherCostEffective,
-                        平台佣金: platformFeeAmount,
-                        不含税售价: netPrice,
-                        销项税: outputVAT,
-                        商品进项税: purchaseVAT,
-                        广告费进项税: adVAT,
-                        平台佣金进项税: platformFeeAmount * 0.06,
-                        总进项税抵扣: totalVATDeduction,
-                        实际应缴税: actualVAT,
-                        总成本: totalCost,
-                        利润: profit,
-                        利润率: profitRate
-                    },
-                    保本计算: {
-                        实际进货成本: effectiveCost,
-                        固定成本分摊: fixedCosts,
-                        销项税占比: taxFactorOnFinal,
-                        服务业进项税率: v,
-                        平台费率小数: platformRateDecimal,
-                        分子常数项B: B,
-                        分母常数项D: D,
-                        保本付费占比: breakevenAdRate,
-                        保本ROI: breakevenROI
-                    }
-                });
+
 
             } catch (error) {
                 console.error('计算错误:', error);
