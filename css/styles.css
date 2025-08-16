@@ -37,7 +37,9 @@
 /* 现代化的UI样式 */
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    max-width: 1000px;
+    /* 动态宽度：根据屏幕宽度自适应，最多占据90%屏幕宽度 */
+    max-width: 90vw;
+    width: 100%;
     margin: 2rem auto;
     padding: 0 1rem;
     background-color: #f5f5f7;
@@ -53,6 +55,9 @@ body {
     border-radius: 16px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 
                0 8px 24px rgba(0, 0, 0, 0.04);
+    /* 确保容器宽度与body保持一致 */
+    width: 100%;
+    box-sizing: border-box;
 }
 h2 {
     color: #1d1d1f;
@@ -1259,4 +1264,85 @@ button:hover {
     #listpriceTab .input-group .input-wrapper input { flex: 1 1 120px; }
     #fullReductionList .tier-row .tier-threshold,
     #fullReductionList .tier-row .tier-off { flex: 1 1 110px; min-width: 100px; }
+}
+
+/* --------------------------- */
+/* 响应式布局：页面宽度动态调整 */
+/* --------------------------- */
+
+/* 大屏幕：限制最大宽度，避免内容过宽 */
+@media (min-width: 1200px) {
+    body {
+        max-width: 1200px; /* 大屏幕下限制最大宽度为1200px */
+    }
+}
+
+/* 中等屏幕：使用90%宽度 */
+@media (min-width: 768px) and (max-width: 1199px) {
+    body {
+        max-width: 90vw;
+    }
+    
+    /* 中等屏幕下调整输入组布局 */
+    .input-groups-container {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.25rem;
+    }
+    
+    /* 中等屏幕下调整容器内边距 */
+    .container {
+        padding: 2rem;
+    }
+}
+
+/* 小屏幕：使用95%宽度，确保移动端有足够空间 */
+@media (max-width: 767px) {
+    body {
+        max-width: 95vw;
+        margin: 1rem auto;
+        padding: 0 0.5rem;
+    }
+    
+    .container {
+        padding: 1.5rem;
+        border-radius: 12px;
+    }
+    
+    /* 小屏幕下调整标题大小 */
+    h2 {
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    /* 小屏幕下调整section间距 */
+    .section {
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+}
+
+/* 超小屏幕：进一步优化布局 */
+@media (max-width: 480px) {
+    body {
+        max-width: 98vw;
+        margin: 0.5rem auto;
+        padding: 0 0.25rem;
+    }
+    
+    .container {
+        padding: 1rem;
+        border-radius: 8px;
+    }
+    
+    /* 超小屏幕下调整输入组布局 */
+    .input-groups-container {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    /* 超小屏幕下调整按钮大小 */
+    button {
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+    }
 }
