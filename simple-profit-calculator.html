@@ -516,6 +516,347 @@
                 gap: 15px;
             }
         }
+
+        /* 纳税人类型对比功能样式 */
+        .taxpayer-comparison-section {
+            margin: 30px 0;
+            padding: 25px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            border: 2px solid #dee2e6;
+        }
+
+        .comparison-controls {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .comparison-rate-selector {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .comparison-rate-selector label {
+            font-weight: 600;
+            color: #333;
+            white-space: nowrap;
+        }
+
+        .comparison-rate-selector select {
+            padding: 12px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            background: white;
+            min-width: 200px;
+        }
+
+        .rate-note {
+            font-size: 0.9rem;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .compare-btn {
+            padding: 15px 25px;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .compare-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(40, 167, 69, 0.3);
+        }
+
+        .comparison-results {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            border: 2px solid #28a745;
+        }
+
+        .comparison-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .comparison-header h4 {
+            margin: 0;
+            color: #28a745;
+            font-size: 1.3rem;
+        }
+
+        .comparison-summary {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid #c3e6cb;
+            font-weight: 600;
+        }
+
+        .comparison-table-container {
+            overflow-x: auto;
+            margin-bottom: 25px;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+
+        .comparison-table th {
+            background: #f8f9fa;
+            padding: 15px 12px;
+            text-align: center;
+            font-weight: 600;
+            color: #333;
+            border: 1px solid #dee2e6;
+            position: sticky;
+            top: 0;
+        }
+
+        .comparison-table td {
+            padding: 12px 10px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+            vertical-align: middle;
+        }
+
+        .comparison-table th:first-child,
+        .comparison-table td:first-child {
+            text-align: left;
+            font-weight: 600;
+            background: #f8f9fa;
+        }
+
+        .comparison-table td:nth-child(2) {
+            background: rgba(102, 126, 234, 0.05);
+            color: #667eea;
+        }
+
+        .comparison-table td:nth-child(3) {
+            background: rgba(255, 107, 53, 0.05);
+            color: #ff6b35;
+        }
+
+        .comparison-table td:nth-child(4) {
+            background: rgba(40, 167, 69, 0.05);
+            color: #28a745;
+            font-weight: 600;
+        }
+
+        .comparison-insights {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+        }
+
+        .comparison-insights h5 {
+            margin: 0 0 15px 0;
+            color: #495057;
+            font-size: 1.1rem;
+        }
+
+        .insight-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 12px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+
+        .insight-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .insight-icon.advantage {
+            background: #28a745;
+            color: white;
+        }
+
+        .insight-icon.disadvantage {
+            background: #dc3545;
+            color: white;
+        }
+
+        .insight-icon.neutral {
+            background: #6c757d;
+            color: white;
+        }
+
+        .insight-text {
+            flex: 1;
+            color: #495057;
+            line-height: 1.5;
+        }
+
+        /* 移动端响应式调整 */
+        @media (max-width: 768px) {
+            .comparison-controls {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 15px;
+            }
+            
+            .comparison-rate-selector {
+                flex-direction: column;
+                align-items: stretch;
+                min-width: auto;
+            }
+            
+            .comparison-header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 15px;
+            }
+            
+            .comparison-table-container {
+                margin: 0 -10px 25px -10px;
+            }
+            
+            .comparison-table {
+                min-width: 500px;
+            }
+        }
+
+        /* 纳税人类型选择样式 */
+        .taxpayer-options-modal {
+            display: flex;
+            gap: 15px;
+            flex: 1;
+        }
+        
+        .taxpayer-option-modal {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 15px;
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+        }
+        
+        .taxpayer-option-modal:hover {
+            border-color: #667eea;
+            transform: translateY(-1px);
+        }
+        
+        .taxpayer-option-modal input[type="radio"] {
+            display: none;
+        }
+        
+        .radio-custom-modal {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #dee2e6;
+            border-radius: 50%;
+            position: relative;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+        
+        .taxpayer-option-modal input[type="radio"]:checked + .radio-custom-modal {
+            border-color: #667eea;
+            background: #667eea;
+        }
+        
+        .taxpayer-option-modal input[type="radio"]:checked + .radio-custom-modal::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 6px;
+            height: 6px;
+            background: white;
+            border-radius: 50%;
+        }
+        
+        .option-content-modal {
+            flex: 1;
+        }
+        
+        .option-title-modal {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9rem;
+            margin-bottom: 2px;
+        }
+        
+        .option-desc-modal {
+            color: #6c757d;
+            font-size: 0.8rem;
+            line-height: 1.3;
+        }
+        
+        /* 税率设置样式 */
+        .tax-rate-controls {
+            display: flex;
+            gap: 20px;
+            flex: 1;
+        }
+        
+        .tax-rate-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .tax-rate-item span {
+            font-size: 0.9rem;
+            color: #495057;
+            white-space: nowrap;
+        }
+        
+        .tax-rate-item select {
+            padding: 8px 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            background: white;
+            min-width: 80px;
+        }
+        
+        .tax-rate-item select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
     </style>
 </head>
 <body>
@@ -639,6 +980,51 @@
 
             <button class="calculate-btn" onclick="calculateProfitAndVerify()">计算利润并验证</button>
             <button class="explore-btn" onclick="openProfitExploration()">利润率推演</button>
+            
+            <!-- 纳税人类型对比功能 -->
+            <div class="taxpayer-comparison-section">
+                <h3 style="color: #495057; font-size: 1.3rem; margin: 30px 0 20px 0; padding-bottom: 8px; border-bottom: 2px solid #667eea;">纳税人类型对比分析</h3>
+                <div class="comparison-controls">
+                    <div class="comparison-rate-selector">
+                        <label>对比税率选择：</label>
+                        <select id="comparisonTaxRate" onchange="updateComparisonRate()">
+                            <option value="13">13% - 一般货物（纺织品、家电、电子产品等）</option>
+                            <option value="9">9% - 农产品、自来水、暖气、煤气、图书、运输服务</option>
+                            <option value="6">6% - 现代服务业（金融、咨询、广告、软件服务等）</option>
+                        </select>
+                        <span class="rate-note">（选择一般纳税人适用的税率进行对比）</span>
+                    </div>
+                    <button class="compare-btn" onclick="compareTaxpayerTypes()">一键对比纳税人类型</button>
+                </div>
+                
+                <!-- 对比结果 -->
+                <div class="comparison-results" id="comparisonResults" style="display: none;">
+                    <div class="comparison-header">
+                        <h4>对比结果</h4>
+                        <div class="comparison-summary" id="comparisonSummary"></div>
+                    </div>
+                    
+                    <div class="comparison-table-container">
+                        <table class="comparison-table">
+                            <thead>
+                                <tr>
+                                    <th>成本项目</th>
+                                    <th>一般纳税人</th>
+                                    <th>小规模纳税人</th>
+                                    <th>差异</th>
+                                </tr>
+                            </thead>
+                            <tbody id="comparisonTableBody">
+                                <!-- 对比数据将通过JavaScript动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="comparison-insights" id="comparisonInsights">
+                        <!-- 对比洞察将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+            </div>
 
             <!-- 计算结果 -->
             <div class="results" id="results" style="display: none;">
@@ -685,6 +1071,10 @@
                 <div class="verification-section">
                     <h3>基础参数</h3>
                     <div class="verification-grid">
+                        <div class="verification-item">
+                            <span class="verification-label">纳税人类型:</span>
+                            <span class="verification-value" id="verifyTaxpayerType">一般纳税人</span>
+                        </div>
                         <div class="verification-item">
                             <span class="verification-label">进价:</span>
                             <span class="verification-value" id="verifyCostPrice">¥0.00</span>
@@ -760,7 +1150,7 @@
                             <span class="verification-value" id="verifyNetPrice">¥0.00</span>
                         </div>
                         <div class="verification-item">
-                            <span class="verification-label">销项税:</span>
+                            <span class="verification-label" id="verifyOutputVATLabel">销项税:</span>
                             <span class="verification-value" id="verifyOutputVAT">¥0.00</span>
                         </div>
                         <div class="verification-item">
@@ -772,7 +1162,7 @@
                             <span class="verification-value" id="verifyPlatformVAT">¥0.00</span>
                         </div>
                         <div class="verification-item">
-                            <span class="verification-label">实际应缴税:</span>
+                            <span class="verification-label" id="verifyActualVATLabel">实际应缴税:</span>
                             <span class="verification-value" id="verifyActualVAT">¥0.00</span>
                         </div>
                     </div>
@@ -906,7 +1296,7 @@
                 } else {
                     // 小规模纳税人：征收率计算方式
                     netPrice = sellingPrice; // 小规模纳税人售价就是不含税价
-                    outputVAT = sellingPrice * (outputTaxRate / 100); // 直接按征收率计算
+                    outputVAT = sellingPrice * 0.03; // 固定使用3%征收率
                     actualVAT = outputVAT; // 小规模纳税人没有进项税抵扣，实际应缴税额就是销项税
                 }
 
@@ -938,7 +1328,7 @@
                     D = 1 - platformRateDecimal - taxFactorOnFinal + (v / (1 + v)) * platformRateDecimal;
                 } else {
                     // 小规模纳税人：征收率计算方式
-                    const t = outputTaxRate / 100; // 征收率小数
+                    const t = 0.03; // 固定使用3%征收率
                     const taxFactorOnFinal = t; // 小规模纳税人征收率直接计入成本
                     D = 1 - platformRateDecimal - taxFactorOnFinal;
                 }
@@ -1093,7 +1483,7 @@
             } else {
                 // 小规模纳税人：征收率计算方式
                 netPrice = sellingPrice; // 小规模纳税人售价就是不含税价
-                outputVAT = sellingPrice * (outputTaxRate / 100); // 直接按征收率计算
+                outputVAT = sellingPrice * 0.03; // 固定使用3%征收率
                 actualVAT = outputVAT; // 小规模纳税人没有进项税抵扣，实际应缴税额就是销项税
             }
             const totalCost = totalPurchaseCost + platformFeeAmount + adCostEffective + 
@@ -1109,16 +1499,16 @@
             const platformRateDecimal = platformFee / 100;
             
             // 根据纳税人类型计算分母常数项D
-            let D;
+            let D, taxFactorOnFinal;
             if (taxpayerType === 'general') {
                 // 一般纳税人：考虑进项税抵扣
                 const t = outputTaxRate / 100; // 销项税率小数
-                const taxFactorOnFinal = t / (1 + t); // 销项税价内占比 s = t/(1+t)
+                taxFactorOnFinal = t / (1 + t); // 销项税价内占比 s = t/(1+t)
                 D = 1 - platformRateDecimal - taxFactorOnFinal + (v / (1 + v)) * platformRateDecimal;
             } else {
                 // 小规模纳税人：征收率计算方式
-                const t = outputTaxRate / 100; // 征收率小数
-                const taxFactorOnFinal = t; // 小规模纳税人征收率直接计入成本
+                const t = 0.03; // 固定使用3%征收率
+                taxFactorOnFinal = t; // 小规模纳税人征收率直接计入成本
                 D = 1 - platformRateDecimal - taxFactorOnFinal;
             }
             
@@ -1126,6 +1516,17 @@
             const breakevenAdRate = (effectiveSalesRate / (1 - v)) * term;
             const breakevenROI = effectiveSalesRate / breakevenAdRate;
 
+            // 根据纳税人类型更新标签名称和纳税人类型显示
+            if (taxpayerType === 'general') {
+                document.getElementById('verifyTaxpayerType').textContent = '一般纳税人';
+                document.getElementById('verifyOutputVATLabel').textContent = '销项税:';
+                document.getElementById('verifyActualVATLabel').textContent = '实际应缴税:';
+            } else {
+                document.getElementById('verifyTaxpayerType').textContent = '小规模纳税人';
+                document.getElementById('verifyOutputVATLabel').textContent = '销售税(3%):';
+                document.getElementById('verifyActualVATLabel').textContent = '应缴销售税:';
+            }
+            
             // 更新验证结果显示
             document.getElementById('verifyCostPrice').textContent = `¥${costPrice.toFixed(2)}`;
             document.getElementById('verifyInvoiceCost').textContent = `¥${actualInvoiceCost.toFixed(2)}`;
@@ -1246,6 +1647,54 @@
                         
                         <div class="modal-body">
                             <div class="exploration-controls">
+                                <!-- 纳税人类型选择 -->
+                                <div class="control-group taxpayer-selection">
+                                    <label>纳税人类型：</label>
+                                    <div class="taxpayer-options-modal">
+                                        <label class="taxpayer-option-modal">
+                                            <input type="radio" name="modalTaxpayerType" value="general" checked onchange="updateModalTaxRatesAndRecalculate()">
+                                            <span class="radio-custom-modal"></span>
+                                            <div class="option-content-modal">
+                                                <div class="option-title-modal">一般纳税人</div>
+                                                <div class="option-desc-modal">可抵扣进项税</div>
+                                            </div>
+                                        </label>
+                                        <label class="taxpayer-option-modal">
+                                            <input type="radio" name="modalTaxpayerType" value="small" onchange="updateModalTaxRatesAndRecalculate()">
+                                            <span class="radio-custom-modal"></span>
+                                            <div class="option-content-modal">
+                                                <div class="option-title-modal">小规模纳税人</div>
+                                                <div class="option-desc-modal">征收率3%，不可抵扣</div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <!-- 税率设置 -->
+                                <div class="control-group tax-rate-selection">
+                                    <label>税率设置：</label>
+                                    <div class="tax-rate-controls">
+                                        <div class="tax-rate-item">
+                                            <span>进项税率：</span>
+                                            <select id="modalInputTaxRate" onchange="updateModalOutputTaxRateAndRecalculate()">
+                                                <option value="13">13%</option>
+                                                <option value="9">9%</option>
+                                                <option value="6">6%</option>
+                                                <option value="0">0%</option>
+                                            </select>
+                                        </div>
+                                        <div class="tax-rate-item">
+                                            <span>销项税率：</span>
+                                            <select id="modalOutputTaxRate" onchange="updateModalInputTaxRateAndRecalculate()">
+                                                <option value="13">13%</option>
+                                                <option value="9">9%</option>
+                                                <option value="6">6%</option>
+                                                <option value="0">0%</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                
                                 <div class="control-group">
                                     <label>当前售价：</label>
                                     <div class="current-price">
@@ -1279,9 +1728,9 @@
                             
                             <div class="exploration-results" id="explorationResults" style="display: none;">
                                 <div class="results-header">
-                                    <h3>利润率推演结果矩阵</h3>
-                                    <div class="current-params" id="currentParams"></div>
+                                    <h3>利润率推演矩阵</h3>
                                 </div>
+                                <div class="current-params" id="currentParams"></div>
                                 <div class="matrix-container" id="profitMatrix"></div>
                                 
                                 <div class="exploration-summary">
@@ -1299,6 +1748,9 @@
 
             // 添加弹窗样式
             addModalStyles();
+            
+            // 初始化弹窗中的纳税人类型和税率设置
+            updateModalTaxRates();
         }
 
         // 添加弹窗样式
@@ -1544,6 +1996,44 @@
                         border: 2px solid #e1e5e9;
                     }
                     
+                    .current-params {
+                        display: grid;
+                        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                        gap: 15px;
+                        margin: 20px 0;
+                        padding: 20px;
+                        background: #f8f9fa;
+                        border-radius: 10px;
+                        border: 2px solid #e9ecef;
+                    }
+                    
+                    .param-item {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        padding: 10px 15px;
+                        background: white;
+                        border-radius: 8px;
+                        border: 1px solid #e9ecef;
+                        white-space: nowrap;
+                        min-width: 0;
+                    }
+                    
+                    .param-label {
+                        font-weight: 600;
+                        color: #495057;
+                        white-space: nowrap;
+                        margin-right: 10px;
+                    }
+                    
+                    .param-value {
+                        font-weight: bold;
+                        color: #ff6b35;
+                        font-size: 1.1rem;
+                        white-space: nowrap;
+                        text-align: right;
+                    }
+                    
                     .summary-grid {
                         display: grid;
                         grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -1683,23 +2173,26 @@
             // 获取当前输入参数
             const costPrice = parseFloat(document.getElementById('costPrice').value) || 0;
             const invoiceCost = parseFloat(document.getElementById('invoiceCost').value) || 0;
-            const inputTaxRate = parseFloat(document.getElementById('inputTaxRate').value) || 0;
-            const outputTaxRate = parseFloat(document.getElementById('outputTaxRate').value) || 0;
             const platformFee = parseFloat(document.getElementById('platformFee').value) || 0;
             const logisticsCost = parseFloat(document.getElementById('logisticsCost').value) || 0;
             const shippingInsurance = parseFloat(document.getElementById('shippingInsurance').value) || 0;
             const otherCost = parseFloat(document.getElementById('otherCost').value) || 0;
+            
+            // 获取弹窗中设置的纳税人类型和税率
+            const modalTaxpayerType = document.querySelector('input[name="modalTaxpayerType"]:checked').value;
+            const modalInputTaxRate = parseFloat(document.getElementById('modalInputTaxRate').value) || 0;
+            const modalOutputTaxRate = parseFloat(document.getElementById('modalOutputTaxRate').value) || 0;
 
-            for (let i = 0; i < returnRates.length; i++) {
-                matrix[i] = [];
-                for (let j = 0; j < adRates.length; j++) {
-                    const result = calculateProfitForScenario(
-                        costPrice, invoiceCost, currentPrice, adRates[j], returnRates[i],
-                        inputTaxRate, outputTaxRate, platformFee, logisticsCost, shippingInsurance, otherCost
-                    );
-                    matrix[i][j] = result;
+                            for (let i = 0; i < returnRates.length; i++) {
+                    matrix[i] = [];
+                    for (let j = 0; j < adRates.length; j++) {
+                        const result = calculateProfitForScenario(
+                            costPrice, invoiceCost, currentPrice, adRates[j], returnRates[i],
+                            modalInputTaxRate, modalOutputTaxRate, platformFee, logisticsCost, shippingInsurance, otherCost
+                        );
+                        matrix[i][j] = result;
+                    }
                 }
-            }
             
             return matrix;
         }
@@ -1708,8 +2201,8 @@
         function calculateProfitForScenario(costPrice, invoiceCost, sellingPrice, adRate, returnRate, 
                                          inputTaxRate, outputTaxRate, platformFee, logisticsCost, shippingInsurance, otherCost) {
             try {
-                // 获取纳税人类型
-                const taxpayerType = document.querySelector('input[name="taxpayerType"]:checked').value;
+                // 获取弹窗中设置的纳税人类型
+                const taxpayerType = document.querySelector('input[name="modalTaxpayerType"]:checked').value;
                 
                 // 计算进货成本
                 const actualInvoiceCost = costPrice * (invoiceCost / 100);
@@ -1762,7 +2255,7 @@
                 } else {
                     // 小规模纳税人：征收率计算方式
                     netPrice = sellingPrice; // 小规模纳税人售价就是不含税价
-                    outputVAT = sellingPrice * (outputTaxRate / 100); // 直接按征收率计算
+                    outputVAT = sellingPrice * 0.03; // 固定使用3%征收率
                     actualVAT = outputVAT; // 小规模纳税人没有进项税抵扣，实际应缴税额就是销项税
                 }
 
@@ -1843,7 +2336,36 @@
             const costPrice = parseFloat(document.getElementById('costPrice').value) || 0;
             const platformFee = parseFloat(document.getElementById('platformFee').value) || 0;
             
+            // 获取弹窗中设置的纳税人类型和税率
+            const modalTaxpayerType = document.querySelector('input[name="modalTaxpayerType"]:checked').value;
+            const modalInputTaxRate = parseFloat(document.getElementById('modalInputTaxRate').value) || 0;
+            const modalOutputTaxRate = parseFloat(document.getElementById('modalOutputTaxRate').value) || 0;
+            
+            const taxpayerTypeText = modalTaxpayerType === 'general' ? '一般纳税人' : '小规模纳税人';
+            
+            // 根据纳税人类型正确显示税率
+            let inputTaxRateDisplay, outputTaxRateDisplay;
+            if (modalTaxpayerType === 'general') {
+                inputTaxRateDisplay = `${modalInputTaxRate}%`;
+                outputTaxRateDisplay = `${modalOutputTaxRate}%`;
+            } else {
+                inputTaxRateDisplay = '0%';
+                outputTaxRateDisplay = '3%'; // 小规模纳税人固定3%征收率
+            }
+            
             const html = `
+                <div class="param-item">
+                    <span class="param-label">纳税人类型:</span>
+                    <span class="param-value">${taxpayerTypeText}</span>
+                </div>
+                <div class="param-item">
+                    <span class="param-label">进项税率:</span>
+                    <span class="param-value">${inputTaxRateDisplay}</span>
+                </div>
+                <div class="param-item">
+                    <span class="param-label">销项税率:</span>
+                    <span class="param-value">${outputTaxRateDisplay}</span>
+                </div>
                 <div class="param-item">
                     <span class="param-label">进货价:</span>
                     <span class="param-value">¥${costPrice.toFixed(2)}</span>
@@ -2081,6 +2603,347 @@
                 }
             } catch (e) {
                 console.warn('无法从localStorage加载纳税人类型:', e);
+            }
+        }
+
+        // 更新对比税率选择
+        function updateComparisonRate() {
+            // 当对比税率改变时，可以在这里添加一些逻辑
+            // 比如自动更新对比结果等
+        }
+
+        // 一键对比纳税人类型
+        function compareTaxpayerTypes() {
+            // 获取当前输入参数
+            const costPrice = parseFloat(document.getElementById('costPrice').value) || 0;
+            const invoiceCost = parseFloat(document.getElementById('invoiceCost').value) || 0;
+            const sellingPrice = parseFloat(document.getElementById('sellingPrice').value) || 0;
+            const marketingCost = parseFloat(document.getElementById('marketingCost').value) || 0;
+            const riskRate = parseFloat(document.getElementById('riskRate').value) || 0;
+            const platformFee = parseFloat(document.getElementById('platformFee').value) || 0;
+            const logisticsCost = parseFloat(document.getElementById('logisticsCost').value) || 0;
+            const shippingInsurance = parseFloat(document.getElementById('shippingInsurance').value) || 0;
+            const otherCost = parseFloat(document.getElementById('otherCost').value) || 0;
+            const comparisonTaxRate = parseFloat(document.getElementById('comparisonTaxRate').value) || 13;
+
+            // 验证输入
+            if (costPrice <= 0 || sellingPrice <= 0) {
+                alert('请先输入有效的进价和售价！');
+                return;
+            }
+
+            // 计算两种纳税人类型的成本
+            const generalTaxpayer = calculateTaxpayerCosts('general', comparisonTaxRate);
+            const smallTaxpayer = calculateTaxpayerCosts('small', 3); // 小规模纳税人固定使用3%征收率
+
+            // 显示对比结果
+            displayComparisonResults(generalTaxpayer, smallTaxpayer, comparisonTaxRate);
+            
+            // 显示对比结果区域
+            document.getElementById('comparisonResults').style.display = 'block';
+            
+            // 滚动到对比结果区域
+            document.getElementById('comparisonResults').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 计算指定纳税人类型的成本
+        function calculateTaxpayerCosts(taxpayerType, taxRate) {
+            // 获取当前输入参数
+            const costPrice = parseFloat(document.getElementById('costPrice').value) || 0;
+            const invoiceCost = parseFloat(document.getElementById('invoiceCost').value) || 0;
+            const sellingPrice = parseFloat(document.getElementById('sellingPrice').value) || 0;
+            const marketingCost = parseFloat(document.getElementById('marketingCost').value) || 0;
+            const riskRate = parseFloat(document.getElementById('riskRate').value) || 0;
+            const platformFee = parseFloat(document.getElementById('platformFee').value) || 0;
+            const logisticsCost = parseFloat(document.getElementById('logisticsCost').value) || 0;
+            const shippingInsurance = parseFloat(document.getElementById('shippingInsurance').value) || 0;
+            const otherCost = parseFloat(document.getElementById('otherCost').value) || 0;
+
+            // 计算进货成本
+            const actualInvoiceCost = costPrice * (invoiceCost / 100);
+            const totalPurchaseCost = costPrice + actualInvoiceCost;
+            
+            // 计算有效销售率
+            const effectiveSalesRate = 1 - (riskRate / 100);
+            
+            // 计算销售相关费用
+            const platformFeeAmount = sellingPrice * (platformFee / 100);
+            const adCost = sellingPrice * (marketingCost / 100);
+            const adCostEffective = adCost / effectiveSalesRate;
+            
+            // 运营成本分摊
+            const logisticsCostEffective = logisticsCost / effectiveSalesRate;
+            const shippingInsuranceEffective = shippingInsurance / effectiveSalesRate;
+            const otherCostEffective = otherCost / effectiveSalesRate;
+
+            let netPrice, outputVAT, actualVAT, purchaseVAT, adVAT, platformVAT;
+            
+            if (taxpayerType === 'general') {
+                // 一般纳税人计算
+                purchaseVAT = costPrice * (taxRate / 100);
+                adVAT = adCostEffective * 0.06;
+                platformVAT = platformFeeAmount * 0.06;
+                
+                netPrice = sellingPrice / (1 + taxRate / 100);
+                outputVAT = netPrice * (taxRate / 100);
+                actualVAT = outputVAT - purchaseVAT - adVAT - platformVAT;
+            } else {
+                // 小规模纳税人计算
+                purchaseVAT = 0;
+                adVAT = 0;
+                platformVAT = 0;
+                
+                netPrice = sellingPrice;
+                outputVAT = sellingPrice * 0.03; // 固定使用3%征收率
+                actualVAT = outputVAT;
+            }
+
+            const totalCost = totalPurchaseCost + platformFeeAmount + adCostEffective + 
+                            logisticsCostEffective + shippingInsuranceEffective + otherCostEffective + actualVAT;
+            const profit = sellingPrice - totalCost;
+            const profitRate = (profit / sellingPrice) * 100;
+
+            return {
+                taxpayerType: taxpayerType,
+                taxRate: taxRate,
+                totalPurchaseCost: totalPurchaseCost,
+                purchaseVAT: purchaseVAT,
+                platformFeeAmount: platformFeeAmount,
+                adCostEffective: adCostEffective,
+                adVAT: adVAT,
+                platformVAT: platformVAT,
+                logisticsCostEffective: logisticsCostEffective,
+                shippingInsuranceEffective: shippingInsuranceEffective,
+                otherCostEffective: otherCostEffective,
+                netPrice: netPrice,
+                outputVAT: outputVAT,
+                actualVAT: actualVAT,
+                totalCost: totalCost,
+                profit: profit,
+                profitRate: profitRate
+            };
+        }
+
+        // 显示对比结果
+        function displayComparisonResults(general, small, comparisonTaxRate) {
+            // 更新对比摘要
+            const summary = document.getElementById('comparisonSummary');
+            const profitDiff = general.profit - small.profit;
+            const profitRateDiff = general.profitRate - small.profitRate;
+            
+            let summaryText = '';
+            if (profitDiff > 0) {
+                summaryText = `一般纳税人更划算！利润多¥${profitDiff.toFixed(2)}，利润率高${profitRateDiff.toFixed(2)}%`;
+            } else if (profitDiff < 0) {
+                summaryText = `小规模纳税人更划算！利润多¥${Math.abs(profitDiff).toFixed(2)}，利润率高${Math.abs(profitRateDiff).toFixed(2)}%`;
+            } else {
+                summaryText = '两种纳税人类型利润相当';
+            }
+            summary.textContent = summaryText;
+
+            // 生成对比表格
+            const tableBody = document.getElementById('comparisonTableBody');
+            tableBody.innerHTML = '';
+
+            const rows = [
+                { label: '进货成本', general: general.totalPurchaseCost, small: small.totalPurchaseCost },
+                { label: '商品进项税', general: general.purchaseVAT, small: small.purchaseVAT },
+                { label: '平台佣金', general: general.platformFeeAmount, small: small.platformFeeAmount },
+                { label: '平台佣金进项税', general: general.platformVAT, small: small.platformVAT },
+                { label: '广告费分摊', general: general.adCostEffective, small: small.adCostEffective },
+                { label: '广告费进项税', general: general.adVAT, small: small.adVAT },
+                { label: '物流费分摊', general: general.logisticsCostEffective, small: small.logisticsCostEffective },
+                { label: '运费险分摊', general: general.shippingInsuranceEffective, small: small.shippingInsuranceEffective },
+                { label: '其他费用分摊', general: general.otherCostEffective, small: small.otherCostEffective },
+                { label: '销项税', general: general.outputVAT, small: small.outputVAT },
+                { label: '实际应缴税', general: general.actualVAT, small: small.actualVAT },
+                { label: '总成本', general: general.totalCost, small: small.totalCost },
+                { label: '利润', general: general.profit, small: small.profit },
+                { label: '利润率', general: general.profitRate, small: small.profitRate }
+            ];
+
+            rows.forEach(row => {
+                const tr = document.createElement('tr');
+                const diff = row.general - row.small;
+                const diffText = row.label.includes('率') ? 
+                    `${diff > 0 ? '+' : ''}${diff.toFixed(2)}%` : 
+                    `${diff > 0 ? '+' : ''}¥${diff.toFixed(2)}`;
+                
+                tr.innerHTML = `
+                    <td>${row.label}</td>
+                    <td>${formatValue(row.general, row.label)}</td>
+                    <td>${formatValue(row.small, row.label)}</td>
+                    <td>${diffText}</td>
+                `;
+                tableBody.appendChild(tr);
+            });
+
+            // 生成对比洞察
+            generateComparisonInsights(general, small, comparisonTaxRate);
+        }
+
+        // 格式化显示值
+        function formatValue(value, label) {
+            if (label.includes('率')) {
+                return `${value.toFixed(2)}%`;
+            } else {
+                return `¥${value.toFixed(2)}`;
+            }
+        }
+
+        // 生成对比洞察
+        function generateComparisonInsights(general, small, comparisonTaxRate) {
+            const insights = document.getElementById('comparisonInsights');
+            insights.innerHTML = '<h5>关键洞察</h5>';
+
+            const insightsList = [];
+
+            // 税收成本对比
+            if (general.actualVAT > small.actualVAT) {
+                insightsList.push({
+                    type: 'disadvantage',
+                    text: `一般纳税人税收成本更高：¥${general.actualVAT.toFixed(2)} vs ¥${small.actualVAT.toFixed(2)}，差额¥${(general.actualVAT - small.actualVAT).toFixed(2)}`
+                });
+            } else if (general.actualVAT < small.actualVAT) {
+                insightsList.push({
+                    type: 'advantage',
+                    text: `一般纳税人税收成本更低：¥${general.actualVAT.toFixed(2)} vs ¥${small.actualVAT.toFixed(2)}，节省¥${(small.actualVAT - general.actualVAT).toFixed(2)}`
+                });
+            }
+
+            // 进项税抵扣优势
+            if (general.purchaseVAT > 0 || general.adVAT > 0 || general.platformVAT > 0) {
+                insightsList.push({
+                    type: 'advantage',
+                    text: `一般纳税人可抵扣进项税：商品¥${general.purchaseVAT.toFixed(2)} + 广告费¥${general.adVAT.toFixed(2)} + 平台佣金¥${general.platformVAT.toFixed(2)} = ¥${(general.purchaseVAT + general.adVAT + general.platformVAT).toFixed(2)}`
+                });
+            }
+
+            // 利润率对比
+            if (general.profitRate > small.profitRate) {
+                insightsList.push({
+                    type: 'advantage',
+                    text: `一般纳税人利润率更高：${general.profitRate.toFixed(2)}% vs ${small.profitRate.toFixed(2)}%，高出${(general.profitRate - small.profitRate).toFixed(2)}%`
+                });
+            } else if (small.profitRate > general.profitRate) {
+                insightsList.push({
+                    type: 'disadvantage',
+                    text: `小规模纳税人利润率更高：${small.profitRate.toFixed(2)}% vs ${general.profitRate.toFixed(2)}%，高出${(small.profitRate - general.profitRate).toFixed(2)}%`
+                });
+            }
+
+            // 成本结构分析
+            const generalTaxRatio = (general.actualVAT / general.totalCost * 100).toFixed(1);
+            const smallTaxRatio = (small.actualVAT / small.totalCost * 100).toFixed(1);
+            insightsList.push({
+                type: 'neutral',
+                text: `税收成本占比：一般纳税人${generalTaxRatio}%，小规模纳税人${smallTaxRatio}%`
+            });
+
+            // 规模效应建议
+            if (general.profit > small.profit) {
+                insightsList.push({
+                    type: 'advantage',
+                    text: `建议：选择一般纳税人，可获得更高利润¥${general.profit.toFixed(2)}，适合规模较大的企业`
+                });
+            } else {
+                insightsList.push({
+                    type: 'advantage',
+                    text: `建议：选择小规模纳税人，可获得更高利润¥${small.profit.toFixed(2)}，适合小微企业`
+                });
+            }
+
+            // 渲染洞察列表
+            insightsList.forEach(insight => {
+                const insightDiv = document.createElement('div');
+                insightDiv.className = 'insight-item';
+                insightDiv.innerHTML = `
+                    <div class="insight-icon ${insight.type}">${insight.type === 'advantage' ? '✓' : insight.type === 'disadvantage' ? '✗' : 'ℹ'}</div>
+                    <div class="insight-text">${insight.text}</div>
+                `;
+                insights.appendChild(insightDiv);
+            });
+        }
+
+        // 弹窗中更新纳税人类型和税率
+        function updateModalTaxRates() {
+            const modalTaxpayerType = document.querySelector('input[name="modalTaxpayerType"]:checked').value;
+            const modalInputTaxRate = document.getElementById('modalInputTaxRate');
+            const modalOutputTaxRate = document.getElementById('modalOutputTaxRate');
+
+            if (modalTaxpayerType === 'general') {
+                // 一般纳税人：启用税率选择
+                modalInputTaxRate.disabled = false;
+                modalOutputTaxRate.disabled = false;
+                modalInputTaxRate.value = '13';
+                modalOutputTaxRate.value = '13';
+            } else {
+                // 小规模纳税人：固定税率，禁用选择
+                modalInputTaxRate.disabled = true;
+                modalOutputTaxRate.disabled = true;
+                modalInputTaxRate.value = '0';
+                modalOutputTaxRate.value = '3';
+            }
+        }
+
+        // 弹窗中更新纳税人类型和税率，并实时重算
+        function updateModalTaxRatesAndRecalculate() {
+            // 先更新税率设置
+            updateModalTaxRates();
+            
+            // 如果已经有结果，则重新计算并更新显示
+            const explorationResults = document.getElementById('explorationResults');
+            if (explorationResults && explorationResults.style.display !== 'none') {
+                // 重新计算利润矩阵
+                calculateProfitMatrix();
+            }
+        }
+
+        // 弹窗中同步更新销项税率
+        function updateModalOutputTaxRate() {
+            const modalInputTaxRate = document.getElementById('modalInputTaxRate').value;
+            const modalOutputTaxRate = document.getElementById('modalOutputTaxRate');
+            const modalTaxpayerType = document.querySelector('input[name="modalTaxpayerType"]:checked').value;
+            
+            if (modalTaxpayerType === 'general') {
+                modalOutputTaxRate.value = modalInputTaxRate;
+            }
+        }
+
+        // 弹窗中同步更新进项税率
+        function updateModalInputTaxRate() {
+            const modalOutputTaxRate = document.getElementById('modalOutputTaxRate').value;
+            const modalTaxpayerType = document.querySelector('input[name="modalTaxpayerType"]:checked').value;
+            const modalInputTaxRate = document.getElementById('modalInputTaxRate');
+            
+            if (modalTaxpayerType === 'general') {
+                modalInputTaxRate.value = modalOutputTaxRate;
+            }
+        }
+
+        // 弹窗中同步更新销项税率并实时重算
+        function updateModalOutputTaxRateAndRecalculate() {
+            // 先同步更新税率
+            updateModalOutputTaxRate();
+            
+            // 如果已经有结果，则重新计算并更新显示
+            const explorationResults = document.getElementById('explorationResults');
+            if (explorationResults && explorationResults.style.display !== 'none') {
+                // 重新计算利润矩阵
+                calculateProfitMatrix();
+            }
+        }
+
+        // 弹窗中同步更新进项税率并实时重算
+        function updateModalInputTaxRateAndRecalculate() {
+            // 先同步更新税率
+            updateModalInputTaxRate();
+            
+            // 如果已经有结果，则重新计算并更新显示
+            const explorationResults = document.getElementById('explorationResults');
+            if (explorationResults && explorationResults.style.display !== 'none') {
+                // 重新计算利润矩阵
+                calculateProfitMatrix();
             }
         }
     </script>
