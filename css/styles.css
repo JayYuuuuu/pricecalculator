@@ -112,7 +112,7 @@ body {
     width: 100%;
     margin: 2rem auto;
     padding: 0 1rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); /* 与简化版一致的渐变背景 */
+    background: #f8f9fa; /* 改为浅色背景，更清爽易读 */
     color: #333;
     min-height: 100vh;
     /* iOS 安全区域：在带有刘海/小横条设备上避免内容被遮挡 */
