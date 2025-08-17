@@ -11,6 +11,77 @@
             box-sizing: border-box;
         }
 
+        /* 顶部导航栏样式 */
+        .top-navigation {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 15px 20px;
+            text-align: center;
+            border-radius: 20px 20px 0 0;
+            margin-bottom: 0;
+        }
+
+        .top-navigation .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .top-navigation .nav-title {
+            color: white;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .top-navigation .nav-links {
+            display: flex;
+            gap: 15px;
+        }
+
+        .top-navigation .nav-link {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        .top-navigation .nav-link:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-1px);
+        }
+
+        .top-navigation .nav-link.active {
+            background: rgba(255,255,255,0.4);
+            font-weight: 600;
+        }
+
+        /* 移动端导航栏适配 */
+        @media (max-width: 768px) {
+            .top-navigation {
+                padding: 12px 15px;
+                border-radius: 15px 15px 0 0;
+            }
+            
+            .top-navigation .nav-container {
+                flex-direction: column;
+                gap: 12px;
+            }
+            
+            .top-navigation .nav-links {
+                gap: 10px;
+            }
+            
+            .top-navigation .nav-link {
+                padding: 6px 12px;
+                font-size: 0.85rem;
+            }
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -31,6 +102,7 @@
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
             overflow: hidden;
             transition: all 0.5s ease;
+            padding: 0; /* 移除默认内边距，让导航栏和内容区域自己控制 */
         }
 
         .container.split-mode {
@@ -46,6 +118,7 @@
             color: white;
             padding: 30px;
             text-align: center;
+            margin-top: 0; /* 确保与导航栏无缝连接 */
         }
 
         .header h1 {
@@ -1454,6 +1527,17 @@
 </head>
 <body>
     <div class="container">
+        <!-- 新增：顶部导航栏 -->
+        <div class="top-navigation">
+            <div class="nav-container">
+                <div class="nav-title">电商计算器</div>
+                <div class="nav-links">
+                    <a href="index.html" class="nav-link">完整版</a>
+                    <a href="simple-profit-calculator.html" class="nav-link active">简化版</a>
+                </div>
+            </div>
+        </div>
+
         <div class="header">
             <h1>利润计算器（税务合规版）</h1>
             <p>快速计算商品利润和关键指标</p>
