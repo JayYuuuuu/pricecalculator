@@ -139,14 +139,6 @@
             opacity: 0.7;
         }
 
-        /* 为只读输入框添加特殊标识 */
-        .input-group:has(input[readonly]) label::after {
-            content: ' (自动计算)';
-            font-size: 0.9rem;
-            color: #28a745;
-            font-weight: normal;
-            font-style: italic;
-        }
 
         /* 亏损状态的红色样式 */
         .input-group input[readonly].profit-negative {
@@ -1154,6 +1146,46 @@
             }
         }
 
+        /* 移动端适配（推演内容布局与控件） */
+        @media (max-width: 768px) {
+            .exploration-content {
+                padding: 16px;
+            }
+            .exploration-controls {
+                gap: 12px;
+            }
+            .control-group {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+            }
+            .control-group label {
+                min-width: 0;
+            }
+            .taxpayer-options-modal {
+                gap: 10px;
+            }
+            .tax-rate-controls {
+                gap: 10px;
+            }
+            .tax-rate-item select {
+                width: 100%;
+                min-width: 0;
+            }
+            .current-price { flex-wrap: wrap; }
+            .price-display { font-size: 1rem; }
+            .rate-range { flex-wrap: wrap; }
+            .rate-range input {
+                width: 100%;
+                flex: 1;
+                min-width: 0;
+            }
+            /* 防止横向滚动 */
+            .exploration-panel { overflow-x: hidden; }
+            /* 参数区块一列显示，避免溢出 */
+            .current-params { grid-template-columns: 1fr; }
+        }
+
         /* 推演控件样式 */
         .exploration-controls {
             display: grid;
@@ -1385,7 +1417,7 @@
                 <h2>核心财务指标</h2>
                 <div class="input-grid">
                     <div class="input-group">
-                        <label>商品成本（不含税）</label>
+                        <label>进货价（不含税）</label>
                         <input type="number" id="costPrice" placeholder="请输入商品进价" step="0.01" value="38">
                     </div>
                     <div class="input-group">
