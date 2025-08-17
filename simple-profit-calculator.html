@@ -1926,6 +1926,9 @@
 
         // 显示验证计算功能
         function showVerification() {
+            // 检查是否已经在分屏状态，如果是则先关闭当前分屏
+            closeAllPanels();
+            
             // 获取当前输入值
             const costPrice = parseFloat(document.getElementById('costPrice').value) || 0;
             const invoiceCost = parseFloat(document.getElementById('invoiceCost').value) || 0;
@@ -2210,6 +2213,76 @@
             document.body.classList.remove('split-mode');
         }
 
+        // 关闭所有面板的通用函数
+        function closeAllPanels() {
+            let closedPanels = [];
+            
+            // 关闭验证面板
+            const verificationPanel = document.getElementById('verificationPanel');
+            if (verificationPanel && verificationPanel.classList.contains('active')) {
+                verificationPanel.classList.remove('active');
+                closedPanels.push('验证面板');
+            }
+            
+            // 关闭推演面板
+            const explorationPanel = document.getElementById('explorationPanel');
+            if (explorationPanel && explorationPanel.classList.contains('active')) {
+                explorationPanel.classList.remove('active');
+                closedPanels.push('推演面板');
+            }
+            
+            // 关闭对比面板
+            const comparisonPanel = document.getElementById('comparisonPanel');
+            if (comparisonPanel && comparisonPanel.classList.contains('active')) {
+                comparisonPanel.classList.remove('active');
+                closedPanels.push('对比面板');
+            }
+            
+            // 恢复原始布局
+            const container = document.querySelector('.container');
+            const body = document.body;
+            
+            if (container.classList.contains('split-mode')) {
+                container.classList.remove('split-mode');
+                closedPanels.push('分屏模式');
+            }
+            
+            if (body.classList.contains('split-mode')) {
+                body.classList.remove('split-mode');
+                closedPanels.push('body分屏模式');
+            }
+            
+            // 如果有面板被关闭，输出日志（可选，用于调试）
+            if (closedPanels.length > 0) {
+                console.log('已关闭的面板/模式:', closedPanels.join(', '));
+            }
+        }
+
+        // 检查当前分屏状态的函数
+        function checkSplitModeStatus() {
+            const verificationPanel = document.getElementById('verificationPanel');
+            const explorationPanel = document.getElementById('explorationPanel');
+            const comparisonPanel = document.getElementById('comparisonPanel');
+            const container = document.querySelector('.container');
+            const body = document.body;
+            
+            const activePanels = [];
+            if (verificationPanel && verificationPanel.classList.contains('active')) activePanels.push('验证面板');
+            if (explorationPanel && explorationPanel.classList.contains('active')) activePanels.push('推演面板');
+            if (comparisonPanel && comparisonPanel.classList.contains('active')) activePanels.push('对比面板');
+            
+            const splitMode = container.classList.contains('split-mode') || body.classList.contains('split-mode');
+            
+            console.log('当前分屏状态检查:');
+            console.log('- 活跃面板:', activePanels.length > 0 ? activePanels.join(', ') : '无');
+            console.log('- 分屏模式:', splitMode ? '是' : '否');
+            
+            return {
+                activePanels: activePanels,
+                splitMode: splitMode
+            };
+        }
+
         // 自动保存输入数据到localStorage
         function saveToLocalStorage() {
             const inputs = document.querySelectorAll('input[type="number"]');
@@ -2253,6 +2326,9 @@
 
         // —— 纳税人类型对比：改为桌面分屏 / 移动全屏面板 ——
         function openTaxpayerComparison() {
+            // 检查是否已经在分屏状态，如果是则先关闭当前分屏
+            closeAllPanels();
+            
             // 若页面已有生成对比内容的旧函数，则先调用以生成内容
             if (typeof window.compareTaxpayerTypesCompact === 'function') {
                 try { window.compareTaxpayerTypesCompact(); } catch (e) { console.warn('旧对比函数执行失败(可忽略):', e); }
@@ -2287,6 +2363,9 @@
 
         // 显示利润率推演面板
         function showExploration() {
+            // 检查是否已经在分屏状态，如果是则先关闭当前分屏
+            closeAllPanels();
+            
             // 获取当前输入值
             const costPrice = parseFloat(document.getElementById('costPrice').value) || 0;
             const invoiceCost = parseFloat(document.getElementById('invoiceCost').value) || 0;
