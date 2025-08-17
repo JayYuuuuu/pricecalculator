@@ -112,6 +112,126 @@
             font-weight: normal;
         }
 
+        /* 纳税人类型选择样式 */
+        .taxpayer-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            border: 2px solid #dee2e6;
+        }
+
+        .taxpayer-options {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .taxpayer-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px 20px;
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .taxpayer-option:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.1);
+        }
+
+        .taxpayer-option input[type="radio"] {
+            display: none;
+        }
+
+        .radio-custom {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #dee2e6;
+            border-radius: 50%;
+            position: relative;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .taxpayer-option input[type="radio"]:checked + .radio-custom {
+            border-color: #667eea;
+            background: #667eea;
+        }
+
+        .taxpayer-option input[type="radio"]:checked + .radio-custom::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+        }
+
+        .option-content {
+            flex: 1;
+        }
+
+        .option-title {
+            font-weight: 600;
+            color: #333;
+            font-size: 1.1rem;
+            margin-bottom: 4px;
+        }
+
+        .option-desc {
+            color: #6c757d;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        /* 下拉选择框样式 */
+        .input-group select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 1.4rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+            cursor: pointer;
+        }
+
+        .input-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .input-group select option {
+            padding: 10px;
+            font-size: 1rem;
+        }
+
+        /* 移动端响应式调整 */
+        @media (max-width: 768px) {
+            .taxpayer-options {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .taxpayer-option {
+                min-width: auto;
+            }
+        }
+
         .results {
             background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
             border-radius: 15px;
@@ -329,6 +449,73 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* 纳税人类型说明样式 */
+        .taxpayer-note {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            border: 1px solid #dee2e6;
+        }
+
+        .taxpayer-note p {
+            margin: 0 0 10px 0;
+            color: #495057;
+            font-weight: 600;
+        }
+
+        .taxpayer-note ul {
+            margin: 0;
+            padding-left: 20px;
+            color: #6c757d;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .taxpayer-note li {
+            margin-bottom: 8px;
+        }
+
+        .taxpayer-note strong {
+            color: #495057;
+        }
+
+        /* 税率设置样式 */
+        .tax-rates-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            border: 2px solid #dee2e6;
+        }
+
+        .tax-rates-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .tax-rates-grid .input-group {
+            margin-bottom: 0;
+        }
+
+        /* 移动端响应式调整 */
+        @media (max-width: 768px) {
+            .taxpayer-options {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .taxpayer-option {
+                min-width: auto;
+            }
+            
+            .tax-rates-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -365,6 +552,63 @@
             <!-- 费用设置 -->
             <div class="section">
                 <h2>费用设置</h2>
+                
+                <!-- 纳税人类型选择 -->
+                <div class="taxpayer-section">
+                    <h3 style="color: #495057; font-size: 1.3rem; margin-bottom: 15px; padding-bottom: 8px; border-bottom: 2px solid #667eea;">纳税人类型</h3>
+                    <div class="taxpayer-options">
+                        <label class="taxpayer-option">
+                            <input type="radio" name="taxpayerType" value="general" checked onchange="updateTaxRates()">
+                            <span class="radio-custom"></span>
+                            <div class="option-content">
+                                <div class="option-title">一般纳税人</div>
+                                <div class="option-desc">可抵扣进项税，适用标准税率（13%、9%、6%等）</div>
+                            </div>
+                        </label>
+                        <label class="taxpayer-option">
+                            <input type="radio" name="taxpayerType" value="small" onchange="updateTaxRates()">
+                            <span class="radio-custom"></span>
+                            <div class="option-content">
+                                <div class="option-title">小规模纳税人</div>
+                                <div class="option-desc">征收率3%，不可抵扣进项税，适合小微企业</div>
+                            </div>
+                        </label>
+                    </div>
+                    <div class="taxpayer-note">
+                        <p><strong>说明：</strong></p>
+                        <ul>
+                            <li><strong>一般纳税人：</strong>年销售额超过500万元，可开具专用发票，买方可抵扣进项税，适合规模较大的企业</li>
+                            <li><strong>小规模纳税人：</strong>年销售额500万元以下，征收率低但不可抵扣进项税，适合业务简单的小微企业</li>
+                            <li>选择纳税人类型后，系统会自动调整税率选项和计算逻辑</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- 税率设置 -->
+                <div class="tax-rates-section">
+                    <h3 style="color: #495057; font-size: 1.3rem; margin-bottom: 15px; padding-bottom: 8px; border-bottom: 2px solid #667eea;">税率设置</h3>
+                    <div class="tax-rates-grid">
+                        <div class="input-group">
+                            <label>进项税率（%）</label>
+                            <select id="inputTaxRate" onchange="updateOutputTaxRate()">
+                                <option value="13">13% - 一般货物（纺织品、家电、电子产品等）</option>
+                                <option value="9">9% - 农产品、自来水、暖气、煤气、图书、运输服务</option>
+                                <option value="6">6% - 现代服务业（金融、咨询、广告、软件服务等）</option>
+                                <option value="0">0% - 出口货物和劳务</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>销项税率（%）</label>
+                            <select id="outputTaxRate" onchange="updateInputTaxRate()">
+                                <option value="13">13% - 一般货物（纺织品、家电、电子产品等）</option>
+                                <option value="9">9% - 农产品、自来水、暖气、煤气、图书、运输服务</option>
+                                <option value="6">6% - 现代服务业（金融、咨询、广告、软件服务等）</option>
+                                <option value="0">0% - 出口货物和劳务</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="input-grid">
                     <div class="input-group">
                         <label>付费占比（%）</label>
@@ -373,14 +617,6 @@
                     <div class="input-group">
                         <label>退货率（%）</label>
                         <input type="number" id="riskRate" placeholder="请输入退货率" step="0.1" value="20">
-                    </div>
-                    <div class="input-group">
-                        <label>进项税率（%）</label>
-                        <input type="number" id="inputTaxRate" placeholder="进项税率" step="0.1" value="13">
-                    </div>
-                    <div class="input-group">
-                        <label>销项税率（%）</label>
-                        <input type="number" id="outputTaxRate" placeholder="销项税率" step="0.1" value="13">
                     </div>
                     <div class="input-group">
                         <label>平台佣金（%）</label>
@@ -605,6 +841,9 @@
                 const logisticsCost = parseFloat(document.getElementById('logisticsCost').value) || 0;
                 const shippingInsurance = parseFloat(document.getElementById('shippingInsurance').value) || 0;
                 const otherCost = parseFloat(document.getElementById('otherCost').value) || 0;
+                
+                // 获取纳税人类型
+                const taxpayerType = document.querySelector('input[name="taxpayerType"]:checked').value;
 
                 // 验证输入
                 if (costPrice <= 0 || sellingPrice <= 0) {
@@ -615,7 +854,16 @@
                 // 计算进货成本（按原系统逻辑）
                 const actualInvoiceCost = costPrice * (invoiceCost / 100); // 开票费用
                 const totalPurchaseCost = costPrice + actualInvoiceCost; // 总进货成本（实际支付给供应商的金额）
-                const purchaseVAT = costPrice * (inputTaxRate / 100); // 进项税额（基于不含税进价）
+                
+                // 根据纳税人类型计算进项税额
+                let purchaseVAT = 0;
+                if (taxpayerType === 'general') {
+                    // 一般纳税人：可以抵扣进项税
+                    purchaseVAT = costPrice * (inputTaxRate / 100);
+                } else {
+                    // 小规模纳税人：不可抵扣进项税
+                    purchaseVAT = 0;
+                }
 
                 // 计算基础指标
                 const markupRatio = (sellingPrice / costPrice).toFixed(2); // 加价倍率（基于不含税进价）
@@ -629,7 +877,16 @@
                 const v = 0.06; // 服务业进项税率
                 const adCost = sellingPrice * (marketingCost / 100); // 广告费（不可退回，需分摊）
                 const adCostEffective = adCost / effectiveSalesRate; // 分摊后的广告费
-                const adVAT = adCostEffective * v; // 广告费可抵扣进项税（6%）
+                
+                // 根据纳税人类型计算广告费可抵扣进项税
+                let adVAT = 0;
+                if (taxpayerType === 'general') {
+                    // 一般纳税人：可以抵扣广告费进项税
+                    adVAT = adCostEffective * v;
+                } else {
+                    // 小规模纳税人：不可抵扣进项税
+                    adVAT = 0;
+                }
 
                 // 运营成本（不可退回，需分摊）
                 const logisticsCostEffective = logisticsCost / effectiveSalesRate;
@@ -637,12 +894,21 @@
                 const otherCostEffective = otherCost / effectiveSalesRate;
 
                 // 计算销项税
-                const netPrice = sellingPrice / (1 + outputTaxRate / 100);
-                const outputVAT = netPrice * (outputTaxRate / 100);
-
-                // 计算总可抵扣进项税
-                const totalVATDeduction = purchaseVAT + adVAT + (platformFeeAmount * v); // 商品+广告+平台佣金的进项税
-                const actualVAT = outputVAT - totalVATDeduction; // 实际应缴税额
+                let netPrice, outputVAT, actualVAT;
+                if (taxpayerType === 'general') {
+                    // 一般纳税人：价内税计算方式
+                    netPrice = sellingPrice / (1 + outputTaxRate / 100);
+                    outputVAT = netPrice * (outputTaxRate / 100);
+                    
+                    // 计算总可抵扣进项税
+                    const totalVATDeduction = purchaseVAT + adVAT + (platformFeeAmount * v);
+                    actualVAT = outputVAT - totalVATDeduction; // 实际应缴税额
+                } else {
+                    // 小规模纳税人：征收率计算方式
+                    netPrice = sellingPrice; // 小规模纳税人售价就是不含税价
+                    outputVAT = sellingPrice * (outputTaxRate / 100); // 直接按征收率计算
+                    actualVAT = outputVAT; // 小规模纳税人没有进项税抵扣，实际应缴税额就是销项税
+                }
 
                 // 计算总成本（按原系统逻辑）
                 const totalCost = totalPurchaseCost + platformFeeAmount + adCostEffective + 
@@ -656,8 +922,6 @@
                 // 关键中间量计算
                 const effectiveCost = costPrice + actualInvoiceCost; // 实际进货成本 C = 进货价 + 开票成本
                 const fixedCosts = (logisticsCost + shippingInsurance + otherCost) / effectiveSalesRate; // 不可退回固定成本按有效销售率分摊
-                const t = outputTaxRate / 100; // 销项税率小数
-                const taxFactorOnFinal = t / (1 + t); // 销项税价内占比 s = t/(1+t)
                 // 使用上面已定义的变量 v
 
                 // 分子常数项 B = C - 商品进项税 + 固定成本/E
@@ -666,7 +930,18 @@
                 // 分母常数项 D = 1 - 平台费率 - 销项税占比 + v/(1+v) × 平台费率
                 // 注意：原系统使用小数形式的平台费率，这里需要转换
                 const platformRateDecimal = platformFee / 100; // 转换为小数形式
-                const D = 1 - platformRateDecimal - taxFactorOnFinal + (v / (1 + v)) * platformRateDecimal;
+                let D;
+                if (taxpayerType === 'general') {
+                    // 一般纳税人：考虑进项税抵扣
+                    const t = outputTaxRate / 100; // 销项税率小数
+                    const taxFactorOnFinal = t / (1 + t); // 销项税价内占比 s = t/(1+t)
+                    D = 1 - platformRateDecimal - taxFactorOnFinal + (v / (1 + v)) * platformRateDecimal;
+                } else {
+                    // 小规模纳税人：征收率计算方式
+                    const t = outputTaxRate / 100; // 征收率小数
+                    const taxFactorOnFinal = t; // 小规模纳税人征收率直接计入成本
+                    D = 1 - platformRateDecimal - taxFactorOnFinal;
+                }
 
                 // 保本付费占比 a* = E/(1-v) × (D - B/P)
                 const term = D - (B / sellingPrice);
@@ -747,8 +1022,6 @@
         // 显示验证计算功能
         function showVerification() {
             // 获取当前输入值
-            
-            // 获取当前输入值
             const costPrice = parseFloat(document.getElementById('costPrice').value) || 0;
             const invoiceCost = parseFloat(document.getElementById('invoiceCost').value) || 0;
             const sellingPrice = parseFloat(document.getElementById('sellingPrice').value) || 0;
@@ -760,24 +1033,69 @@
             const logisticsCost = parseFloat(document.getElementById('logisticsCost').value) || 0;
             const shippingInsurance = parseFloat(document.getElementById('shippingInsurance').value) || 0;
             const otherCost = parseFloat(document.getElementById('otherCost').value) || 0;
+            
+            // 获取纳税人类型
+            const taxpayerType = document.querySelector('input[name="taxpayerType"]:checked').value;
 
             // 计算各项中间值
             const actualInvoiceCost = costPrice * (invoiceCost / 100);
             const totalPurchaseCost = costPrice + actualInvoiceCost;
-            const purchaseVAT = costPrice * (inputTaxRate / 100);
+            
+            // 根据纳税人类型计算进项税额
+            let purchaseVAT = 0;
+            if (taxpayerType === 'general') {
+                // 一般纳税人：可以抵扣进项税
+                purchaseVAT = costPrice * (inputTaxRate / 100);
+            } else {
+                // 小规模纳税人：不可抵扣进项税
+                purchaseVAT = 0;
+            }
+            
             const effectiveSalesRate = 1 - (riskRate / 100);
             const platformFeeAmount = sellingPrice * (platformFee / 100);
             const adCost = sellingPrice * (marketingCost / 100);
             const adCostEffective = adCost / effectiveSalesRate;
-            const adVAT = adCostEffective * 0.06; // 使用6%的进项税率
+            
+            // 根据纳税人类型计算广告费可抵扣进项税
+            let adVAT = 0;
+            if (taxpayerType === 'general') {
+                // 一般纳税人：可以抵扣广告费进项税
+                adVAT = adCostEffective * 0.06;
+            } else {
+                // 小规模纳税人：不可抵扣进项税
+                adVAT = 0;
+            }
+            
             const logisticsCostEffective = logisticsCost / effectiveSalesRate;
             const shippingInsuranceEffective = shippingInsurance / effectiveSalesRate;
             const otherCostEffective = otherCost / effectiveSalesRate;
-            const netPrice = sellingPrice / (1 + outputTaxRate / 100);
-            const outputVAT = netPrice * (outputTaxRate / 100);
-            const platformVAT = platformFeeAmount * 0.06; // 使用6%的进项税率
-            const totalVATDeduction = purchaseVAT + adVAT + platformVAT;
-            const actualVAT = outputVAT - totalVATDeduction;
+            
+            // 根据纳税人类型计算平台佣金可抵扣进项税
+            let platformVAT = 0;
+            if (taxpayerType === 'general') {
+                // 一般纳税人：可以抵扣平台佣金进项税
+                platformVAT = platformFeeAmount * 0.06;
+            } else {
+                // 小规模纳税人：不可抵扣进项税
+                platformVAT = 0;
+            }
+            
+            // 根据纳税人类型计算销项税
+            let netPrice, outputVAT, actualVAT;
+            if (taxpayerType === 'general') {
+                // 一般纳税人：价内税计算方式
+                netPrice = sellingPrice / (1 + outputTaxRate / 100);
+                outputVAT = netPrice * (outputTaxRate / 100);
+                
+                // 计算总可抵扣进项税
+                const totalVATDeduction = purchaseVAT + adVAT + platformVAT;
+                actualVAT = outputVAT - totalVATDeduction;
+            } else {
+                // 小规模纳税人：征收率计算方式
+                netPrice = sellingPrice; // 小规模纳税人售价就是不含税价
+                outputVAT = sellingPrice * (outputTaxRate / 100); // 直接按征收率计算
+                actualVAT = outputVAT; // 小规模纳税人没有进项税抵扣，实际应缴税额就是销项税
+            }
             const totalCost = totalPurchaseCost + platformFeeAmount + adCostEffective + 
                             logisticsCostEffective + shippingInsuranceEffective + otherCostEffective + actualVAT;
             const profit = sellingPrice - totalCost;
@@ -786,12 +1104,24 @@
             // 保本计算（使用与主函数完全一致的逻辑）
             const effectiveCost = costPrice + actualInvoiceCost;
             const fixedCosts = (logisticsCost + shippingInsurance + otherCost) / effectiveSalesRate;
-            const t = outputTaxRate / 100; // 销项税率小数
-            const taxFactorOnFinal = t / (1 + t); // 销项税价内占比 s = t/(1+t)
             const v = 0.06;
             const B = effectiveCost - purchaseVAT + fixedCosts;
             const platformRateDecimal = platformFee / 100;
-            const D = 1 - platformRateDecimal - taxFactorOnFinal + (v / (1 + v)) * platformRateDecimal;
+            
+            // 根据纳税人类型计算分母常数项D
+            let D;
+            if (taxpayerType === 'general') {
+                // 一般纳税人：考虑进项税抵扣
+                const t = outputTaxRate / 100; // 销项税率小数
+                const taxFactorOnFinal = t / (1 + t); // 销项税价内占比 s = t/(1+t)
+                D = 1 - platformRateDecimal - taxFactorOnFinal + (v / (1 + v)) * platformRateDecimal;
+            } else {
+                // 小规模纳税人：征收率计算方式
+                const t = outputTaxRate / 100; // 征收率小数
+                const taxFactorOnFinal = t; // 小规模纳税人征收率直接计入成本
+                D = 1 - platformRateDecimal - taxFactorOnFinal;
+            }
+            
             const term = D - (B / sellingPrice);
             const breakevenAdRate = (effectiveSalesRate / (1 - v)) * term;
             const breakevenROI = effectiveSalesRate / breakevenAdRate;
@@ -839,10 +1169,17 @@
         // 自动保存输入数据到localStorage
         function saveToLocalStorage() {
             const inputs = document.querySelectorAll('input[type="number"]');
+            const selects = document.querySelectorAll('select[id*="TaxRate"]');
             const data = {};
             
+            // 保存数字输入框的值
             inputs.forEach(input => {
                 data[input.id] = input.value;
+            });
+            
+            // 保存税率选择框的值
+            selects.forEach(select => {
+                data[select.id] = select.value;
             });
             
             try {
@@ -1371,10 +1708,22 @@
         function calculateProfitForScenario(costPrice, invoiceCost, sellingPrice, adRate, returnRate, 
                                          inputTaxRate, outputTaxRate, platformFee, logisticsCost, shippingInsurance, otherCost) {
             try {
+                // 获取纳税人类型
+                const taxpayerType = document.querySelector('input[name="taxpayerType"]:checked').value;
+                
                 // 计算进货成本
                 const actualInvoiceCost = costPrice * (invoiceCost / 100);
                 const totalPurchaseCost = costPrice + actualInvoiceCost;
-                const purchaseVAT = costPrice * (inputTaxRate / 100);
+                
+                // 根据纳税人类型计算进项税额
+                let purchaseVAT = 0;
+                if (taxpayerType === 'general') {
+                    // 一般纳税人：可以抵扣进项税
+                    purchaseVAT = costPrice * (inputTaxRate / 100);
+                } else {
+                    // 小规模纳税人：不可抵扣进项税
+                    purchaseVAT = 0;
+                }
 
                 // 计算有效销售率
                 const effectiveSalesRate = 1 - (returnRate / 100);
@@ -1384,7 +1733,16 @@
                 const v = 0.06; // 服务业进项税率
                 const adCost = sellingPrice * (adRate / 100);
                 const adCostEffective = adCost / effectiveSalesRate;
-                const adVAT = adCostEffective * v;
+                
+                // 根据纳税人类型计算广告费可抵扣进项税
+                let adVAT = 0;
+                if (taxpayerType === 'general') {
+                    // 一般纳税人：可以抵扣广告费进项税
+                    adVAT = adCostEffective * v;
+                } else {
+                    // 小规模纳税人：不可抵扣进项税
+                    adVAT = 0;
+                }
 
                 // 运营成本分摊
                 const logisticsCostEffective = logisticsCost / effectiveSalesRate;
@@ -1392,12 +1750,21 @@
                 const otherCostEffective = otherCost / effectiveSalesRate;
 
                 // 计算销项税
-                const netPrice = sellingPrice / (1 + outputTaxRate / 100);
-                const outputVAT = netPrice * (outputTaxRate / 100);
-
-                // 计算总可抵扣进项税
-                const totalVATDeduction = purchaseVAT + adVAT + (platformFeeAmount * v);
-                const actualVAT = outputVAT - totalVATDeduction;
+                let netPrice, outputVAT, actualVAT;
+                if (taxpayerType === 'general') {
+                    // 一般纳税人：价内税计算方式
+                    netPrice = sellingPrice / (1 + outputTaxRate / 100);
+                    outputVAT = netPrice * (outputTaxRate / 100);
+                    
+                    // 计算总可抵扣进项税
+                    const totalVATDeduction = purchaseVAT + adVAT + (platformFeeAmount * v);
+                    actualVAT = outputVAT - totalVATDeduction; // 实际应缴税额
+                } else {
+                    // 小规模纳税人：征收率计算方式
+                    netPrice = sellingPrice; // 小规模纳税人售价就是不含税价
+                    outputVAT = sellingPrice * (outputTaxRate / 100); // 直接按征收率计算
+                    actualVAT = outputVAT; // 小规模纳税人没有进项税抵扣，实际应缴税额就是销项税
+                }
 
                 // 计算总成本
                 const totalCost = totalPurchaseCost + platformFeeAmount + adCostEffective + 
@@ -1582,10 +1949,85 @@
             }
         }
 
+        // 更新进项税率和销项税率
+        function updateTaxRates() {
+            const inputTaxRateSelect = document.getElementById('inputTaxRate');
+            const outputTaxRateSelect = document.getElementById('outputTaxRate');
+            const taxpayerType = document.querySelector('input[name="taxpayerType"]:checked').value;
+
+            if (taxpayerType === 'general') {
+                // 一般纳税人：可抵扣进项税，适用标准税率
+                inputTaxRateSelect.value = '13';
+                outputTaxRateSelect.value = '13';
+                // 启用税率选择
+                inputTaxRateSelect.disabled = false;
+                outputTaxRateSelect.disabled = false;
+            } else {
+                // 小规模纳税人：征收率3%，不可抵扣进项税
+                inputTaxRateSelect.value = '0';
+                outputTaxRateSelect.value = '3';
+                // 禁用税率选择（小规模纳税人固定税率）
+                inputTaxRateSelect.disabled = true;
+                outputTaxRateSelect.disabled = true;
+            }
+            
+            // 自动重新计算
+            setTimeout(calculateProfit, 100);
+        }
+
+        // 同步更新销项税率（当进项税率改变时）
+        function updateOutputTaxRate() {
+            const inputTaxRate = document.getElementById('inputTaxRate').value;
+            const outputTaxRateSelect = document.getElementById('outputTaxRate');
+            const taxpayerType = document.querySelector('input[name="taxpayerType"]:checked').value;
+            
+            // 只有一般纳税人才能手动调整税率
+            if (taxpayerType === 'general') {
+                // 通常进项税率和销项税率保持一致
+                outputTaxRateSelect.value = inputTaxRate;
+            }
+            
+            // 自动重新计算
+            setTimeout(calculateProfit, 100);
+        }
+
+        // 同步更新进项税率（当销项税率改变时）
+        function updateInputTaxRate() {
+            const outputTaxRate = document.getElementById('outputTaxRate').value;
+            const inputTaxRateSelect = document.getElementById('inputTaxRate');
+            const taxpayerType = document.querySelector('input[name="taxpayerType"]:checked').value;
+            
+            // 只有一般纳税人才能手动调整税率
+            if (taxpayerType === 'general') {
+                // 通常进项税率和销项税率保持一致
+                inputTaxRateSelect.value = outputTaxRate;
+            }
+            
+            // 自动重新计算
+            setTimeout(calculateProfit, 100);
+        }
+
         // 页面加载完成后自动计算一次
         document.addEventListener('DOMContentLoaded', function() {
             // 先加载保存的数据
             loadFromLocalStorage();
+            
+            // 加载纳税人类型选择
+            loadTaxpayerType();
+            
+            // 初始化纳税人类型选择
+            updateTaxRates();
+            
+            // 为纳税人类型选择添加事件监听器
+            const taxpayerOptions = document.querySelectorAll('input[name="taxpayerType"]');
+            taxpayerOptions.forEach(option => {
+                option.addEventListener('change', function() {
+                    // 保存纳税人类型选择到localStorage
+                    saveTaxpayerType();
+                    // 更新税率选项
+                    updateTaxRates();
+                });
+            });
             
             // 为所有输入框添加实时计算和自动保存功能
             const inputs = document.querySelectorAll('input[type="number"]');
@@ -1600,9 +2042,47 @@
                 });
             });
             
+            // 为税率选择框添加事件监听器
+            const taxRateSelects = document.querySelectorAll('select[id*="TaxRate"]');
+            taxRateSelects.forEach(select => {
+                select.addEventListener('change', function() {
+                    // 自动保存到localStorage
+                    saveToLocalStorage();
+                    
+                    // 延迟计算，避免频繁计算
+                    clearTimeout(this.timeout);
+                    this.timeout = setTimeout(calculateProfit, 500);
+                });
+            });
+            
             // 页面加载完成后自动计算一次
             setTimeout(calculateProfit, 100);
         });
+
+        // 保存纳税人类型选择到localStorage
+        function saveTaxpayerType() {
+            try {
+                const taxpayerType = document.querySelector('input[name="taxpayerType"]:checked').value;
+                localStorage.setItem('taxpayerType', taxpayerType);
+            } catch (e) {
+                console.warn('无法保存纳税人类型到localStorage:', e);
+            }
+        }
+
+        // 从localStorage加载纳税人类型选择
+        function loadTaxpayerType() {
+            try {
+                const savedTaxpayerType = localStorage.getItem('taxpayerType');
+                if (savedTaxpayerType) {
+                    const option = document.querySelector(`input[name="taxpayerType"][value="${savedTaxpayerType}"]`);
+                    if (option) {
+                        option.checked = true;
+                    }
+                }
+            } catch (e) {
+                console.warn('无法从localStorage加载纳税人类型:', e);
+            }
+        }
     </script>
 </body>
 </html>
