@@ -887,6 +887,14 @@
                         <label>你的利润</label>
                         <input type="text" id="profit" readonly placeholder="自动计算">
                     </div>
+                    <div class="input-group">
+                        <label>保本ROI</label>
+                        <input type="text" id="breakevenROI" readonly placeholder="自动计算">
+                    </div>
+                    <div class="input-group">
+                        <label>保本广告占比</label>
+                        <input type="text" id="breakevenAdRate" readonly placeholder="自动计算">
+                    </div>
                 </div>
             </div>
 
@@ -1052,14 +1060,6 @@
                     <div class="metric-card">
                         <div class="metric-value" id="grossMargin">0%</div>
                         <div class="metric-label">毛利润</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value" id="breakevenROI">0</div>
-                        <div class="metric-label">保本ROI</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value" id="breakevenAdRate">0%</div>
-                        <div class="metric-label">保本付费占比</div>
                     </div>
                 </div>
             </div>
@@ -1355,7 +1355,7 @@
                 document.getElementById('profitRate').textContent = `${profitRate}%`;
                 document.getElementById('markupRatio').textContent = `${markupRatio}倍`;
                 document.getElementById('grossMargin').textContent = `${grossMargin}%`;
-                document.getElementById('breakevenROI').textContent = breakevenROI;
+                document.getElementById('breakevenROI').value = breakevenROI;
                 // 格式化保本付费占比显示
                 let breakevenAdRateDisplay;
                 if (breakevenAdRate <= 0) {
@@ -1365,7 +1365,7 @@
                 } else {
                     breakevenAdRateDisplay = (breakevenAdRate * 100).toFixed(2) + '%';
                 }
-                document.getElementById('breakevenAdRate').textContent = breakevenAdRateDisplay;
+                document.getElementById('breakevenAdRate').value = breakevenAdRateDisplay;
 
                 // 设置利润状态
                 const profitStatus = document.getElementById('profitStatus');
