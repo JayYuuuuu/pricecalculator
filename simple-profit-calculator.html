@@ -1125,6 +1125,54 @@
             padding: 25px;
         }
 
+        /* —— 右侧纳税人对比面板样式（桌面分屏 / 移动全屏） —— */
+        .comparison-panel {
+            position: fixed;
+            top: 0;
+            right: -50%;
+            width: 50%;
+            height: 100vh;
+            background: white;
+            box-shadow: -5px 0 20px rgba(0,0,0,0.1);
+            transition: right 0.5s ease;
+            z-index: 1000;
+            overflow-y: auto;
+            border-left: 3px solid #28a745;
+        }
+        .comparison-panel.active { right: 0; }
+        .comparison-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 25px;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .comparison-header h2 { margin: 0; font-size: 1.5rem; font-weight: 600; }
+        .close-comparison-btn {
+            background: none; border: none; color: white; font-size: 2rem; cursor: pointer;
+            padding: 0; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; transition: background 0.3s;
+        }
+        .close-comparison-btn:hover { background: rgba(255,255,255,0.2); }
+        .comparison-content { padding: 25px; }
+
+        /* 让原有的弹窗块在面板内表现为普通块级元素，避免溢出 */
+        .comparison-panel .comparison-results-compact {
+            position: static; top: auto; right: auto; left: auto; transform: none;
+            width: 100%; max-width: none; max-height: none;
+            border: none; box-shadow: none; padding: 0;
+        }
+        .comparison-panel .comparison-header-compact { border-radius: 10px; }
+
+        /* 移动端：全屏显示对比面板 */
+        @media (max-width: 768px) {
+            .comparison-panel { width: 100%; right: -100%; }
+            .comparison-panel.active { right: 0; }
+            .comparison-content { padding: 16px; }
+        }
+
         /* 移动端响应式调整（推演面板） */
         @media (max-width: 768px) {
             /* 覆盖分屏：移动端容器不分屏，全屏显示 */
@@ -1460,7 +1508,7 @@
                         <!-- 纳税人类型对比分析功能 -->
                         <div class="taxpayer-comparison-widget">
                             <div class="comparison-controls-compact">
-                                <button class="compare-btn-compact" onclick="compareTaxpayerTypesCompact()">对比分析</button>
+                                <button class="compare-btn-compact" onclick="openTaxpayerComparison()">对比分析</button>
                             </div>
                             
                             <!-- 对比结果弹窗 -->
@@ -1615,23 +1663,32 @@
             <div class="verification-header">
                 <h2>计算验证详情</h2>
                 <button class="close-verification-btn" onclick="closeVerification()">&times;</button>
-                </div>
-
+            </div>
             <div class="verification-content" id="verificationContent">
                 <!-- 验证内容将通过JavaScript动态生成 -->
-                    </div>
-                </div>
+            </div>
+        </div>
 
         <!-- 右侧利润率推演面板 -->
         <div class="exploration-panel" id="explorationPanel">
             <div class="exploration-header">
                 <h2>利润率推演分析</h2>
                 <button class="close-exploration-btn" onclick="closeExploration()">&times;</button>
-                </div>
-
+            </div>
             <div class="exploration-content" id="explorationContent">
                 <!-- 推演内容将通过JavaScript动态生成 -->
-                        </div>
+            </div>
+        </div>
+
+        <!-- 右侧纳税人类型对比面板 -->
+        <div class="comparison-panel" id="comparisonPanel">
+            <div class="comparison-header">
+                <h2>纳税人类型对比</h2>
+                <button class="close-comparison-btn" onclick="closeComparisonPanel()">&times;</button>
+            </div>
+            <div class="comparison-content" id="comparisonContent">
+                <!-- 将把现有的 comparisonResultsCompact 挂载到这里 -->
+            </div>
         </div>
     </div>
 
@@ -2192,6 +2249,31 @@
             } catch (e) {
                 console.warn('无法从localStorage加载数据:', e);
             }
+        }
+
+        // —— 纳税人类型对比：改为桌面分屏 / 移动全屏面板 ——
+        function openTaxpayerComparison() {
+            // 若页面已有生成对比内容的旧函数，则先调用以生成内容
+            if (typeof window.compareTaxpayerTypesCompact === 'function') {
+                try { window.compareTaxpayerTypesCompact(); } catch (e) { console.warn('旧对比函数执行失败(可忽略):', e); }
+            }
+            // 将原先的弹窗容器挂载到右侧面板中
+            const popup = document.getElementById('comparisonResultsCompact');
+            const mount = document.getElementById('comparisonContent');
+            if (popup && mount) {
+                popup.style.display = 'block';
+                mount.innerHTML = '';
+                mount.appendChild(popup);
+            }
+            // 显示面板并进入分屏模式
+            document.getElementById('comparisonPanel').classList.add('active');
+            document.querySelector('.container').classList.add('split-mode');
+            document.body.classList.add('split-mode');
+        }
+        function closeComparisonPanel() {
+            document.getElementById('comparisonPanel').classList.remove('active');
+            document.querySelector('.container').classList.remove('split-mode');
+            document.body.classList.remove('split-mode');
         }
 
         // 利润率推演功能
