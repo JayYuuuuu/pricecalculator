@@ -209,28 +209,7 @@
             transform: translateY(0);
         }
 
-        .verify-btn {
-            width: 100%;
-            padding: 18px;
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 1.4rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 15px;
-        }
 
-        .verify-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(40, 167, 69, 0.3);
-        }
-
-        .verify-btn:active {
-            transform: translateY(0);
-        }
 
         .explore-btn {
             width: 100%;
@@ -422,8 +401,7 @@
                 </div>
             </div>
 
-            <button class="calculate-btn" onclick="calculateProfit()">计算利润</button>
-            <button class="verify-btn" onclick="showVerification()">验证计算</button>
+            <button class="calculate-btn" onclick="calculateProfitAndVerify()">计算利润并验证</button>
             <button class="explore-btn" onclick="openProfitExploration()">利润率推演</button>
 
             <!-- 计算结果 -->
@@ -757,10 +735,18 @@
             }
         }
 
+        // 计算利润并验证计算功能
+        function calculateProfitAndVerify() {
+            // 先执行利润计算
+            calculateProfit();
+            
+            // 然后显示验证计算
+            showVerification();
+        }
+
         // 显示验证计算功能
         function showVerification() {
-            // 先执行一次计算，确保有最新数据
-            calculateProfit();
+            // 获取当前输入值
             
             // 获取当前输入值
             const costPrice = parseFloat(document.getElementById('costPrice').value) || 0;
