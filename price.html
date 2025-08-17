@@ -85,14 +85,12 @@
             background: #f8f9fa;
         }
 
-        /* 输入框网格布局 */
         .input-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 20px;
         }
 
-        /* 移动端响应式 */
         @media (max-width: 768px) {
             .input-grid {
                 grid-template-columns: repeat(2, 1fr);
@@ -259,8 +257,8 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>利润计算器（税务合规版）</h1>
-            <p>快速计算商品利润和关键指标</p>
+            <h1>利润计算器</h1>
+            <p>税务合规版 成本已包含应缴税费</p>
         </div>
 
         <div class="content">
@@ -269,7 +267,7 @@
                 <h2>核心财务指标</h2>
                 <div class="input-grid">
                     <div class="input-group">
-                        <label>你的进价</label>
+                        <label>进货价</label>
                         <input type="number" id="costPrice" placeholder="请输入商品进价" step="0.01" value="38">
                     </div>
                     <div class="input-group">
@@ -277,7 +275,7 @@
                         <input type="number" id="invoiceCost" placeholder="开票成本比例" step="0.1" value="6">
                     </div>
                     <div class="input-group">
-                        <label>你的售价（含税）</label>
+                        <label>售价（含税）</label>
                         <input type="number" id="sellingPrice" placeholder="请输入商品售价" step="0.01" value="89">
                     </div>
                     <div class="input-group">
@@ -312,15 +310,15 @@
                         <input type="number" id="platformFee" placeholder="请输入平台佣金" step="0.1" value="5.5">
                     </div>
                     <div class="input-group">
-                        <label>物流费用（元/单）</label>
+                        <label>每单快递费</label>
                         <input type="number" id="logisticsCost" placeholder="请输入物流费用" step="0.01" value="2.8">
                     </div>
                     <div class="input-group">
-                        <label>运费险（元/单）</label>
+                        <label>运费险</label>
                         <input type="number" id="shippingInsurance" placeholder="请输入运费险费用" step="0.01" value="1.5">
                     </div>
                     <div class="input-group">
-                        <label>其它费用（元/单）</label>
+                        <label>其它成本</label>
                         <input type="number" id="otherCost" placeholder="请输入其他费用" step="0.01" value="2.5">
                     </div>
                 </div>
@@ -354,6 +352,14 @@
                     <div class="metric-card">
                         <div class="metric-value" id="grossMargin">0%</div>
                         <div class="metric-label">毛利润</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="breakevenROI">0</div>
+                        <div class="metric-label">保本ROI</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="breakevenAdRate">0%</div>
+                        <div class="metric-label">保本付费占比</div>
                     </div>
                 </div>
             </div>
@@ -397,10 +403,10 @@
 
                 // 计算销售相关费用（考虑退货率）
                 const platformFeeAmount = sellingPrice * (platformFee / 100); // 平台佣金（可退回）
-                const SERVICE_VAT = 0.06;
+                const v = 0.06; // 服务业进项税率
                 const adCost = sellingPrice * (marketingCost / 100); // 广告费（不可退回，需分摊）
                 const adCostEffective = adCost / effectiveSalesRate; // 分摊后的广告费
-                const adVAT = adCostEffective * (SERVICE_VAT / (1 + SERVICE_VAT)); // 广告费可抵扣进项税（含税×6%/1.06）
+                const adVAT = adCostEffective * v; // 广告费可抵扣进项税（6%）
 
                 // 运营成本（不可退回，需分摊）
                 const logisticsCostEffective = logisticsCost / effectiveSalesRate;
@@ -412,7 +418,7 @@
                 const outputVAT = netPrice * (outputTaxRate / 100);
 
                 // 计算总可抵扣进项税
-                const totalVATDeduction = purchaseVAT + adVAT + (platformFeeAmount * (SERVICE_VAT / (1 + SERVICE_VAT))); // 商品+广告+平台佣金的进项税（平台佣金为含税→进项=含税×6%/1.06）
+                const totalVATDeduction = purchaseVAT + adVAT + (platformFeeAmount * v); // 商品+广告+平台佣金的进项税
                 const actualVAT = outputVAT - totalVATDeduction; // 实际应缴税额
 
                 // 计算总成本（按原系统逻辑）
@@ -423,9 +429,33 @@
                 const profit = sellingPrice - totalCost;
                 const profitRate = (profit / sellingPrice * 100).toFixed(2);
 
+                // 计算保本ROI和保本付费占比（按原系统完整逻辑）
+                // 关键中间量计算
+                const effectiveCost = costPrice + actualInvoiceCost; // 实际进货成本 C = 进货价 + 开票成本
+                const fixedCosts = (logisticsCost + shippingInsurance + otherCost) / effectiveSalesRate; // 不可退回固定成本按有效销售率分摊
+                const t = outputTaxRate / 100; // 销项税率小数
+                const taxFactorOnFinal = t / (1 + t); // 销项税价内占比 s = t/(1+t)
 
+                // 分子常数项 B = C - 商品进项税 + 固定成本/E
+                const B = effectiveCost - purchaseVAT + fixedCosts;
+                
+                // 分母常数项 D = 1 - 平台费率 - 销项税占比 + v/(1+v) × 平台费率
+                const platformRateDecimal = platformFee / 100; // 转换为小数形式
+                const D = 1 - platformRateDecimal - taxFactorOnFinal + (v / (1 + v)) * platformRateDecimal;
 
+                // 保本付费占比 a* = E/(1-v) × (D - B/P)
+                const term = D - (B / sellingPrice);
+                const breakevenAdRate = (effectiveSalesRate / (1 - v)) * term;
 
+                // 保本ROI = E/a*
+                let breakevenROI;
+                if (breakevenAdRate <= 0) {
+                    breakevenROI = '∞'; // 无需广告也能保本
+                } else if (!isFinite(breakevenAdRate) || breakevenAdRate >= 1) {
+                    breakevenROI = '-'; // 参数异常或需要广告占比≥100%
+                } else {
+                    breakevenROI = (effectiveSalesRate / breakevenAdRate).toFixed(2);
+                }
 
                 // 更新显示结果
                 document.getElementById('profit').value = `¥${profit.toFixed(2)}`;
@@ -433,7 +463,18 @@
                 document.getElementById('profitRate').textContent = `${profitRate}%`;
                 document.getElementById('markupRatio').textContent = `${markupRatio}倍`;
                 document.getElementById('grossMargin').textContent = `${grossMargin}%`;
-
+                document.getElementById('breakevenROI').textContent = breakevenROI;
+                
+                // 格式化保本付费占比显示
+                let breakevenAdRateDisplay;
+                if (breakevenAdRate <= 0) {
+                    breakevenAdRateDisplay = '0%';
+                } else if (!isFinite(breakevenAdRate) || breakevenAdRate >= 1) {
+                    breakevenAdRateDisplay = '-';
+                } else {
+                    breakevenAdRateDisplay = (breakevenAdRate * 100).toFixed(2) + '%';
+                }
+                document.getElementById('breakevenAdRate').textContent = breakevenAdRateDisplay;
 
                 // 设置利润状态
                 const profitStatus = document.getElementById('profitStatus');
@@ -460,25 +501,66 @@
                 // 显示结果区域
                 document.getElementById('results').style.display = 'block';
 
-
-
             } catch (error) {
                 console.error('计算错误:', error);
                 alert('计算过程中出现错误，请检查输入数据！');
             }
         }
 
+        // 自动保存输入数据到localStorage
+        function saveToLocalStorage() {
+            const inputs = document.querySelectorAll('input[type="number"]');
+            const data = {};
+            
+            inputs.forEach(input => {
+                data[input.id] = input.value;
+            });
+            
+            try {
+                localStorage.setItem('priceCalculatorData', JSON.stringify(data));
+            } catch (e) {
+                console.warn('无法保存到localStorage:', e);
+            }
+        }
+
+        // 从localStorage加载保存的数据
+        function loadFromLocalStorage() {
+            try {
+                const saved = localStorage.getItem('priceCalculatorData');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    Object.keys(data).forEach(id => {
+                        const element = document.getElementById(id);
+                        if (element) {
+                            element.value = data[id];
+                        }
+                    });
+                }
+            } catch (e) {
+                console.warn('无法从localStorage加载数据:', e);
+            }
+        }
+
         // 页面加载完成后自动计算一次
         document.addEventListener('DOMContentLoaded', function() {
-            // 为所有输入框添加实时计算功能
+            // 先加载保存的数据
+            loadFromLocalStorage();
+            
+            // 为所有输入框添加实时计算和自动保存功能
             const inputs = document.querySelectorAll('input[type="number"]');
             inputs.forEach(input => {
                 input.addEventListener('input', function() {
+                    // 自动保存到localStorage
+                    saveToLocalStorage();
+                    
                     // 延迟计算，避免频繁计算
                     clearTimeout(this.timeout);
                     this.timeout = setTimeout(calculateProfit, 500);
                 });
             });
+            
+            // 页面加载完成后自动计算一次
+            setTimeout(calculateProfit, 100);
         });
     </script>
 </body>
