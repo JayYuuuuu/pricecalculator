@@ -1295,8 +1295,10 @@
                     actualVAT = outputVAT - totalVATDeduction; // 实际应缴税额
                 } else {
                     // 小规模纳税人：征收率计算方式
-                    netPrice = sellingPrice; // 小规模纳税人售价就是不含税价
-                    outputVAT = sellingPrice * 0.03; // 固定使用3%征收率
+                    // 按照税法规定：应纳税额 = 不含税销售额 × 征收率
+                    // 如果售价是含税的，需要先还原不含税销售额
+                    netPrice = sellingPrice / (1 + 0.03); // 还原不含税销售额 = 含税售价 ÷ (1 + 征收率)
+                    outputVAT = netPrice * 0.03; // 应纳税额 = 不含税销售额 × 征收率
                     actualVAT = outputVAT; // 小规模纳税人没有进项税抵扣，实际应缴税额就是销项税
                 }
 
@@ -1482,8 +1484,10 @@
                 actualVAT = outputVAT - totalVATDeduction;
             } else {
                 // 小规模纳税人：征收率计算方式
-                netPrice = sellingPrice; // 小规模纳税人售价就是不含税价
-                outputVAT = sellingPrice * 0.03; // 固定使用3%征收率
+                // 按照税法规定：应纳税额 = 不含税销售额 × 征收率
+                // 如果售价是含税的，需要先还原不含税销售额
+                netPrice = sellingPrice / (1 + 0.03); // 还原不含税销售额 = 含税售价 ÷ (1 + 征收率)
+                outputVAT = netPrice * 0.03; // 应纳税额 = 不含税销售额 × 征收率
                 actualVAT = outputVAT; // 小规模纳税人没有进项税抵扣，实际应缴税额就是销项税
             }
             const totalCost = totalPurchaseCost + platformFeeAmount + adCostEffective + 
@@ -2254,8 +2258,10 @@
                     actualVAT = outputVAT - totalVATDeduction; // 实际应缴税额
                 } else {
                     // 小规模纳税人：征收率计算方式
-                    netPrice = sellingPrice; // 小规模纳税人售价就是不含税价
-                    outputVAT = sellingPrice * 0.03; // 固定使用3%征收率
+                    // 按照税法规定：应纳税额 = 不含税销售额 × 征收率
+                    // 如果售价是含税的，需要先还原不含税销售额
+                    netPrice = sellingPrice / (1 + 0.03); // 还原不含税销售额 = 含税售价 ÷ (1 + 征收率)
+                    outputVAT = netPrice * 0.03; // 应纳税额 = 不含税销售额 × 征收率
                     actualVAT = outputVAT; // 小规模纳税人没有进项税抵扣，实际应缴税额就是销项税
                 }
 
@@ -2493,8 +2499,12 @@
                 outputTaxRateSelect.disabled = true;
             }
             
-            // 自动重新计算
-            setTimeout(calculateProfit, 100);
+            // 自动重新计算并显示验证过程
+            setTimeout(() => {
+                calculateProfit();
+                // 延迟一点时间再显示验证，确保计算结果已更新
+                setTimeout(showVerification, 200);
+            }, 100);
         }
 
         // 同步更新销项税率（当进项税率改变时）
@@ -2509,8 +2519,12 @@
                 outputTaxRateSelect.value = inputTaxRate;
             }
             
-            // 自动重新计算
-            setTimeout(calculateProfit, 100);
+            // 自动重新计算并显示验证过程
+            setTimeout(() => {
+                calculateProfit();
+                // 延迟一点时间再显示验证，确保计算结果已更新
+                setTimeout(showVerification, 200);
+            }, 100);
         }
 
         // 同步更新进项税率（当销项税率改变时）
@@ -2525,8 +2539,12 @@
                 inputTaxRateSelect.value = outputTaxRate;
             }
             
-            // 自动重新计算
-            setTimeout(calculateProfit, 100);
+            // 自动重新计算并显示验证过程
+            setTimeout(() => {
+                calculateProfit();
+                // 延迟一点时间再显示验证，确保计算结果已更新
+                setTimeout(showVerification, 200);
+            }, 100);
         }
 
         // 页面加载完成后自动计算一次
@@ -2693,8 +2711,10 @@
                 adVAT = 0;
                 platformVAT = 0;
                 
-                netPrice = sellingPrice;
-                outputVAT = sellingPrice * 0.03; // 固定使用3%征收率
+                // 按照税法规定：应纳税额 = 不含税销售额 × 征收率
+                // 如果售价是含税的，需要先还原不含税销售额
+                netPrice = sellingPrice / (1 + 0.03); // 还原不含税销售额 = 含税售价 ÷ (1 + 征收率)
+                outputVAT = netPrice * 0.03; // 应纳税额 = 不含税销售额 × 征收率
                 actualVAT = outputVAT;
             }
 
