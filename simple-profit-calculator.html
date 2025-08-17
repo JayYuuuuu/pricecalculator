@@ -1164,7 +1164,7 @@
             width: 100%; max-width: none; max-height: none;
             border: none; box-shadow: none; padding: 0;
         }
-        .comparison-panel .comparison-header-compact { border-radius: 10px; }
+        .comparison-panel .comparison-header-compact { display: none; }
 
         /* 移动端：全屏显示对比面板 */
         @media (max-width: 768px) {
@@ -3400,6 +3400,14 @@
                     const explorationPanel = document.getElementById('explorationPanel');
                     if (explorationPanel && explorationPanel.classList.contains('active')) {
                         closeExploration();
+                        event.preventDefault();
+                        return;
+                    }
+                    
+                    // 如果对比面板是打开的，则关闭它
+                    const comparisonPanel = document.getElementById('comparisonPanel');
+                    if (comparisonPanel && comparisonPanel.classList.contains('active')) {
+                        closeComparisonPanel();
                         event.preventDefault();
                         return;
                     }
