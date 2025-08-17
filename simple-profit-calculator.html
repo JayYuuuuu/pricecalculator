@@ -1133,6 +1133,27 @@
             padding: 25px;
         }
 
+        /* 移动端响应式调整（推演面板） */
+        @media (max-width: 768px) {
+            /* 覆盖分屏：移动端容器不分屏，全屏显示 */
+            .container.split-mode {
+                max-width: none;
+                width: 100%;
+                margin: 0;
+                transform: none;
+            }
+            body.split-mode { padding: 0; }
+
+            /* 推演面板在移动端占满全屏，从右侧完全滑入 */
+            .exploration-panel {
+                width: 100%;
+                right: -100%;
+            }
+            .exploration-panel.active {
+                right: 0;
+            }
+        }
+
         /* 推演控件样式 */
         .exploration-controls {
             display: grid;
