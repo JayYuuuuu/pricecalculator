@@ -4968,11 +4968,109 @@ function initCatalogTab() {
 	if (btnDelete) btnDelete.addEventListener('click', () => { const container = document.getElementById('catalogTableContainer'); const checks = Array.from(container.querySelectorAll('.catalog-check')); const remain = []; checks.forEach(cb => { const tr = cb.closest('tr'); const idx = Number(tr.getAttribute('data-index')); if (!cb.checked) remain.push(catalogState.rows[idx]); }); catalogState.rows = remain; renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); updatePlatformFilterOptions(); });
 	if (btnRecompute) btnRecompute.addEventListener('click', recomputeAllCatalogRows);
 	if (btnExamples) btnExamples.addEventListener('click', () => {
-		const samples = (window.CATALOG_SAMPLE_ROWS || []).map(s => ({ ...s }));
-		if (!samples.length) { console.warn('[Catalog] 未找到示例数据 window.CATALOG_SAMPLE_ROWS'); return; }
-		samples.forEach(s => { const c = computeRow(s); s.__result = c.__result; });
-		catalogState.rows = (catalogState.rows||[]).concat(samples);
-		renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); updatePlatformFilterOptions();
+		// 密码验证弹窗
+		const overlay = document.createElement('div');
+		overlay.style.position = 'fixed';
+		overlay.style.inset = '0';
+		overlay.style.background = 'rgba(0,0,0,.35)';
+		overlay.style.zIndex = '9999';
+		overlay.style.display = 'flex';
+		overlay.style.alignItems = 'center';
+		overlay.style.justifyContent = 'center';
+		
+		const panel = document.createElement('div');
+		panel.style.background = '#fff';
+		panel.style.borderRadius = '12px';
+		panel.style.width = '400px';
+		panel.style.maxWidth = '94vw';
+		panel.style.boxShadow = '0 12px 34px rgba(0,0,0,.18)';
+		panel.style.padding = '20px';
+		
+		panel.innerHTML = `
+			<div style="text-align:center; margin-bottom:20px;">
+				<div style="font-weight:700; font-size:18px; color:#111827; margin-bottom:8px;">🔒 数据保密验证</div>
+				<div style="font-size:14px; color:#6b7280; margin-bottom:8px;">公司固定电话多少？</div>
+				<div style="font-size:12px; color:#9ca3af; font-style:italic;">提示：请输入8位数字</div>
+			</div>
+			<div style="margin-bottom:20px;">
+				<input type="text" id="samplePasswordInput" placeholder="请输入答案" 
+					style="width:100%; padding:12px 16px; border:2px solid #e5e7eb; border-radius:8px; font-size:16px; box-sizing:border-box;"
+					autocomplete="off" maxlength="8" pattern="[0-9]*">
+			</div>
+			<div style="display:flex; gap:12px; justify-content:center;">
+				<button id="btnCancelSample" class="batch-modal-btn" style="min-width:100px;">取消</button>
+				<button id="btnConfirmSample" class="batch-modal-btn primary" style="min-width:100px;">确认</button>
+			</div>
+		`;
+		
+		overlay.appendChild(panel);
+		document.body.appendChild(overlay);
+		
+		// 自动聚焦到密码输入框
+		const passwordInput = panel.querySelector('#samplePasswordInput');
+		passwordInput.focus();
+		
+		// 回车键确认
+		passwordInput.addEventListener('keypress', (e) => {
+			if (e.key === 'Enter') {
+				document.getElementById('btnConfirmSample').click();
+			}
+		});
+		
+		// 取消按钮
+		panel.querySelector('#btnCancelSample').addEventListener('click', () => {
+			document.body.removeChild(overlay);
+		});
+		
+		// 确认按钮
+		panel.querySelector('#btnConfirmSample').addEventListener('click', () => {
+			const answer = passwordInput.value.trim();
+			
+			// 公司固定电话答案
+			const correctAnswer = '88772773';
+			
+			if (answer === correctAnswer) {
+				// 密码正确，插入示例数据
+				const samples = (window.CATALOG_SAMPLE_ROWS || []).map(s => ({ ...s }));
+				if (!samples.length) { 
+					console.warn('[Catalog] 未找到示例数据 window.CATALOG_SAMPLE_ROWS'); 
+					showToast && showToast('未找到示例数据');
+					document.body.removeChild(overlay);
+					return; 
+				}
+				
+				samples.forEach(s => { const c = computeRow(s); s.__result = c.__result; });
+				catalogState.rows = (catalogState.rows||[]).concat(samples);
+				renderCatalogTable(); 
+				updateCatalogStatus(); 
+				saveCatalogToStorage(); 
+				updatePlatformFilterOptions();
+				
+				showToast && showToast(`示例数据插入成功，共${samples.length}条记录`);
+				document.body.removeChild(overlay);
+			} else {
+				// 答案错误
+				passwordInput.style.borderColor = '#ef4444';
+				passwordInput.style.background = '#fef2f2';
+				passwordInput.value = '';
+				passwordInput.placeholder = '答案错误，请重新输入';
+				passwordInput.focus();
+				
+				// 3秒后恢复样式
+				setTimeout(() => {
+					passwordInput.style.borderColor = '#e5e7eb';
+					passwordInput.style.background = '#fff';
+					passwordInput.style.placeholder = '请输入答案';
+				}, 3000);
+			}
+		});
+		
+		// 点击遮罩层关闭弹窗
+		overlay.addEventListener('click', (e) => {
+			if (e.target === overlay) {
+				document.body.removeChild(overlay);
+			}
+		});
 	});
 	if (btnUndo) btnUndo.addEventListener('click', () => { if (!catalogState.lastImportBackup) return; catalogState.rows = catalogState.lastImportBackup; catalogState.lastImportBackup = null; btnUndo.style.display='none'; renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); updatePlatformFilterOptions(); });
 	if (btnPlat) btnPlat.addEventListener('click', () => openPlatformSettingsModal());
