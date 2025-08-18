@@ -3332,12 +3332,35 @@ function computeRow(row) {
 		return { __result: { list, errors: [] } };
 	}
 
-	// 新规则：进货价必填且为单值；不再支持上下限区间
-	if (!isFinite(std.costMin) && !isFinite(std.costMax)) errors.push('进货价为必填');
-	const singleCost = isFinite(std.costMin) ? std.costMin : std.costMax;
-	if (!isFinite(singleCost)) return { __result: { errors } };
-	const r = computeRowWithCost(std, singleCost);
-	return { __result: { list: [{ cost: singleCost, ...r }], errors: [] } };
+	// 新规则：进货价必填，支持单值或多档
+	if (!isFinite(std.costMin) && !isFinite(std.costMax) && (!Array.isArray(std.costTiers) || std.costTiers.length === 0)) {
+		errors.push('进货价为必填（支持单值或多档）');
+		return { __result: { errors } };
+	}
+	
+	// 处理进货价：优先使用多档，否则使用单值
+	let costValues = [];
+	if (Array.isArray(std.costTiers) && std.costTiers.length > 0) {
+		costValues = std.costTiers;
+	} else {
+		const singleCost = isFinite(std.costMin) ? std.costMin : std.costMax;
+		if (isFinite(singleCost)) {
+			costValues = [singleCost];
+		}
+	}
+	
+	if (costValues.length === 0) {
+		errors.push('进货价数据无效');
+		return { __result: { errors } };
+	}
+	
+	// 计算每个成本档位的结果
+	const results = costValues.map(cost => {
+		const r = computeRowWithCost(std, cost);
+		return { cost, ...r };
+	});
+	
+	return { __result: { list: results, errors: [] } };
 }
 
 // 辅助函数：计算区间结果
