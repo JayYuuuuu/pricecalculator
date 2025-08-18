@@ -457,16 +457,30 @@
 
                 <!-- C位：目标到手价 + 活动选择（紧凑主卡片） -->
                 <div class="primary-card" style="background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
-                    <!-- 顶部：目标到手价（大号输入） -->
+                    <!-- 顶部：目标到手价设置 -->
                     <div style="display:grid; grid-template-columns: 1.2fr 1.8fr; gap:16px; align-items:start;">
                         <div>
-                            <label for="targetFinalPrice" style="display:block; font-weight:600; margin-bottom:6px;">目标到手价（含税，元）</label>
-                            <div class="input-wrapper" style="display:flex; gap:8px;">
-                                <input type="number" id="targetFinalPrice" value="59" step="0.01" 
-                                       style="font-size:1.4rem; font-weight:700; padding:12px 14px; width:100%; border-radius:10px;">
-                                <button class="save-button" onclick="saveInputs()">保存</button>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                <label style="font-weight:600;">目标到手价（含税，元）</label>
+                                <div style="display:flex; gap:8px; align-items:center;">
+                                    <button type="button" class="batch-modal-btn" style="margin:0; padding:4px 8px; font-size:12px;" onclick="addTargetPrice()">新增</button>
+                                    <button type="button" class="batch-modal-btn" style="margin:0; padding:4px 8px; font-size:12px;" onclick="clearAllTargetPrices()">清空</button>
+                                </div>
                             </div>
-                            <div class="field-hint" style="margin-top:6px;">买家最终支付价（叠加所有优惠后）。</div>
+                            
+                            <!-- 到手价目标列表 -->
+                            <div id="targetPriceList" style="display:flex; flex-direction:column; gap:8px;">
+                                <div class="target-price-row">
+                                    <div class="input-wrapper" style="display:flex; gap:8px;">
+                                        <input type="number" class="target-price-input" value="59" step="0.01" 
+                                               style="font-size:1.4rem; font-weight:700; padding:12px 14px; width:100%; border-radius:10px;">
+                                        <button class="save-button" onclick="saveInputs()">保存</button>
+                                        <button type="button" class="batch-modal-btn" onclick="removeTargetPrice(this)" style="margin:0; padding:8px 12px;">删除</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="field-hint" style="margin-top:6px;">买家最终支付价（叠加所有优惠后）。可设置多个目标价进行批量计算。</div>
                         </div>
 
                         <!-- 活动勾选：单品立减 + 满减概览 -->

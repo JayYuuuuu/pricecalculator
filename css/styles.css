@@ -1216,94 +1216,466 @@ button:hover {
     box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     padding: 12px;
 }
-.lp-table-wrapper { overflow: auto; }
-.lp-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    /* 移除固定最小宽度，便于列宽动态适配内容 */
+
+/* 价格卡片容器 */
+.price-cards-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+}
+
+/* 价格卡片样式 */
+.price-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.price-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.price-card-invalid {
+    opacity: 0.6;
+    background: #f9fafb;
+}
+
+/* 卡片头部 */
+.price-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.discount-rate {
+    background: #f3f4f6;
+    color: #374151;
+    padding: 6px 12px;
+    border-radius: 20px;
     font-size: 14px;
-    background: #fff;
-    border-radius: 10px;
-    overflow: hidden;
-    table-layout: auto; /* 动态列宽 */
-}
-.lp-table thead th {
-    position: sticky;
-    top: 0;
-    background: #fafafa; /* 表头层级：比正文略浅 */
-    color: #475569;
-    text-align: left;
-    font-weight: 500; /* 级别降低，避免喧宾夺主 */
-    border-bottom: 1px solid #edf2f7;
-    padding: 10px 14px; /* 字号略小、内边距略紧凑 */
-    font-size: 13px;
-    white-space: nowrap;
-}
-.lp-table thead th.lp-col-right { text-align: right; }
-.lp-table thead th.lp-col-center { text-align: center; }
-.lp-table thead th.lp-col-left { text-align: left; }
-.lp-table tbody td {
-    /* 行距适度放大，提升可读性 */
-    padding: 10px 12px;
-    border-bottom: 1px solid #f1f5f9;
-    color: #1f2937;
-    vertical-align: middle;
-    line-height: 1.5; /* 行间距：1.5倍行高 */
-}
-/* 纵向分隔线：弱化但提供列界限，降低横向误读 */
-.lp-table thead th + th, .lp-table tbody td + td { border-left: 1px solid #f3f4f6; }
-/* 列间距：让数据块更独立 */
-.lp-table thead th + th { padding-left: 16px; }
-.lp-table tbody td + td { padding-left: 16px; }
-.lp-table tbody tr:nth-child(odd) { background: #f9fafb; }
-.lp-table tbody tr:hover { background: #f6faff; }
-.lp-col-left { text-align: left; }
-.lp-col-right { text-align: right; }
-.lp-col-center { text-align: center; }
-.lp-price { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
-/* 数额展示：货币符号与数值分层，突出数字 */
-.lp-amount { display: inline-flex; align-items: baseline; gap: 4px; }
-.lp-amount .currency { color:#64748b; font-weight: 500; font-size: 0.9em; }
-.lp-amount .value { color:#111827; font-weight: 700; letter-spacing: 0.2px; }
-.lp-amount.emphasis .value { font-weight: 800; font-size: 1.05em; }
-.lp-strong { font-weight: 700; color: #0b63ce; }
-.lp-nowrap { white-space: nowrap; }
-
-/* 固定首列：横向滚动时让首列保持在视野内，避免行对不齐造成误读 */
-.lp-table thead th:first-child,
-.lp-table tbody td:first-child {
-    position: sticky;
-    left: 0;
-    z-index: 1;
-    background: #fff;
-    box-shadow: 2px 0 0 rgba(0,0,0,0.02);
+    font-weight: 600;
 }
 
-/* 状态徽章（精确/偏差） */
-.lp-badge {
+/* 状态徽章 */
+.status-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    text-align: center;
+}
+
+.status-success {
+    background: #f0fdf4;
+    color: #16a34a;
+    border: 1px solid #d1fae5;
+}
+
+.status-warning {
+    background: #fff7ed;
+    color: #9a3412;
+    border: 1px solid #fed7aa;
+}
+
+.status-error {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+/* 卡片内容 */
+.price-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* 价格数值 - 重点突出 */
+.price-value {
+    text-align: center;
+    padding: 20px;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 12px;
+    border: 2px solid #e2e8f0;
+}
+
+.price-value .currency {
+    font-size: 24px;
+    color: #64748b;
+    font-weight: 600;
+    margin-right: 4px;
+}
+
+.price-value .value {
+    font-size: 36px;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.5px;
+    line-height: 1;
+}
+
+/* 价格详情 */
+.price-details {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+}
+
+.detail-label {
+    color: #6b7280;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.detail-value {
+    color: #111827;
+    font-weight: 600;
+    text-align: right;
+}
+
+/* 价格标签样式 */
+.price-chip {
     display: inline-block;
     padding: 4px 8px;
-    border-radius: 999px;
+    border-radius: 6px;
     font-size: 12px;
-    line-height: 1;
+    font-weight: 500;
     white-space: nowrap;
 }
-.lp-badge.ok { background: #f6fffb; color: #16a34a; border: 1px solid #d1fae5; }
-.lp-badge.warn { background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; }
-/* 徽章与紧邻数据的间距 */
-.lp-badge { margin-left: 8px; }
 
-/* 轻量“Chip”展示（比如立减/满减） */
-.lp-chip { display:inline-block; padding: 2px 8px; border-radius: 999px; background:#f3f4f6; color:#374151; font-size:12px; white-space: nowrap; }
-.lp-chip.blue { background:#eef2ff; color:#3730a3; }
-.lp-chip.green { background:#ecfdf5; color:#065f46; }
-.lp-chip.gray { background:#f3f4f6; color:#374151; }
+.price-chip-gray {
+    background: #f3f4f6;
+    color: #374151;
+}
 
-/* 窄屏适配：压缩字号与最小宽度 */
+.price-chip-blue {
+    background: #eef2ff;
+    color: #3730a3;
+}
+
+.price-chip-green {
+    background: #ecfdf5;
+    color: #065f46;
+}
+
+/* 移动端适配 */
 @media (max-width: 768px) {
-    .lp-table { min-width: 520px; font-size: 13px; }
-    .lp-table thead th, .lp-table tbody td { padding: 10px 12px; }
+    .price-cards-container {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .price-card {
+        padding: 16px;
+    }
+    
+    .price-value {
+        padding: 16px;
+    }
+    
+    .price-value .currency {
+        font-size: 20px;
+    }
+    
+    .price-value .value {
+        font-size: 28px;
+    }
+    
+    .price-card-header {
+        flex-direction: column;
+        gap: 8px;
+        align-items: flex-start;
+    }
+    
+    .detail-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+    
+    .detail-value {
+        text-align: left;
+    }
+}
+
+@media (max-width: 480px) {
+    .price-value .currency {
+        font-size: 18px;
+    }
+    
+    .price-value .value {
+        font-size: 24px;
+    }
+}
+
+/* 批量计算结果样式 */
+.batch-summary {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.summary-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.summary-label {
+    color: #64748b;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.summary-value {
+    color: #0f172a;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.target-price-section {
+    margin-bottom: 32px;
+    padding: 20px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.target-price-section:last-child {
+    margin-bottom: 0;
+}
+
+.target-price-header {
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #f1f5f9;
+}
+
+.target-price-header h4 {
+    margin: 0 0 8px 0;
+    color: #0f172a;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.target-price-summary {
+    color: #64748b;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* 目标价格输入行样式 */
+.target-price-row {
+    margin-bottom: 8px;
+}
+
+.target-price-row:last-child {
+    margin-bottom: 0;
+}
+
+/* 移动端批量结果适配 */
+@media (max-width: 768px) {
+    .batch-summary {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        padding: 12px;
+    }
+    
+    .target-price-section {
+        padding: 16px;
+        margin-bottom: 24px;
+    }
+    
+    .target-price-header h4 {
+        font-size: 16px;
+    }
+}
+
+/* 批量结果表格样式 */
+.batch-results-table {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-top: 20px;
+}
+
+.table-header {
+    display: grid;
+    grid-template-columns: 120px repeat(auto-fit, minmax(200px, 1fr));
+    background: #f8fafc;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.header-discount-rate {
+    padding: 16px;
+    font-weight: 600;
+    color: #374151;
+    border-right: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+}
+
+.header-target-price {
+    padding: 16px;
+    font-weight: 600;
+    color: #374151;
+    text-align: center;
+    border-right: 1px solid #e5e7eb;
+}
+
+.header-target-price:last-child {
+    border-right: none;
+}
+
+.discount-rate-row {
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.discount-rate-row:last-child {
+    border-bottom: none;
+}
+
+.discount-rate-header {
+    display: grid;
+    grid-template-columns: 120px repeat(auto-fit, minmax(200px, 1fr));
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.discount-rate-label {
+    padding: 16px;
+    font-weight: 700;
+    color: #0f172a;
+    border-right: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.discount-rate-desc {
+    font-size: 12px;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.price-cells-container {
+    display: grid;
+    grid-template-columns: 120px repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.price-cell {
+    padding: 16px;
+    border-right: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 120px;
+}
+
+.price-cell:last-child {
+    border-right: none;
+}
+
+.price-cell-invalid {
+    opacity: 0.6;
+    background: #f9fafb;
+}
+
+.cell-target-price {
+    font-size: 14px;
+    color: #6b7280;
+    font-weight: 500;
+    text-align: center;
+}
+
+.cell-price {
+    text-align: center;
+    padding: 12px;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.cell-price .currency {
+    font-size: 16px;
+    color: #64748b;
+    font-weight: 600;
+    margin-right: 2px;
+}
+
+.cell-price .value {
+    font-size: 20px;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.3px;
+}
+
+.cell-off {
+    text-align: center;
+    font-size: 12px;
+}
+
+.cell-status {
+    text-align: center;
+}
+
+.cell-status .status-badge {
+    font-size: 11px;
+    padding: 3px 8px;
+}
+
+/* 移动端批量表格适配 */
+@media (max-width: 768px) {
+    .batch-results-table {
+        overflow-x: auto;
+    }
+    
+    .table-header,
+    .discount-rate-header,
+    .price-cells-container {
+        grid-template-columns: 120px repeat(auto-fit, minmax(180px, 1fr));
+        min-width: 600px;
+    }
+    
+    .price-cell {
+        padding: 12px;
+        min-height: 100px;
+    }
+    
+    .cell-price {
+        padding: 8px;
+    }
+    
+    .cell-price .currency {
+        font-size: 14px;
+    }
+    
+    .cell-price .value {
+        font-size: 16px;
+    }
 }
 
 /* --------------------------- */

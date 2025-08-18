@@ -1003,8 +1003,16 @@ window.addEventListener('load', () => {
  *   取满足条件且 S>0 的解中，到手价误差最小的一个解，作为该 r 下的建议标价。
  */
 function calculateListPrice() {
-    // 读取输入
-    const targetFinalPrice = validateInput(parseFloat(document.getElementById('targetFinalPrice').value), 0.01, 100000000, '目标到手价');
+    // 读取输入：支持多个到手价目标
+    const targetPriceInputs = document.querySelectorAll('#targetPriceList .target-price-input');
+    const targetFinalPrices = Array.from(targetPriceInputs)
+        .map(input => parseFloat(input.value))
+        .filter(price => isFinite(price) && price > 0);
+    
+    if (targetFinalPrices.length === 0) {
+        throw new Error('请至少设置一个有效的目标到手价');
+    }
+    
     const rateValues = Array.from(document.querySelectorAll('.lp-rate')).filter(x => x.checked).map(x => parseFloat(x.value));
     const tiers = Array.from(document.querySelectorAll('#fullReductionList .tier-row')).map(row => ({
         threshold: parseFloat(row.querySelector('.tier-threshold').value),
@@ -1016,43 +1024,50 @@ function calculateListPrice() {
     // 若无满减档，按 off=0 处理
     const offCandidates = tiers.length ? tiers.map(t => t.off).sort((a,b)=>a-b) : [0];
 
-    // 对每个立减比例分别给出建议标价
-    const results = rateValues.map(r => {
-        let best = null; // { price, off, thresholdUsed, finalPrice, diff }
-        const k = 1 - r;
-        if (k <= 0) return { r, price: NaN, finalPrice: NaN, detail: [], note: '立减过高' };
+    // 对每个到手价目标分别计算
+    const allResults = targetFinalPrices.map(targetFinalPrice => {
+        // 对每个立减比例分别给出建议标价
+        const results = rateValues.map(r => {
+            let best = null; // { price, off, thresholdUsed, finalPrice, diff }
+            const k = 1 - r;
+            if (k <= 0) return { r, price: NaN, finalPrice: NaN, detail: [], note: '立减过高' };
 
-        // 穷举可能的 off（由各档可触发的最大减额决定）。考虑不触发满减的 off=0 场景
-        const candidates = new Set(offCandidates.concat([0]));
-        candidates.forEach(off => {
-            // 反解标价 S = (P + off)/k
-            const S = (targetFinalPrice + off) / k;
-            if (!isFinite(S) || S <= 0) return;
-            const S1 = S * k; // 立减后价
-            // 找到在 S1 下能触发的最大满减档位（若有）
-            const available = tiers.filter(t => S1 >= t.threshold);
-            const maxOff = available.length ? Math.max(...available.map(t => t.off)) : 0;
-            // 验证该解是否自洽：若我们假设的 off 与实际可触发 maxOff 不一致，则该解不成立
-            if (Math.abs((off||0) - (maxOff||0)) > 1e-6) return;
-            const P = S1 - (maxOff||0);
-            const diff = Math.abs(P - targetFinalPrice);
-            const candidate = { price: S, off: maxOff||0, thresholdUsed: (function(){
-                if (!maxOff) return null;
-                const t = available.find(x => x.off === maxOff);
-                return t ? t.threshold : null;
-            })(), finalPrice: P, diff };
-            if (!best || diff < best.diff || (Math.abs(diff - best.diff) < 1e-9 && S < best.price)) {
-                best = candidate;
-            }
+            // 穷举可能的 off（由各档可触发的最大减额决定）。考虑不触发满减的 off=0 场景
+            const candidates = new Set(offCandidates.concat([0]));
+            candidates.forEach(off => {
+                // 反解标价 S = (P + off)/k
+                const S = (targetFinalPrice + off) / k;
+                if (!isFinite(S) || S <= 0) return;
+                const S1 = S * k; // 立减后价
+                // 找到在 S1 下能触发的最大满减档位（若有）
+                const available = tiers.filter(t => S1 >= t.threshold);
+                const maxOff = available.length ? Math.max(...available.map(t => t.off)) : 0;
+                // 验证该解是否自洽：若我们假设的 off 与实际可触发 maxOff 不一致，则该解不成立
+                if (Math.abs((off||0) - (maxOff||0)) > 1e-6) return;
+                const P = S1 - (maxOff||0);
+                const diff = Math.abs(P - targetFinalPrice);
+                const candidate = { price: S, off: maxOff||0, thresholdUsed: (function(){
+                    if (!maxOff) return null;
+                    const t = available.find(x => x.off === maxOff);
+                    return t ? t.threshold : null;
+                })(), finalPrice: P, diff };
+                if (!best || diff < best.diff || (Math.abs(diff - best.diff) < 1e-9 && S < best.price)) {
+                    best = candidate;
+                }
+            });
+            return { r, price: best? best.price : NaN, finalPrice: best? best.finalPrice : NaN, off: best? best.off : 0, thresholdUsed: best? best.thresholdUsed : null };
         });
-        return { r, price: best? best.price : NaN, finalPrice: best? best.finalPrice : NaN, off: best? best.off : 0, thresholdUsed: best? best.thresholdUsed : null };
+        
+        return {
+            targetFinalPrice,
+            results
+        };
     });
 
     // 渲染结果
-    document.getElementById('result').innerHTML = generateListPriceHtml({
-        targetFinalPrice,
-        tiers,
-        results
+    document.getElementById('result').innerHTML = generateBatchListPriceHtml({
+        allResults,
+        tiers
     });
     try { if (window.__setShareButtonsEnabled) window.__setShareButtonsEnabled(true); } catch (e) {}
 
@@ -1064,7 +1079,7 @@ function calculateListPrice() {
         if (window.matchMedia && !window.matchMedia('(hover: hover)').matches) {
             const tapContainer = document.getElementById('result');
             const onTap = (e) => {
-                const el = e.target.closest('.lp-price-row');
+                const el = e.target.closest('.price-card');
                 if (!el || !tapContainer.contains(el)) return;
                 const S = parseFloat(el.getAttribute('data-s'));
                 if (!isFinite(S) || S <= 0) return;
@@ -1132,6 +1147,71 @@ function removeTierRow(btn) {
     if (row && row.parentNode) row.parentNode.removeChild(row);
 }
 
+// 标价页：增加/删除到手价目标
+function addTargetPrice() {
+    const list = document.getElementById('targetPriceList');
+    if (!list) return;
+    
+    // 限制最多10个目标价
+    if (list.children.length >= 10) {
+        alert('最多只能设置10个目标到手价');
+        return;
+    }
+    
+    const row = document.createElement('div');
+    row.className = 'target-price-row';
+    row.style.display = 'flex';
+    row.style.alignItems = 'center';
+    row.style.gap = '8px';
+    row.style.flexWrap = 'wrap';
+    
+    // 计算默认值：基于上一个价格递增
+    const existingPrices = Array.from(list.querySelectorAll('.target-price-input'))
+        .map(input => parseFloat(input.value))
+        .filter(price => isFinite(price) && price > 0);
+    const lastPrice = existingPrices.length > 0 ? Math.max(...existingPrices) : 59;
+    const defaultPrice = lastPrice + 10; // 默认递增10元
+    
+    row.innerHTML = '<div class="input-wrapper" style="display:flex; gap:8px;">' +
+                    '<input type="number" class="target-price-input" value="' + defaultPrice + '" step="0.01" ' +
+                    'style="font-size:1.4rem; font-weight:700; padding:12px 14px; width:100%; border-radius:10px;">' +
+                    '<button class="save-button" onclick="saveInputs()" style="margin:0;">保存</button>' +
+                    '<button type="button" class="batch-modal-btn" onclick="removeTargetPrice(this)" style="margin:0; padding:8px 12px;">删除</button>' +
+                    '</div>';
+    list.appendChild(row);
+}
+
+function removeTargetPrice(btn) {
+    const row = btn && btn.closest('.target-price-row');
+    if (row && row.parentNode) {
+        // 确保至少保留一个目标价输入框
+        const list = document.getElementById('targetPriceList');
+        if (list && list.children.length > 1) {
+            row.parentNode.removeChild(row);
+        } else {
+            alert('至少需要保留一个目标到手价');
+        }
+    }
+}
+
+function clearAllTargetPrices() {
+    const list = document.getElementById('targetPriceList');
+    if (!list) return;
+    
+    if (confirm('确定要清空所有目标到手价吗？')) {
+        // 保留第一个，清空其他
+        const rows = list.querySelectorAll('.target-price-row');
+        for (let i = 1; i < rows.length; i++) {
+            rows[i].remove();
+        }
+        // 重置第一个的价格为默认值
+        const firstInput = list.querySelector('.target-price-input');
+        if (firstInput) {
+            firstInput.value = '59';
+        }
+    }
+}
+
 /**
  * 为"建议标价"列添加悬浮说明：展示给定标价在各立减档位下的到手价
  * 档位固定为 [10%, 12%, 15%, 18%, 20%]
@@ -1186,14 +1266,14 @@ function initSuggestPriceTooltip(tiers) {
     const container = document.getElementById('result');
     if (!container) return;
     const onOver = (e) => {
-        const el = e.target.closest('.lp-price-row');
-        if (!el || !container.contains(el)) return;
+        const el = e.target.closest('.price-card');
+        if (!el || !container.contains(el)) return hide();
         const S = parseFloat(el.getAttribute('data-s'));
         if (!isFinite(S) || S <= 0) return hide();
         show(buildHtml(S), e.clientX, e.clientY);
     };
     const onMove = (e) => {
-        const el = e.target.closest('.lp-price-row');
+        const el = e.target.closest('.price-card');
         if (!el || !container.contains(el)) return hide();
         const S = parseFloat(el.getAttribute('data-s'));
         if (!isFinite(S) || S <= 0) return hide();

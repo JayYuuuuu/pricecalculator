@@ -270,56 +270,74 @@ function generateListPriceHtml({ targetFinalPrice, tiers, results }) {
         + '</div>'
     ) : '<div style="font-size:0.9rem;color:#666;margin-top:6px;">未设置满减，按无满减计算</div>';
 
-    const rows = sorted.map(item => {
+    // 生成卡片形式的标价建议
+    const priceCards = sorted.map(item => {
         const rPct = (item.r*100).toFixed(0) + '%';
         if (!isFinite(item.price)) {
-            return `<tr>
-                <td class="lp-col-left"><span class="lp-chip gray">${rPct}</span></td>
-                <td class="lp-col-right lp-price">-</td>
-                <td class="lp-col-right">-</td>
-                <td class="lp-col-right lp-price">-</td>
-                <td class="lp-col-right"><span class="lp-badge warn">参数无解</span></td>
-            </tr>`;
+            return `<div class="price-card price-card-invalid">
+                <div class="price-card-header">
+                    <span class="discount-rate">${rPct}</span>
+                    <span class="status-badge status-error">参数无解</span>
+                </div>
+                <div class="price-card-content">
+                    <div class="price-value">-</div>
+                    <div class="price-details">
+                        <div class="detail-item">
+                            <span class="detail-label">建议标价：</span>
+                            <span class="detail-value">-</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">满减触发：</span>
+                            <span class="detail-value">-</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">叠加后到手价：</span>
+                            <span class="detail-value">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
         }
+        
         // 提示优化：满减触发信息用 Chip 展示，维持次要色；金额保持统一格式
-        const offText = item.off ? `<span class="lp-chip green">减 ¥${Number(item.off).toFixed(2)}</span>${item.thresholdUsed? ` <span class=\"lp-chip blue\">触发满¥${Number(item.thresholdUsed).toFixed(2)}</span>` : ''}` : '<span class="lp-chip gray">无</span>';
+        const offText = item.off ? `<span class="price-chip price-chip-green">减 ¥${Number(item.off).toFixed(2)}</span>${item.thresholdUsed? ` <span class=\"price-chip price-chip-blue\">触发满¥${Number(item.thresholdUsed).toFixed(2)}</span>` : ''}` : '<span class="price-chip price-chip-gray">无</span>';
         const isExact = Math.abs((item.finalPrice||0) - targetFinalPrice) < 0.005;
-        const note = isExact ? '<span class="lp-badge ok">精确匹配</span>' : `<span class="lp-badge warn">偏差 ¥${Math.abs((item.finalPrice||0)-targetFinalPrice).toFixed(2)}</span>`;
-        return `<tr class="lp-price-row" data-s="${Number(item.price).toFixed(2)}">
-            <td class="lp-col-left" data-label="单品立减"><span class="lp-chip gray">${rPct}</span></td>
-            <td class="lp-col-right lp-price" data-label="建议标价">
-                <span class="lp-amount emphasis"><span class="currency">¥</span><span class="value">${Number(item.price).toFixed(2)}</span></span>
-            </td>
-            <td class="lp-col-right lp-nowrap" data-label="满减触发">${offText}</td>
-            <td class="lp-col-right lp-price" data-label="叠加后到手价">
-                ${isFinite(item.finalPrice)? `<span class=\"lp-amount\"><span class=\"currency\">¥</span><span class=\"value\">${Number(item.finalPrice).toFixed(2)}</span></span>` : '-'}
-            </td>
-            <td class="lp-col-right" data-label="校验">${note}</td>
-        </tr>`;
+        const statusClass = isExact ? 'status-success' : 'status-warning';
+        const statusText = isExact ? '精确匹配' : `偏差 ¥${Math.abs((item.finalPrice||0)-targetFinalPrice).toFixed(2)}`;
+        
+        return `<div class="price-card" data-s="${Number(item.price).toFixed(2)}">
+            <div class="price-card-header">
+                <span class="discount-rate">${rPct}</span>
+                <span class="status-badge ${statusClass}">${statusText}</span>
+            </div>
+            <div class="price-card-content">
+                <div class="price-value">
+                    <span class="currency">¥</span>
+                    <span class="value">${Number(item.price).toFixed(2)}</span>
+                </div>
+                <div class="price-details">
+                    <div class="detail-item">
+                        <span class="detail-label">满减触发：</span>
+                        <span class="detail-value">${offText}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">叠加后到手价：</span>
+                        <span class="detail-value">¥${Number(item.finalPrice).toFixed(2)}</span>
+                    </div>
+                </div>
+            </div>
+        </div>`;
     }).join('');
 
-    // 说明：这里原本会渲染一个顶部“目标到手价”信息卡片（类名：final-price），
-    // 为满足“仅在标价计算页面隐藏该模块，不影响其他页面”的需求，
-    // 我们在此函数内直接移除该模块的模板字符串，仅保留下方的“标价建议与校验”表格区域。
+    // 说明：这里原本会渲染一个顶部"目标到手价"信息卡片（类名：final-price），
+    // 为满足"仅在标价计算页面隐藏该模块，不影响其他页面"的需求，
+    // 我们在此函数内直接移除该模块的模板字符串，仅保留下方的"标价建议与校验"表格区域。
     // 其它页面的结果页仍然使用各自模板文件（如 generatePriceResultHtml / generateResultHtml），不会受此次修改影响。
     return `
         <div class="section calculation-process lp-card">
             <h3>标价建议与校验</h3>
-            <div class="lp-table-wrapper">
-                <table class="lp-table">
-                    <thead>
-                        <tr>
-                            <th class="lp-col-left lp-col-left">单品立减</th>
-                            <th class="lp-col-right lp-col-right">建议标价</th>
-                            <th class="lp-col-right lp-col-right">满减触发</th>
-                            <th class="lp-col-right lp-col-right">叠加后到手价</th>
-                            <th class="lp-col-right lp-col-right">校验</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rows}
-                    </tbody>
-                </table>
+            <div class="price-cards-container">
+                ${priceCards}
             </div>
 
             <div class="calculation-steps" style="margin-top:16px;">
@@ -349,6 +367,247 @@ function generateListPriceHtml({ targetFinalPrice, tiers, results }) {
                                 </tr>
                             </table>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// 生成批量标价计算结果HTML（支持多个到手价目标）
+function generateBatchListPriceHtml({ allResults, tiers }) {
+    // 按到手价从小到大排序
+    const sortedResults = allResults.slice().sort((a, b) => a.targetFinalPrice - b.targetFinalPrice);
+    
+    // 判断是否为多个到手价目标
+    const isMultipleTargets = sortedResults.length > 1;
+    
+    if (isMultipleTargets) {
+        // 多个到手价目标：按优惠区间分组展示
+        return generateBatchResultsByDiscountRate(sortedResults, tiers);
+    } else {
+        // 单个到手价目标：按原有逻辑展示
+        return generateSingleTargetResults(sortedResults[0], tiers);
+    }
+}
+
+// 生成单个到手价目标的结果（保持原有展示逻辑）
+function generateSingleTargetResults(targetResult, tiers) {
+    const { targetFinalPrice, results } = targetResult;
+    const sorted = results.slice().sort((a,b)=>a.r-b.r);
+    
+    const priceCards = sorted.map(item => {
+        const rPct = (item.r*100).toFixed(0) + '%';
+        if (!isFinite(item.price)) {
+            return `<div class="price-card price-card-invalid">
+                <div class="price-card-header">
+                    <span class="discount-rate">${rPct}</span>
+                    <span class="status-badge status-error">参数无解</span>
+                </div>
+                <div class="price-card-content">
+                    <div class="price-value">-</div>
+                    <div class="price-details">
+                        <div class="detail-item">
+                            <span class="detail-label">建议标价：</span>
+                            <span class="detail-value">-</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">满减触发：</span>
+                            <span class="detail-value">-</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">叠加后到手价：</span>
+                            <span class="detail-value">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        }
+        
+        const offText = item.off ? `<span class="price-chip price-chip-green">减 ¥${Number(item.off).toFixed(2)}</span>${item.thresholdUsed? ` <span class=\"price-chip price-chip-blue\">触发满¥${Number(item.thresholdUsed).toFixed(2)}</span>` : ''}` : '<span class="price-chip price-chip-gray">无</span>';
+        const isExact = Math.abs((item.finalPrice||0) - targetFinalPrice) < 0.005;
+        const statusClass = isExact ? 'status-success' : 'status-warning';
+        const statusText = isExact ? '精确匹配' : `偏差 ¥${Math.abs((item.finalPrice||0)-targetFinalPrice).toFixed(2)}`;
+        
+        return `<div class="price-card" data-s="${Number(item.price).toFixed(2)}">
+            <div class="price-card-header">
+                <span class="discount-rate">${rPct}</span>
+                <span class="status-badge ${statusClass}">${statusText}</span>
+            </div>
+            <div class="price-card-content">
+                <div class="price-value">
+                    <span class="currency">¥</span>
+                    <span class="value">${Number(item.price).toFixed(2)}</span>
+                </div>
+                <div class="price-details">
+                    <div class="detail-item">
+                        <span class="detail-label">满减触发：</span>
+                        <span class="detail-value">${offText}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">叠加后到手价：</span>
+                        <span class="detail-value">¥${Number(item.finalPrice).toFixed(2)}</span>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+
+    return `
+        <div class="section calculation-process lp-card">
+            <h3>标价建议与校验</h3>
+            <div class="price-cards-container">
+                ${priceCards}
+            </div>
+            ${generateCalculationSteps()}
+        </div>
+    `;
+}
+
+// 生成多个到手价目标的结果（按优惠区间分组展示）
+function generateBatchResultsByDiscountRate(allResults, tiers) {
+    // 获取所有立减比例，按从小到大排序
+    const allDiscountRates = [...new Set(allResults.flatMap(r => r.results.map(item => item.r)))].sort((a, b) => a - b);
+    
+    // 按优惠区间分组生成结果
+    const discountRateSections = allDiscountRates.map(discountRate => {
+        const rPct = (discountRate * 100).toFixed(0) + '%';
+        const discountRateResults = allResults.map(targetResult => {
+            const result = targetResult.results.find(r => r.r === discountRate);
+            if (!result || !isFinite(result.price)) {
+                return {
+                    targetPrice: targetResult.targetFinalPrice,
+                    price: null,
+                    finalPrice: null,
+                    off: 0,
+                    thresholdUsed: null,
+                    isValid: false
+                };
+            }
+            
+            return {
+                targetPrice: targetResult.targetFinalPrice,
+                price: result.price,
+                finalPrice: result.finalPrice,
+                off: result.off,
+                thresholdUsed: result.thresholdUsed,
+                isValid: true
+            };
+        });
+        
+        // 生成该优惠区间的行
+        const priceCells = discountRateResults.map(item => {
+            if (!item.isValid) {
+                return `<div class="price-cell price-cell-invalid">
+                    <div class="cell-target-price">¥${item.targetPrice.toFixed(2)}</div>
+                    <div class="cell-price">-</div>
+                    <div class="cell-status">参数无解</div>
+                </div>`;
+            }
+            
+            const offText = item.off ? `<span class="price-chip price-chip-green">减 ¥${Number(item.off).toFixed(2)}</span>${item.thresholdUsed? ` <span class=\"price-chip price-chip-blue\">触发满¥${Number(item.thresholdUsed).toFixed(2)}</span>` : ''}` : '<span class="price-chip price-chip-gray">无</span>';
+            const isExact = Math.abs((item.finalPrice||0) - item.targetPrice) < 0.005;
+            const statusClass = isExact ? 'status-success' : 'status-warning';
+            const statusText = isExact ? '精确匹配' : `偏差 ¥${Math.abs((item.finalPrice||0)-item.targetPrice).toFixed(2)}`;
+            
+            return `<div class="price-cell" data-s="${Number(item.price).toFixed(2)}">
+                <div class="cell-target-price">¥${item.targetPrice.toFixed(2)}</div>
+                <div class="cell-price">
+                    <span class="currency">¥</span>
+                    <span class="value">${Number(item.price).toFixed(2)}</span>
+                </div>
+                <div class="cell-off">${offText}</div>
+                <div class="cell-status">
+                    <span class="status-badge ${statusClass}">${statusText}</span>
+                </div>
+            </div>`;
+        }).join('');
+        
+        return `
+            <div class="discount-rate-row">
+                <div class="discount-rate-header">
+                    <div class="discount-rate-label">${rPct}</div>
+                    <div class="discount-rate-desc">单品立减</div>
+                </div>
+                <div class="price-cells-container">
+                    ${priceCells}
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    // 满减规则说明
+    const tierSummary = tiers && tiers.length ? (
+        '<div style="font-size:0.9rem;color:#666;margin-top:6px;">满减档位：'
+        + tiers
+            .slice()
+            .sort((a,b)=>a.threshold-b.threshold)
+            .map(t=>`满${Number(t.threshold).toFixed(2)}减${Number(t.off).toFixed(2)}`)
+            .join('，')
+        + '</div>'
+    ) : '<div style="font-size:0.9rem;color:#666;margin-top:6px;">未设置满减，按无满减计算</div>';
+
+    return `
+        <div class="section calculation-process lp-card">
+            <h3>批量标价建议与校验</h3>
+            <div class="batch-summary">
+                <div class="summary-item">
+                    <span class="summary-label">目标到手价数量：</span>
+                    <span class="summary-value">${allResults.length} 个</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">价格区间：</span>
+                    <span class="summary-value">¥${Math.min(...allResults.map(r => r.targetFinalPrice)).toFixed(2)} - ¥${Math.max(...allResults.map(r => r.targetFinalPrice)).toFixed(2)}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">立减档位：</span>
+                    <span class="summary-value">${allDiscountRates.length} 个</span>
+                </div>
+                ${tierSummary}
+            </div>
+            
+            <div class="batch-results-table">
+                <div class="table-header">
+                    <div class="header-discount-rate">立减档位</div>
+                    ${allResults.map(result => `<div class="header-target-price">到手价 ¥${result.targetFinalPrice.toFixed(2)}</div>`).join('')}
+                </div>
+                ${discountRateSections}
+            </div>
+            
+            ${generateCalculationSteps()}
+        </div>
+    `;
+}
+
+// 生成计算说明部分
+function generateCalculationSteps() {
+    return `
+        <div class="calculation-steps" style="margin-top:16px;">
+            <div class="step-header">计算说明</div>
+            <div class="step-section">
+                <div class="step-title">公式与顺序</div>
+                <div class="cost-table">
+                    <div class="table-section">
+                        <div class="section-title">设：</div>
+                        <div class="section-note">S=标价，r=单品立减比例，阈值/减额为满减各档位 (T_i, O_i)</div>
+                        <table>
+                            <tr>
+                                <td>立减后价</td>
+                                <td class="formula">S1 = S × (1 − r)</td>
+                            </tr>
+                            <tr>
+                                <td>满减触发条件</td>
+                                <td class="formula">若 S1 ≥ T_i，则可减 O_i，取 O_i 最大者</td>
+                            </tr>
+                            <tr>
+                                <td>到手价</td>
+                                <td class="formula">P = S1 − O_max</td>
+                            </tr>
+                            <tr>
+                                <td>反解标价</td>
+                                <td class="formula">S = (目标价 + O_assume) ÷ (1 − r)，并验证 O_assume 是否可由 S1 触发</td>
+                            </tr>
+                        </table>
                     </div>
                 </div>
             </div>
