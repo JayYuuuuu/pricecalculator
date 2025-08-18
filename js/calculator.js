@@ -5059,7 +5059,7 @@ async function importCatalogFromFile(file) {
 		console.warn('[Catalog] 导入错误行（结构化）:', failed);
 	}
 	catalogState.lastImportBackup = JSON.parse(JSON.stringify(catalogState.rows || [])); const undoBtn = document.getElementById('btnCatalogUndoImport'); if (undoBtn) undoBtn.style.display='';
-	catalogState.rows = (catalogState.rows||[]).concat(okRows); recomputeAllCatalogRows();
+	catalogState.rows = okRows.concat(catalogState.rows||[]); recomputeAllCatalogRows();
 	updatePlatformFilterOptions();
 }
 
@@ -5077,7 +5077,7 @@ function initCatalogTab() {
 	const btnUndo = document.getElementById('btnCatalogUndoImport');
 	const btnPlat = document.getElementById('btnPlatformSettings');
 	const btnFullscreen = document.getElementById('btnCatalogFullscreen');
-	if (btnAdd) btnAdd.addEventListener('click', () => { catalogState.rows.push({ name:'', sku:'', platform:'', salePrice:'', returnRate:'', costMin:'', costMax:'' }); renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); updatePlatformFilterOptions(); });
+	if (btnAdd) btnAdd.addEventListener('click', () => { catalogState.rows.unshift({ name:'', sku:'', platform:'', salePrice:'', returnRate:'', costMin:'', costMax:'' }); renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); updatePlatformFilterOptions(); });
 	if (btnImport && fileInput) { btnImport.addEventListener('click', () => fileInput.click()); fileInput.addEventListener('change', async () => { const f = fileInput.files && fileInput.files[0]; if (!f) return; try { await importCatalogFromFile(f); } finally { fileInput.value=''; } }); }
 	if (btnExport) btnExport.addEventListener('click', exportCatalogToCSV);
 	if (btnDelete) btnDelete.addEventListener('click', () => { const container = document.getElementById('catalogTableContainer'); const checks = Array.from(container.querySelectorAll('.catalog-check')); const remain = []; checks.forEach(cb => { const tr = cb.closest('tr'); const idx = Number(tr.getAttribute('data-index')); if (!cb.checked) remain.push(catalogState.rows[idx]); }); catalogState.rows = remain; renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); updatePlatformFilterOptions(); });
@@ -5155,7 +5155,7 @@ function initCatalogTab() {
 				}
 				
 				samples.forEach(s => { const c = computeRow(s); s.__result = c.__result; });
-				catalogState.rows = (catalogState.rows||[]).concat(samples);
+				catalogState.rows = samples.concat(catalogState.rows||[]);
 				renderCatalogTable(); 
 				updateCatalogStatus(); 
 				saveCatalogToStorage(); 
@@ -5228,7 +5228,7 @@ function initCatalogTab() {
 		if (closeBtn) closeBtn.addEventListener('click', exitFullscreen);
 		if (overlay) overlay.addEventListener('click', (e) => { if (e.target === overlay) exitFullscreen(); });
 					if (recomputeBtn) recomputeBtn.addEventListener('click', recomputeAllCatalogRows);
-			if (addRowBtn) addRowBtn.addEventListener('click', () => { catalogState.rows.push({ name:'', sku:'', platform:'', salePrice:'', returnRate:'', costMin:'', costMax:'' }); renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); updatePlatformFilterOptions(); updateFullscreenPlatformFilterOptions(); });
+			if (addRowBtn) addRowBtn.addEventListener('click', () => { catalogState.rows.unshift({ name:'', sku:'', platform:'', salePrice:'', returnRate:'', costMin:'', costMax:'' }); renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); updatePlatformFilterOptions(); updateFullscreenPlatformFilterOptions(); });
 			if (importBtn && fullscreenFileInput) { importBtn.addEventListener('click', () => fullscreenFileInput.click()); fullscreenFileInput.addEventListener('change', async () => { const f = fullscreenFileInput.files && fullscreenFileInput.files[0]; if (!f) return; try { await importCatalogFromFile(f); } finally { fullscreenFileInput.value=''; } }); }
 			if (delBtn) delBtn.addEventListener('click', () => { const cont = document.getElementById('catalogTableContainer'); const checks = Array.from(cont.querySelectorAll('.catalog-check')); const remain = []; checks.forEach(cb => { const tr = cb.closest('tr'); const idx = Number(tr.getAttribute('data-index')); if (!cb.checked) remain.push(catalogState.rows[idx]); }); catalogState.rows = remain; renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); updatePlatformFilterOptions(); updateFullscreenPlatformFilterOptions(); });
 		// ESC 关闭
