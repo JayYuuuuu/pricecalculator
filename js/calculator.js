@@ -3206,6 +3206,13 @@ function parsePercent(val) {
 function formatPercent(p) { if (!isFinite(p)) return '-'; return (p*100).toFixed(2)+'%'; }
 function formatMoney(n) { if (!isFinite(n)) return '-'; return '¥ ' + Number(n).toFixed(2); }
 
+// 根据显示索引获取正确的行数据（支持筛选后的表格）
+function getRowByDisplayIndex(displayIndex) {
+	// 如果有筛选，使用筛选后的数据；否则使用原始数据
+	const rows = catalogFilterState.filteredRows || catalogState.rows;
+	return rows[displayIndex] || null;
+}
+
 // 读取全局默认（只取与本页相关字段）
 function getGlobalDefaultsForCatalog() {
 	try {
@@ -3581,7 +3588,11 @@ function renderCatalogTable() {
 		input.addEventListener('input', (e) => {
 			const el = e.target;
 			const tr = el.closest('tr'); const index = Number(tr.getAttribute('data-index'));
-			const key = el.getAttribute('data-key'); let value = el.value; const row = catalogState.rows[index] || {};
+			const key = el.getAttribute('data-key'); let value = el.value; 
+			
+			// 修复：根据筛选状态获取正确的行数据
+			const row = getRowByDisplayIndex(index);
+			if (!row) return;
 			
 			// 退货率字段特殊处理：支持百分比格式输入
 			if (key === 'returnRate') {
@@ -3595,9 +3606,9 @@ function renderCatalogTable() {
 				}
 			}
 			
-			row[key] = value; catalogState.rows[index] = row; catalogState.dirty = true;
+			row[key] = value; 
 			// 立即计算缓存，但仅更新行展示的非输入单元格，避免重建输入框
-			const computed = computeRow(row); catalogState.rows[index].__result = computed.__result; saveCatalogToStorage();
+			const computed = computeRow(row); row.__result = computed.__result; saveCatalogToStorage();
 			// 使用 120ms 节流合并频繁输入，降低 render 频率，且仅调用 renderCatalogRow（不会重建输入框）
 			clearTimeout(inputDebounceTimer);
 			inputDebounceTimer = setTimeout(() => { renderCatalogRow(index); updateCatalogStatus(); }, 120);
@@ -3609,12 +3620,13 @@ function renderCatalogTable() {
 			const el = e.target; const tr = el.closest('tr'); const index = Number(tr.getAttribute('data-index'));
 			const name = el.value; const rate = getPlatformRateByName(name);
 			if (isFinite(rate)) {
-				const row = catalogState.rows[index] || {};
+				const row = getRowByDisplayIndex(index);
+				if (!row) return;
+				
 				row.platform = name; // 已在通用 input 处理逻辑中覆盖
 				// 行内覆盖平台佣金：后续 mergeGlobalsWithRow 会优先取行内值
 				row.platformRate = rate;
-				catalogState.rows[index] = row;
-				const computed = computeRow(row); catalogState.rows[index].__result = computed.__result; saveCatalogToStorage(); renderCatalogRow(index); updateCatalogStatus();
+				const computed = computeRow(row); row.__result = computed.__result; saveCatalogToStorage(); renderCatalogRow(index); updateCatalogStatus();
 				showToast && showToast(`已按平台"${name}"设置佣金为 ${(rate*100).toFixed(2)}%`);
 			}
 		});
@@ -3622,10 +3634,12 @@ function renderCatalogTable() {
 	// 事件：新增/删除/编辑 多档进货价
 	container.querySelectorAll('button[data-action="addTier"]').forEach(btn => {
 		btn.addEventListener('click', (e) => {
-			const tr = e.target.closest('tr'); const index = Number(tr.getAttribute('data-index')); const row = catalogState.rows[index] || {};
+			const tr = e.target.closest('tr'); const index = Number(tr.getAttribute('data-index')); 
+			const row = getRowByDisplayIndex(index);
+			if (!row) return;
+			
 			if (!Array.isArray(row.costTiers)) row.costTiers = [];
 			row.costTiers.push('');
-			catalogState.rows[index] = row;
 			// 需要重新渲染整表以生成新的输入框并绑定事件
 			saveCatalogToStorage();
 			renderCatalogTable();
@@ -3634,10 +3648,13 @@ function renderCatalogTable() {
 	});
 	container.querySelectorAll('button[data-action="removeTier"]').forEach(btn => {
 		btn.addEventListener('click', (e) => {
-			const tr = e.target.closest('tr'); const index = Number(tr.getAttribute('data-index')); const row = catalogState.rows[index] || {};
+			const tr = e.target.closest('tr'); const index = Number(tr.getAttribute('data-index')); 
+			const row = getRowByDisplayIndex(index);
+			if (!row) return;
+			
 			const ti = Number(e.target.getAttribute('data-tier-index'));
 			if (Array.isArray(row.costTiers)) row.costTiers.splice(ti,1);
-			catalogState.rows[index] = row; const computed = computeRow(row); catalogState.rows[index].__result = computed.__result; saveCatalogToStorage();
+			const computed = computeRow(row); row.__result = computed.__result; saveCatalogToStorage();
 			// 需要重新渲染整表以去除该输入框并重绑事件
 			renderCatalogTable();
 			updateCatalogStatus();
@@ -3645,18 +3662,21 @@ function renderCatalogTable() {
 	});
 	container.querySelectorAll('.catalog-cost-tier').forEach(inp => {
 		inp.addEventListener('input', (e) => {
-			const tr = e.target.closest('tr'); const index = Number(tr.getAttribute('data-index')); const row = catalogState.rows[index] || {};
+			const tr = e.target.closest('tr'); const index = Number(tr.getAttribute('data-index')); 
+			const row = getRowByDisplayIndex(index);
+			if (!row) return;
+			
 			const ti = Number(e.target.getAttribute('data-tier-index'));
 			if (!Array.isArray(row.costTiers)) row.costTiers = [];
 			row.costTiers[ti] = e.target.value;
-			catalogState.rows[index] = row;
-			const computed = computeRow(row); catalogState.rows[index].__result = computed.__result; saveCatalogToStorage(); renderCatalogRow(index); updateCatalogStatus();
+			const computed = computeRow(row); row.__result = computed.__result; saveCatalogToStorage(); renderCatalogRow(index); updateCatalogStatus();
 		});
 	});
 	container.querySelectorAll('button[data-action="priceCheck"]').forEach(btn => {
 		btn.addEventListener('click', (e) => {
 			const tr = e.target.closest('tr'); const index = Number(tr.getAttribute('data-index'));
-			const row = catalogState.rows[index] || {};
+			const row = getRowByDisplayIndex(index);
+			if (!row) return;
 			showPriceCheckModal(row);
 		});
 	});
@@ -4131,17 +4151,20 @@ function showCatalogProfitScenario(row){
 	container.querySelectorAll('button[data-action="profitScenario"]').forEach(btn => {
 		btn.addEventListener('click', (e) => {
 			const tr = e.target.closest('tr'); const index = Number(tr.getAttribute('data-index'));
-			const row = catalogState.rows[index] || {};
+			const row = getRowByDisplayIndex(index);
+			if (!row) return;
 			showCatalogProfitScenario(row);
 		});
 	});
 	// 事件：新增/删除/编辑 多档含税售价
 	container.querySelectorAll('button[data-action="addPriceTier"]').forEach(btn => {
 		btn.addEventListener('click', (e) => {
-			const tr = e.target.closest('tr'); const index = Number(tr.getAttribute('data-index')); const row = catalogState.rows[index] || {};
+			const tr = e.target.closest('tr'); const index = Number(tr.getAttribute('data-index')); 
+			const row = getRowByDisplayIndex(index);
+			if (!row) return;
+			
 			if (!Array.isArray(row.salePriceTiers)) row.salePriceTiers = [];
 			row.salePriceTiers.push('');
-			catalogState.rows[index] = row;
 			saveCatalogToStorage();
 			renderCatalogTable();
 			updateCatalogStatus();
@@ -4149,22 +4172,27 @@ function showCatalogProfitScenario(row){
 	});
 	container.querySelectorAll('button[data-action="removePriceTier"]').forEach(btn => {
 		btn.addEventListener('click', (e) => {
-			const tr = e.target.closest('tr'); const index = Number(tr.getAttribute('data-index')); const row = catalogState.rows[index] || {};
+			const tr = e.target.closest('tr'); const index = Number(tr.getAttribute('data-index')); 
+			const row = getRowByDisplayIndex(index);
+			if (!row) return;
+			
 			const ti = Number(e.target.getAttribute('data-price-tier-index'));
 			if (Array.isArray(row.salePriceTiers)) row.salePriceTiers.splice(ti,1);
-			catalogState.rows[index] = row; const computed = computeRow(row); catalogState.rows[index].__result = computed.__result; saveCatalogToStorage();
+			const computed = computeRow(row); row.__result = computed.__result; saveCatalogToStorage();
 			renderCatalogTable();
 			updateCatalogStatus();
 		});
 	});
 	container.querySelectorAll('.catalog-price-tier').forEach(inp => {
 		inp.addEventListener('input', (e) => {
-			const tr = e.target.closest('tr'); const index = Number(tr.getAttribute('data-index')); const row = catalogState.rows[index] || {};
+			const tr = e.target.closest('tr'); const index = Number(tr.getAttribute('data-index')); 
+			const row = getRowByDisplayIndex(index);
+			if (!row) return;
+			
 			const ti = Number(e.target.getAttribute('data-price-tier-index'));
 			if (!Array.isArray(row.salePriceTiers)) row.salePriceTiers = [];
 			row.salePriceTiers[ti] = e.target.value;
-			catalogState.rows[index] = row;
-			const computed = computeRow(row); catalogState.rows[index].__result = computed.__result; saveCatalogToStorage(); renderCatalogRow(index); updateCatalogStatus();
+			const computed = computeRow(row); row.__result = computed.__result; saveCatalogToStorage(); renderCatalogRow(index); updateCatalogStatus();
 		});
 	});
 	updateCatalogStatus();
@@ -4172,7 +4200,7 @@ function showCatalogProfitScenario(row){
 
 function renderCatalogRow(index) {
 	const container = document.getElementById('catalogTableContainer'); const tr = container.querySelector(`tr[data-index="${index}"]`); if (!tr) return;
-	const row = catalogState.rows[index] || {}; const res = row.__result || {}; const tds = tr.querySelectorAll('td');
+	const row = getRowByDisplayIndex(index); if (!row) return; const res = row.__result || {}; const tds = tr.querySelectorAll('td');
 	const fmt = (v, asPercent, asMoney, clampZero) => {
 		const show = (x) => { if (!isFinite(x)) return '-'; if (asPercent) { if (clampZero && x<=0) return '0%'; return (x*100).toFixed(2)+'%'; } return asMoney?('¥ '+Number(x).toFixed(2)):Number(x).toFixed(2); };
 		if (v && typeof v==='object' && 'min' in v) return `${show(v.min)} ~ ${show(v.max)}`; return show(v);
