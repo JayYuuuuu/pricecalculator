@@ -61,6 +61,18 @@ function switchTab(tabName) {
     // 清空结果区域，并禁用分享按钮
     document.getElementById('result').innerHTML = '';
     try { if (window.__setShareButtonsEnabled) window.__setShareButtonsEnabled(false); } catch (e) {}
+    // 针对商品清单页隐藏结果与分享模块，其它页面恢复显示
+    try {
+        const resultEl = document.getElementById('result');
+        const shareEl = document.getElementById('shareToolbar');
+        if (tabName === 'catalog') {
+            if (resultEl) resultEl.style.display = 'none';
+            if (shareEl) shareEl.style.display = 'none';
+        } else {
+            if (resultEl) resultEl.style.display = '';
+            if (shareEl) shareEl.style.display = '';
+        }
+    } catch (_) {}
 
     // 若切到标价页，初始化一次展示（尝试实时计算）
     try {
@@ -3290,6 +3302,9 @@ function computeRow(row) {
 	// 如果没有设置售价区间，检查单一售价
 	if (salePriceTiers.length === 0) {
 		if (!isFinite(std.salePrice) || std.salePrice <= 0) errors.push('含税售价P必填且>0');
+	} else {
+		// 如果启用了多档售价，含税售价P可以为0（表示只使用多档售价）
+		if (!isFinite(std.salePrice) || std.salePrice < 0) errors.push('含税售价P不能为负数');
 	}
 
 	// 支持"多档进货价"输入：row.costTiers = [cost1, cost2, ...]
@@ -3304,6 +3319,7 @@ function computeRow(row) {
 		}
 		const list = salePriceTiers.map((price, i) => {
 			const cost = costTiers[i];
+			// 关键修复：使用多档售价的价格，而不是可能为0的含税售价P
 			const rowWithPrice = { ...std, salePrice: price };
 			const r = computeRowWithCost(rowWithPrice, cost);
 			return { cost, price, ...r };
@@ -3318,6 +3334,7 @@ function computeRow(row) {
 		if (salePriceTiers.length !== costTiers.length) { errors.push('含税售价（多档）与进货价（多档）档数需一致'); return { __result: { errors } }; }
 		const list = salePriceTiers.map((price, i) => {
 			const cost = costTiers[i];
+			// 使用多档售价的价格，而不是可能为0的含税售价P
 			const rowWithPrice = { ...std, salePrice: price };
 			const r = computeRowWithCost(rowWithPrice, cost);
 			return { cost, price, ...r };
@@ -3328,8 +3345,28 @@ function computeRow(row) {
 	// 如果只有多档成本（按逐档展示）
 	if (costTiers.length > 0) {
 		if (errors.length) return { __result: { errors } };
-		const list = costTiers.map(cost => { const r = computeRowWithCost(std, cost); return { cost, ...r }; });
-		return { __result: { list, errors: [] } };
+		// 如果有启用多档售价，使用多档售价的价格；否则使用单一售价
+		if (salePriceTiers.length > 0) {
+			// 多档售价 + 多档成本：1:1配对计算
+			if (salePriceTiers.length !== costTiers.length) {
+				errors.push('多档售价与多档成本数量不一致');
+				return { __result: { errors } };
+			}
+			const list = salePriceTiers.map((price, i) => {
+				const cost = costTiers[i];
+				const rowWithPrice = { ...std, salePrice: price };
+				const r = computeRowWithCost(rowWithPrice, cost);
+				return { cost, price, ...r };
+			});
+			return { __result: { list, errors: [] } };
+		} else {
+			// 单一售价 + 多档成本：逐档计算
+			const list = costTiers.map(cost => { 
+				const r = computeRowWithCost(std, cost); 
+				return { cost, ...r }; 
+			});
+			return { __result: { list, errors: [] } };
+		}
 	}
 
 	// 新规则：进货价必填，支持单值或多档
@@ -3356,8 +3393,18 @@ function computeRow(row) {
 	
 	// 计算每个成本档位的结果
 	const results = costValues.map(cost => {
-		const r = computeRowWithCost(std, cost);
-		return { cost, ...r };
+		// 如果有启用多档售价，使用多档售价的价格；否则使用单一售价
+		if (salePriceTiers.length > 0) {
+			// 多档售价 + 单值成本：使用第一个售价档位
+			const price = salePriceTiers[0];
+			const rowWithPrice = { ...std, salePrice: price };
+			const r = computeRowWithCost(rowWithPrice, cost);
+			return { cost, price, ...r };
+		} else {
+			// 单一售价 + 单值成本：正常计算
+			const r = computeRowWithCost(std, cost);
+			return { cost, ...r };
+		}
 	});
 	
 	return { __result: { list: results, errors: [] } };
@@ -4413,8 +4460,27 @@ async function importCatalogFromCSV(file) {
 				const row = { name:get('name'), sku:get('sku'), platform:get('platform') };
 				const salePrice = Number(get('salePrice'));
 				if (!row.name || !row.sku || !row.platform) throw new Error('name/sku/platform 必填');
-				if (!isFinite(salePrice) || salePrice <= 0) throw new Error('salePrice 必须>0');
-				row.salePrice = salePrice;
+				
+				// 先解析多档售价，用于判断是否启用多档模式
+				const rawPrices = String(get('salePriceTiers')||'').trim();
+				let pt = [];
+				if (rawPrices) {
+					const parts = rawPrices.split(/[;|，,\/\s]+/);
+					pt = parts.map(s=>Number(s)).filter(n=>isFinite(n) && n>0);
+				}
+				
+				// 如果启用了多档售价，允许含税售价P为0；否则必须>0
+				if (pt.length > 0) {
+					// 启用多档售价时，含税售价P可以为0或>0
+					if (!isFinite(salePrice) || salePrice < 0) throw new Error('含税售价P不能为负数');
+					row.salePrice = salePrice;
+					row.salePriceTiers = pt;
+				} else {
+					// 未启用多档售价时，含税售价P必须>0
+					if (!isFinite(salePrice) || salePrice <= 0) throw new Error('含税售价P必须>0（未启用多档售价时）');
+					row.salePrice = salePrice;
+				}
+				
 				// 退货率特殊处理：导入后直接转换为百分比格式字符串，确保显示一致性
 				const returnRateValue = parsePercent(get('returnRate'));
 				if (isFinite(returnRateValue)) {
@@ -4423,6 +4489,7 @@ async function importCatalogFromCSV(file) {
 					row.returnRate = '';
 				}
 				row.adRate = parsePercent(get('adRate'));
+				
 				// 解析多档进货价：支持 19;29;39 或用空格/逗号/竖线等分隔（不再支持上下限区间写法）
 				const rawCosts = String(get('costTiers')||'').trim();
 				let tiers = [];
@@ -4432,14 +4499,6 @@ async function importCatalogFromCSV(file) {
 				}
 				// 放宽限制：如果模板提供了售价多档但未提供成本多档，不强制要求成本多档
 				if (tiers.length) row.costTiers = tiers;
-				// 解析多档售价：支持 59;69;79 或空格/逗号/竖线等分隔
-				const rawPrices = String(get('salePriceTiers')||'').trim();
-				let pt = [];
-				if (rawPrices) {
-					const parts = rawPrices.split(/[;|，,\/\s]+/);
-					pt = parts.map(s=>Number(s)).filter(n=>isFinite(n) && n>0);
-				}
-				if (pt.length) row.salePriceTiers = pt;
 				// 校验多档联动：若提供了售价多档但成本多档数量不一致，给出明确错误
 				if (Array.isArray(row.salePriceTiers) && row.salePriceTiers.length) {
 					if (!Array.isArray(row.costTiers) || row.costTiers.length === 0) throw new Error('提供了含税售价（多档）但缺少进货价（多档）');
@@ -4497,16 +4556,70 @@ function initCatalogTab() {
 	if (btnDelete) btnDelete.addEventListener('click', () => { const container = document.getElementById('catalogTableContainer'); const checks = Array.from(container.querySelectorAll('.catalog-check')); const remain = []; checks.forEach(cb => { const tr = cb.closest('tr'); const idx = Number(tr.getAttribute('data-index')); if (!cb.checked) remain.push(catalogState.rows[idx]); }); catalogState.rows = remain; renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); });
 	if (btnRecompute) btnRecompute.addEventListener('click', recomputeAllCatalogRows);
 	if (btnExamples) btnExamples.addEventListener('click', () => { const samples = [
-		// 示例1：单一售价 + 单一进货价（基础情况）
-		{ name:'纯棉薄款内衣', sku:'NB001', platform:'淘宝', salePrice:79.80, returnRate:'12%', costMin:38, inputTaxRate:'6', outputTaxRate:'13', salesTaxRate:'13', platformRate:'0', shippingCost:5.00, shippingInsurance:0.30, otherCost:0.80, adRate:'20%' },
-		// 示例2：单一售价 + 多档进货价（逐档多行显示）
-		{ name:'莫代尔套装', sku:'MD002', platform:'天猫', salePrice:99.80, returnRate:'10%', costTiers:[42, 45, 48], inputTaxRate:'6', outputTaxRate:'13', salesTaxRate:'13', platformRate:'5.5', shippingCost:5.50, shippingInsurance:0.30, otherCost:0.80, adRate:'25%' },
-		// 示例3：多档售价 + 多档进货价（1:1配对显示）
-		{ name:'冰丝短袖', sku:'IS003', platform:'抖音', salePrice:59.80, returnRate:'15%', salePriceTiers:[59.80, 69.80, 79.80], costTiers:[28, 32, 36], inputTaxRate:'6', outputTaxRate:'13', salesTaxRate:'13', platformRate:'5', shippingCost:4.50, shippingInsurance:0.30, otherCost:0.60, adRate:'18%' },
-		// 示例4：多档售价 + 多档进货价（档数一致，正常显示）
-		{ name:'运动套装', sku:'SP004', platform:'拼多多', salePrice:89.80, returnRate:'8%', salePriceTiers:[89.80, 99.80], costTiers:[45, 50], inputTaxRate:'6', outputTaxRate:'13', salesTaxRate:'13', platformRate:'4', shippingCost:6.00, shippingInsurance:0.40, otherCost:1.00, adRate:'22%' },
-		// 示例5：单一售价 + 多档进货价（逐档多行显示）
-		{ name:'休闲裤装', sku:'LX005', platform:'京东', salePrice:129.80, returnRate:'6%', costTiers:[65, 70, 75], inputTaxRate:'6', outputTaxRate:'13', salesTaxRate:'13', platformRate:'3', shippingCost:7.00, shippingInsurance:0.50, otherCost:1.20, adRate:'28%' }
+		// 摇粒绒马甲 - 单一售价 + 单一进货价
+		{ name:'摇粒绒马甲', sku:'HYXB50001', platform:'淘宝', salePrice:58, returnRate:'13.99%', costTiers:[22.5] },
+		// 色纱空气层单裤 - 多档售价 + 多档进货价
+		{ name:'色纱空气层单裤', sku:'FWL240331', platform:'淘宝', salePrice:0, salePriceTiers:[59.40, 63.00, 67.50], returnRate:'24.78%', costTiers:[27.00, 29.50, 32.00] },
+		// 暖阳绒 - 单一售价 + 单一进货价
+		{ name:'暖阳绒', sku:'HYXY8101', platform:'淘宝', salePrice:79.8, returnRate:'11.26%', costTiers:[38] },
+		// 绵绵绒上衣 - 单一售价 + 多档进货价
+		{ name:'绵绵绒上衣', sku:'FWL240441', platform:'淘宝', salePrice:44.1, returnRate:'14.83%', costTiers:[18.50, 20.50] },
+		// 色纱棉毛 - 单一售价 + 单一进货价
+		{ name:'色纱棉毛', sku:'HYXY50001', platform:'淘宝', salePrice:89.1, returnRate:'9.10%', costTiers:[44] },
+		// 色纱加绒 - 单一售价 + 单一进货价
+		{ name:'色纱加绒', sku:'HYXY60001', platform:'淘宝', salePrice:125.1, returnRate:'13.24%', costTiers:[62] },
+		// 鸿运礼盒 - 单一售价 + 单一进货价
+		{ name:'鸿运礼盒', sku:'HYX2889', platform:'淘宝', salePrice:69.8, returnRate:'6.58%', costTiers:[33] },
+		// 鸿运内裤 - 单一售价 + 多档进货价
+		{ name:'鸿运内裤', sku:'HYXN3061', platform:'淘宝', salePrice:69.8, returnRate:'6.39%', costTiers:[29.50, 31.00, 33.50] },
+		// 纯色棉毛 - 多档售价 + 多档进货价
+		{ name:'纯色棉毛', sku:'HYX19585', platform:'淘宝', salePrice:0, salePriceTiers:[62.10, 62.10, 71.10], returnRate:'10.08%', costTiers:[33.50, 38.50, 42.00] },
+		// 纯棉印花棉毛 - 单一售价 + 单一进货价
+		{ name:'纯棉印花棉毛', sku:'HYX2021', platform:'淘宝', salePrice:69.98, returnRate:'9.17%', costTiers:[35] },
+		// 纯棉印花棉毛 - 单一售价 + 单一进货价
+		{ name:'纯棉印花棉毛', sku:'HYX2221', platform:'淘宝', salePrice:79.98, returnRate:'9.17%', costTiers:[43.5] },
+		// 空气层套装 - 多档售价 + 多档进货价
+		{ name:'空气层套装', sku:'FWL240131', platform:'淘宝', salePrice:0, salePriceTiers:[99.00, 108.00, 115.50], returnRate:'13.08%', costTiers:[50.00, 52.50, 56.00] },
+		// 德绒背心 - 单一售价 + 多档进货价
+		{ name:'德绒背心', sku:'HYX2140', platform:'淘宝', salePrice:79, returnRate:'9.14%', costTiers:[24.30, 30.30, 33.80] },
+		// 德绒套装（不贴片） - 单一售价 + 多档进货价
+		{ name:'德绒套装（不贴片）', sku:'HYX2101', platform:'淘宝', salePrice:129, returnRate:'14.49%', costTiers:[56.80, 66.80, 80.80] },
+		// 德绒套装（贴片） - 单一售价 + 多档进货价
+		{ name:'德绒套装（贴片）', sku:'HYX21011-1', platform:'淘宝', salePrice:149, returnRate:'4.55%', costTiers:[63.80, 74.80, 87.80] },
+		// 德绒运动套装 - 单一售价 + 单一进货价
+		{ name:'德绒运动套装', sku:'HYX2151', platform:'淘宝', salePrice:139, returnRate:'10.58%', costTiers:[68.5] },
+		// 大红棉毛 - 多档售价 + 多档进货价
+		{ name:'大红棉毛', sku:'HYX17100', platform:'淘宝', salePrice:0, salePriceTiers:[71.10, 71.10, 80.10], returnRate:'8.46%', costTiers:[37.50, 40.50, 44.00] },
+		// 空气层马甲 - 单一售价 + 单一进货价
+		{ name:'空气层马甲', sku:'FWL240231', platform:'淘宝', salePrice:59.4, returnRate:'16.21%', costTiers:[27] },
+		// 蜂巢马甲 - 单一售价 + 单一进货价
+		{ name:'蜂巢马甲', sku:'FWL240251', platform:'淘宝', salePrice:99, returnRate:'17.70%', costTiers:[47] },
+		// 蜂巢裤子 - 单一售价 + 单一进货价
+		{ name:'蜂巢裤子', sku:'FWL240351', platform:'淘宝', salePrice:99, returnRate:'30.00%', costTiers:[47] },
+		// 蜂巢上衣 - 单一售价 + 单一进货价
+		{ name:'蜂巢上衣', sku:'FWL240451', platform:'淘宝', salePrice:118.8, returnRate:'22.69%', costTiers:[56] },
+		// 棉莱卡内衣 - 单一售价 + 单一进货价
+		{ name:'棉莱卡内衣', sku:'HYXY70001', platform:'淘宝', salePrice:89.1, returnRate:'9.28%', costTiers:[46] },
+		// 纯棉秋裤 - 多档售价 + 多档进货价
+		{ name:'纯棉秋裤', sku:'HYX1813', platform:'淘宝', salePrice:0, salePriceTiers:[35.10, 39.60, 44.10, 44.10], returnRate:'12.23%', costTiers:[17.00, 18.50, 20.00, 21.50] },
+		// 色纱加绒单裤 - 多档售价 + 多档进货价
+		{ name:'色纱加绒单裤', sku:'FWL240361', platform:'淘宝', salePrice:0, salePriceTiers:[69.30, 79.20, 89.10], returnRate:'25.91%', costTiers:[31.00, 37.00, 43.00] },
+		// 莫代尔内裤 - 单一售价 + 多档进货价
+		{ name:'莫代尔内裤', sku:'HYXN3081', platform:'淘宝', salePrice:79.8, returnRate:'7.26%', costTiers:[30.50, 32.00] },
+		// 网眼内裤三条 - 单一售价 + 多档进货价
+		{ name:'网眼内裤三条', sku:'HYXN94341', platform:'淘宝', salePrice:69, returnRate:'5.10%', costTiers:[26.50, 28.00, 29.50] },
+		// 网眼内裤4条 - 单一售价 + 多档进货价
+		{ name:'网眼内裤4条', sku:'FWL2505541', platform:'淘宝', salePrice:79.8, returnRate:'5.10%', costTiers:[30.50, 33.00] },
+		// 胖童内裤 - 单一售价 + 单一进货价
+		{ name:'胖童内裤', sku:'HYXN11221', platform:'淘宝', salePrice:59, returnRate:'10.95%', costTiers:[25.5] },
+		// 纯棉内裤3条 - 多档售价 + 多档进货价
+		{ name:'纯棉内裤3条', sku:'HYX1801', platform:'淘宝', salePrice:0, salePriceTiers:[53.10, 53.10, 62.10], returnRate:'4.96%', costTiers:[27.50, 29.00, 30.50] },
+		// 纯棉内裤4条 - 单一售价 + 多档进货价
+		{ name:'纯棉内裤4条', sku:'HYX2003', platform:'淘宝', salePrice:69.75, returnRate:'4.96%', costTiers:[36.50, 39.50] },
+		// 纯棉内裤4条 - 单一售价 + 多档进货价
+		{ name:'纯棉内裤4条', sku:'FWL2405141', platform:'淘宝', salePrice:69.75, returnRate:'8.21%', costTiers:[28.50, 30.00] },
+		// 纯棉内裤3条 - 单一售价 + 多档进货价
+		{ name:'纯棉内裤3条', sku:'FWL2505131', platform:'淘宝', salePrice:59, returnRate:'5.42%', costTiers:[23.40, 25.00] }
 	]; samples.forEach(s => { const c = computeRow(s); s.__result = c.__result; }); catalogState.rows = (catalogState.rows||[]).concat(samples); renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); });
 	if (btnUndo) btnUndo.addEventListener('click', () => { if (!catalogState.lastImportBackup) return; catalogState.rows = catalogState.lastImportBackup; catalogState.lastImportBackup = null; btnUndo.style.display='none'; renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); });
 	if (btnPlat) btnPlat.addEventListener('click', () => openPlatformSettingsModal());
