@@ -1728,16 +1728,30 @@
                 <div class="status" id="profitStatus"></div>
 
                 <!-- 价格指标一览 -->
-                <h3 style="margin-top: 30px; color: #495057; font-size: 1.4rem;">价格指标一览</h3>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 30px; margin-bottom: 15px;">
+                    <h3 style="margin:0; color: #495057; font-size: 1.4rem;">价格指标一览</h3>
+                    <div style="display:flex; align-items:center; gap:8px; font-size:0.85rem;">
+                        <span style="color:#666;">口径切换：</span>
+                        <label class="switch" style="transform:scale(0.8);">
+                            <input type="checkbox" id="simpleTaxViewToggle" onchange="toggleSimpleTaxView()">
+                            <span class="slider"></span>
+                        </label>
+                        <span id="simpleTaxViewLabel" style="color:#2ea44f; font-weight:500;">含税视图</span>
+                    </div>
+                </div>
+                <div id="simpleTaxViewDescription" style="color:#666; font-size:0.85rem; margin-bottom:15px; font-style:italic;">
+                    当前口径：含税售价 vs 进货实际成本（不含进项税）
+                </div>
                 <div class="metrics-grid">
                     <div class="metric-card">
                         <div class="metric-value" id="markupRatio">0倍</div>
                         <div class="metric-label">加价倍率</div>
+                        <div data-formula="simple-multiple" style="color:#999; font-size:0.8rem; margin-top:5px;">售价÷进货实际成本</div>
                     </div>
                     <div class="metric-card">
                         <div class="metric-value" id="grossMargin">0%</div>
                         <div class="metric-label">毛利润</div>
-                    </div>
+                        <div data-formula="simple-gross" style="color:#999; font-size:0.8rem; margin-top:5px;">(售价-进货实际成本)÷售价</div>
                     </div>
                 </div>
             </div>
@@ -1816,15 +1830,31 @@
                     purchaseVAT = 0;
                 }
 
-                // 计算基础指标（基于含税口径）
-                // 计算进货实际成本（含税）
-                const baseCost = costPrice + actualInvoiceCost; // 进货价 + 开票费用
+                // 计算基础指标（支持含税/不含税口径切换）
+                // 获取当前口径设置
+                const isTaxInclusive = !document.getElementById('simpleTaxViewToggle')?.checked;
                 
-                // 加价倍率：含税售价 ÷ 进货实际成本（含税）
-                const markupRatio = (sellingPrice / baseCost).toFixed(2); // 加价倍率 = 含税售价 ÷ 进货实际成本
+                let markupRatio, grossMargin;
                 
-                // 毛利率：(含税售价 - 进货实际成本) ÷ 含税售价
-                const grossMargin = (((sellingPrice - baseCost) / sellingPrice) * 100).toFixed(2); // 毛利率（基于含税口径）
+                if (isTaxInclusive) {
+                    // 含税口径：含税售价 vs 进货实际成本（不含进项税）
+                    const baseCost = costPrice + actualInvoiceCost; // 进货价 + 开票费用
+                    
+                    // 加价倍率：含税售价 ÷ 进货实际成本（含税）
+                    markupRatio = (sellingPrice / baseCost).toFixed(2); // 加价倍率 = 含税售价 ÷ 进货实际成本
+                    
+                    // 毛利率：(含税售价 - 进货实际成本) ÷ 含税售价
+                    grossMargin = (((sellingPrice - baseCost) / sellingPrice) * 100).toFixed(2); // 毛利率（基于含税口径）
+                } else {
+                    // 不含税口径：不含税售价 vs 不含税进价
+                    const netPrice = sellingPrice / (1 + outputTaxRate / 100); // 不含税售价
+                    
+                    // 加价倍率：不含税售价 ÷ 不含税进价
+                    markupRatio = (netPrice / costPrice).toFixed(2); // 加价倍率 = 不含税售价 ÷ 不含税进价
+                    
+                    // 毛利率：(不含税售价 - 不含税进价) ÷ 不含税售价
+                    grossMargin = (((netPrice - costPrice) / netPrice) * 100).toFixed(2); // 毛利率（基于不含税口径）
+                }
 
                 // 计算有效销售率（考虑退货率）
                 const effectiveSalesRate = 1 - (riskRate / 100);
@@ -4009,6 +4039,74 @@
             if (explorationResults && explorationResults.style.display !== 'none') {
                 // 重新计算利润矩阵
                 calculateProfitMatrix();
+            }
+        }
+
+        /**
+         * 切换简化版价格指标的口径视图（含税/不含税）
+         * 功能说明：
+         * 1. 含税视图：含税售价 vs 进货实际成本（不含进项税）
+         * 2. 不含税视图：不含税售价 vs 不含税进价
+         * 3. 切换后自动重新计算并更新显示
+         */
+        function toggleSimpleTaxView() {
+            const toggle = document.getElementById('simpleTaxViewToggle');
+            const label = document.getElementById('simpleTaxViewLabel');
+            const description = document.getElementById('simpleTaxViewDescription');
+            
+            if (!toggle || !label || !description) return;
+            
+            const isTaxInclusive = !toggle.checked;
+            
+            if (isTaxInclusive) {
+                // 含税视图
+                label.textContent = '含税视图';
+                label.style.color = '#2ea44f';
+                description.innerHTML = '当前口径：含税售价 vs 进货实际成本（不含进项税）';
+                
+                // 更新公式说明
+                updateSimpleFormulaDescriptions(true);
+            } else {
+                // 不含税视图
+                label.textContent = '不含税视图';
+                label.style.color = '#e65100';
+                description.innerHTML = '当前口径：不含税售价 vs 不含税进价';
+                
+                // 更新公式说明
+                updateSimpleFormulaDescriptions(false);
+            }
+            
+            // 重新计算价格指标
+            try {
+                calculateProfit();
+            } catch (e) {
+                console.warn('切换口径后重新计算失败:', e);
+            }
+        }
+
+        /**
+         * 更新简化版公式说明文字
+         * @param {boolean} isTaxInclusive - 是否为含税视图
+         */
+        function updateSimpleFormulaDescriptions(isTaxInclusive) {
+            try {
+                if (isTaxInclusive) {
+                    // 含税视图的公式说明
+                    const multipleDesc = document.querySelector('[data-formula="simple-multiple"]');
+                    const grossDesc = document.querySelector('[data-formula="simple-gross"]');
+                    
+                    if (multipleDesc) multipleDesc.textContent = '售价÷进货实际成本';
+                    if (grossDesc) grossDesc.textContent = '(售价-进货实际成本)÷售价';
+                } else {
+                    // 不含税视图的公式说明
+                    const multipleDesc = document.querySelector('[data-formula="simple-multiple"]');
+                    const grossDesc = document.querySelector('[data-formula="simple-gross"]');
+                    
+                    if (multipleDesc) multipleDesc.textContent = '不含税售价÷不含税进价';
+                    if (grossDesc) grossDesc.textContent = '(不含税售价-不含税进价)÷不含税售价';
+                }
+            } catch (e) {
+                console.warn('更新简化版公式说明失败:', e);
             }
         }
     </script>
