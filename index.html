@@ -245,6 +245,15 @@
                             <span id="profitStatus" style="font-weight: 500;"></span>
                         </div>
                     </div>
+
+                    <div class="input-group">
+                        <label>税费占比:</label>
+                        <div class="input-wrapper" style="position: relative;">
+                            <input type="text" id="taxRatio" readonly style="background-color: #f8f9fa; cursor: help;" title="鼠标悬停查看详细税费计算过程">
+                            <div id="taxRatioPercent" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); color: #e65100; font-size: 0.9rem;"></div>
+                        </div>
+                        <div class="field-hint">税费占销售额的比重，鼠标悬停查看详细计算过程</div>
+                    </div>
                 </div>
                 <!-- 价格指标：基于含税口径，展示常用倍率/加成/毛利率指标 -->
                 <div class="section" style="margin-top: 1rem;">
@@ -532,13 +541,7 @@
                         </div>
                     </div>
 
-                    <!-- 次要信息折叠 -->
-                    <details style="margin-top:12px;">
-                        <summary style="cursor:pointer; color:#666;">说明与计算顺序</summary>
-                        <div class="field-hint" style="margin-top:8px;">
-                            满减与单品立减可叠加。顺序：先单品立减，再判断是否触发满减并扣减固定金额；按阈值可触发的最大减额计算。
-                        </div>
-                    </details>
+
                 </div>
             </div>
 
@@ -724,7 +727,7 @@
                 <li>销项税率用于计算可抵扣的进项税额（如服装类目13%）</li>
                 <li>计算结果已考虑开票成本、税费抵扣、平台抽佣等</li>
                 <li>目标利润率基于最终售价计算</li>
-                <li>其他成本为“预估口径”，用于汇总包装材料、耗材、办公与管理等未单独计提的固定/间接费用；不包含以下随增值税附征或按规定征收的税费（这些税费已体现在“销项税—进项税=实际应缴VAT”的口径内，或另行按政策缴纳）：
+                <li>其他成本为“预估口径”，用于汇总包装材料、耗材、办公与管理等未单独计提的固定/间接费用；不包含以下随增值税附征或按规定征收的税费（这些税费已体现在“增值税销项—进项抵扣”的口径内，或另行按政策缴纳）：
                     <ul>
                         <li>增值税（常见税率：13%，部分行业为9%或6%）</li>
                         <li>城建税（对实际缴纳的增值税等按7%/5%/1%征收，视地区而定）</li>

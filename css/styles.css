@@ -2041,3 +2041,25 @@ button:hover {
 #catalogFullscreenBody .lp-col-center {
     /* 继承商品清单表格的样式 */
 }
+
+/* 税费占比样式 */
+.tax-positive {
+    color: #e65100 !important;
+    font-weight: 500;
+}
+
+.tax-negative {
+    color: #2ea44f !important;
+    font-weight: 500;
+}
+
+/* 税费占比样式 */
+.tax-positive {
+    color: #e65100 !important;
+    font-weight: 500;
+}
+
+.tax-negative {
+    color: #2ea44f !important;
+    font-weight: 500;
+}

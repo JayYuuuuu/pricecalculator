@@ -339,37 +339,6 @@ function generateListPriceHtml({ targetFinalPrice, tiers, results }) {
             <div class="price-cards-container">
                 ${priceCards}
             </div>
-
-            <div class="calculation-steps" style="margin-top:16px;">
-                <div class="step-header">计算说明</div>
-                <div class="step-section">
-                    <div class="step-title">公式与顺序</div>
-                    <div class="cost-table">
-                        <div class="table-section">
-                            <div class="section-title">设：</div>
-                            <div class="section-note">S=标价，r=单品立减比例，阈值/减额为满减各档位 (T_i, O_i)</div>
-                            <table>
-                                <tr>
-                                    <td>立减后价</td>
-                                    <td class="formula">S1 = S × (1 − r)</td>
-                                </tr>
-                                <tr>
-                                    <td>满减触发条件</td>
-                                    <td class="formula">若 S1 ≥ T_i，则可减 O_i，取 O_i 最大者</td>
-                                </tr>
-                                <tr>
-                                    <td>到手价</td>
-                                    <td class="formula">P = S1 − O_max</td>
-                                </tr>
-                                <tr>
-                                    <td>反解标价</td>
-                                    <td class="formula">S = (目标价 + O_assume) ÷ (1 − r)，并验证 O_assume 是否可由 S1 触发</td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     `;
 }
@@ -485,37 +454,6 @@ function generateBatchListPriceHtml({ allResults, tiers }) {
             </div>
             
             ${targetPriceSections}
-
-            <div class="calculation-steps" style="margin-top:16px;">
-                <div class="step-header">计算说明</div>
-                <div class="step-section">
-                    <div class="step-title">公式与顺序</div>
-                    <div class="cost-table">
-                        <div class="table-section">
-                            <div class="section-title">设：</div>
-                            <div class="section-note">S=标价，r=单品立减比例，阈值/减额为满减各档位 (T_i, O_i)</div>
-                            <table>
-                                <tr>
-                                    <td>立减后价</td>
-                                    <td class="formula">S1 = S × (1 − r)</td>
-                                </tr>
-                                <tr>
-                                    <td>满减触发条件</td>
-                                    <td class="formula">若 S1 ≥ T_i，则可减 O_i，取 O_i 最大者</td>
-                                </tr>
-                                <tr>
-                                    <td>到手价</td>
-                                    <td class="formula">P = S1 − O_max</td>
-                                </tr>
-                                <tr>
-                                    <td>反解标价</td>
-                                    <td class="formula">S = (目标价 + O_assume) ÷ (1 − r)，并验证 O_assume 是否可由 S1 触发</td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     `;
 }

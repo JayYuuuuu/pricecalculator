@@ -24,8 +24,11 @@ function showCatalogTooltip(text, x, y) {
 	});
 	tooltip.textContent = text;
 	
-	// 添加到页面
-	document.body.appendChild(tooltip);
+	    // 添加到页面
+    document.body.appendChild(tooltip);
+    
+    // 初始状态隐藏浮层
+    tooltip.style.display = 'none';
 	
 	// 基于鼠标位置定位浮层
 	const offset = 12;
@@ -212,6 +215,38 @@ function calculateProfit() {
         }
         profitStatus.textContent = statusText;
         profitStatus.className = statusClass;
+
+        // 计算并显示税费占比
+        const taxRatio = (actualVAT / actualPrice * 100).toFixed(2);
+        const taxRatioInput = document.getElementById('taxRatio');
+        const taxRatioPercent = document.getElementById('taxRatioPercent');
+        
+        if (taxRatioInput && taxRatioPercent) {
+            taxRatioInput.value = `¥ ${actualVAT.toFixed(2)}`;
+            taxRatioPercent.textContent = `${taxRatio}%`;
+            
+            // 设置税费占比的样式
+            if (actualVAT < 0) {
+                taxRatioInput.className = 'tax-negative';
+                taxRatioPercent.style.color = '#2ea44f'; // 绿色，表示退税
+            } else {
+                taxRatioInput.className = 'tax-positive';
+                taxRatioPercent.style.color = '#e65100'; // 橙色，表示缴税
+            }
+            
+            // 添加鼠标悬停显示详细税费计算过程的功能
+            addTaxTooltip(taxRatioInput, {
+                actualVAT,
+                outputVAT,
+                totalVATDeduction,
+                purchaseVAT,
+                adVAT,
+                platformVAT: platformFee * 0.06 / 1.06,
+                actualPrice,
+                salesTaxRate: salesTaxRate * 100,
+                inputTaxRate: outputTaxRate * 100
+            });
+        }
 
         // 计算并更新价格指标（支持含税/不含税口径切换）
         try {
@@ -2561,7 +2596,7 @@ function initPriceExploration() {
                 const tooltipData = `目标利润率：${(t.rate*100).toFixed(0)}%\n售价：¥${S.toFixed(2)}\n退货率：${(rr*100).toFixed(0)}%\n\n成本明细：\n• 进货成本：¥${purchaseCost.toFixed(2)}\n• 平台佣金：¥${platformFee.toFixed(2)}\n• 广告费（分摊）：¥${adCostEffective.toFixed(2)}\n• 物流费（分摊）：¥${shippingCostEffective.toFixed(2)}\n• 运费险（分摊）：¥${insuranceCostEffective.toFixed(2)}\n• 其他成本（分摊）：¥${otherCostEffective.toFixed(2)}\n• 销项税：¥${outputVAT.toFixed(2)}\n• 进项抵扣：¥${totalVATDeduction.toFixed(2)}\n• 实际税负：¥${actualVAT.toFixed(2)}\n\n核对利润：¥${profit.toFixed(2)}（${((profit/S)*100).toFixed(2)}%）`;
                 return `<td class=\"price-exp-cell\" data-tooltip=\"${tooltipData}\" style=\"padding:8px 10px;text-align:right;color:#111;font-weight:700;cursor:help;\">¥ ${S.toFixed(2)}</td>`;
             }).join('');
-            const tipCol = `<td style=\"padding:8px 10px;color:#666;\">不投广告；佣金遵循免佣开关；固定成本按有效销售率分摊</td>`;
+            const tipCol = `<td style=\"padding:8px 10px;color:#666;\">不投广告，仅固定成本与税费口径；每个退货率对应的售价为保本点。</td>`;
             return `<tr>${firstCol}${priceCols}${tipCol}</tr>`;
         }).join('');
         return `<table style="border-collapse:separate;border-spacing:0;width:100%;min-width:420px;font-size:13px;"><thead style="position:sticky;top:0;background:#fff;">${thead}</thead><tbody>${rowsHtml}</tbody></table>`;
@@ -5556,4 +5591,121 @@ function clearFullscreenFilters() {
 	
 	renderCatalogTable();
 	updateCatalogStatus();
+}
+
+// 添加税费详情浮层功能
+function addTaxTooltip(element, taxData) {
+    // 移除已存在的浮层
+    removeTaxTooltip();
+    
+    // 创建浮层元素
+    const tooltip = document.createElement('div');
+    tooltip.id = 'tax-tooltip';
+    
+    // 生成税费详情内容
+    const tooltipContent = generateTaxTooltipContent(taxData);
+    tooltip.innerHTML = tooltipContent;
+    
+    // 使用内联样式，与利润率推演弹窗保持一致
+    Object.assign(tooltip.style, {
+        position: 'fixed',
+        zIndex: '10001',
+        padding: '8px 10px',
+        borderRadius: '8px',
+        background: 'rgba(17,24,39,0.92)',
+        color: '#fff',
+        fontSize: '12px',
+        lineHeight: '1.4',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+        pointerEvents: 'none',
+        whiteSpace: 'pre',
+        transition: 'opacity .08s ease',
+        opacity: '0'
+    });
+    
+    // 添加到页面
+    document.body.appendChild(tooltip);
+    
+    // 鼠标进入事件
+    element.addEventListener('mouseenter', (e) => {
+        showTaxTooltip(e, tooltip);
+    });
+    
+    // 鼠标离开事件
+    element.addEventListener('mouseleave', () => {
+        hideTaxTooltip();
+    });
+    
+    // 鼠标移动事件（更新浮层位置）
+    element.addEventListener('mousemove', (e) => {
+        updateTaxTooltipPosition(e, tooltip);
+    });
+}
+
+// 生成税费详情浮层内容
+function generateTaxTooltipContent(taxData) {
+    const {
+        actualVAT,
+        outputVAT,
+        totalVATDeduction,
+        purchaseVAT,
+        adVAT,
+        platformVAT,
+        actualPrice,
+        salesTaxRate,
+        inputTaxRate
+    } = taxData;
+    
+    const netPrice = actualPrice / (1 + salesTaxRate / 100);
+    
+    return `详细税费计算过程
+
+销项税计算
+含税售价：¥${actualPrice.toFixed(2)}
+不含税售价：¥${netPrice.toFixed(2)}
+销项税（${salesTaxRate}%）：¥${outputVAT.toFixed(2)}
+
+进项税抵扣
+商品进项税（${inputTaxRate}%）：¥${purchaseVAT.toFixed(2)}
+广告费进项税（6%）：¥${adVAT.toFixed(2)}
+平台佣金进项税（6%）：¥${platformVAT.toFixed(2)}
+可抵扣进项税合计：¥${totalVATDeduction.toFixed(2)}
+
+实际税负
+销项税：+¥${outputVAT.toFixed(2)}
+可抵扣进项税：-¥${totalVATDeduction.toFixed(2)}
+实际应缴税额：¥${actualVAT.toFixed(2)}
+占销售额比例：${(actualVAT / actualPrice * 100).toFixed(2)}%
+
+注：税费占比 = 实际应缴税额 ÷ 含税销售额 × 100%`;
+}
+
+// 显示税费详情浮层
+function showTaxTooltip(event, tooltip) {
+    // 即显：不做延时，直接更新位置与内容
+    updateTaxTooltipPosition(event, tooltip);
+    tooltip.style.opacity = '1';
+}
+
+// 隐藏税费详情浮层
+function hideTaxTooltip() {
+    const tooltip = document.getElementById('tax-tooltip');
+    if (tooltip) {
+        tooltip.style.opacity = '0';
+    }
+}
+
+// 更新税费详情浮层位置
+function updateTaxTooltipPosition(event, tooltip) {
+    const offset = 12;
+    tooltip.style.left = `${event.clientX + offset}px`;
+    tooltip.style.top = `${event.clientY + offset}px`;
+}
+
+// 移除税费详情浮层
+function removeTaxTooltip() {
+    const tooltip = document.getElementById('tax-tooltip');
+    if (tooltip) {
+        tooltip.remove();
+    }
 }
