@@ -493,7 +493,6 @@ function saveInputs() {
         setTimeout(() => document.body.removeChild(toast), 300);
     }, 2000);
 }
-
 // 从localStorage加载保存的输入值
 function loadSavedInputs() {
     const saved = localStorage.getItem('priceCalculatorInputs');
@@ -994,7 +993,6 @@ window.addEventListener('load', () => {
         }
     } catch (_) {}
 });
-
 /**
  * 标价计算核心逻辑
  * 目标：给定"目标到手价 P_final"，在可叠加优惠（单品立减 r、满减 T→O）下，反推页面标价 S。
@@ -1484,7 +1482,6 @@ function showToast(message) {
         alert(message);
     }
 }
-
 /**
  * 初始化"保本ROI"卡片的浮动说明窗（桌面端hover，移动端点击）
  * - 桌面端：悬停显示，移出隐藏
@@ -2282,7 +2279,6 @@ function initBatchProfitScenario() {
         open();
     });
 }
-
 /**
  * 价格推演：在利润计算页，固定成本/税率/费率等参数，仅变动：
  *   - 含税售价（候选集合或单值）
@@ -2582,7 +2578,6 @@ function initPriceExploration() {
         overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
         document.body.appendChild(overlay);
     };
-
     const open = () => {
         ensureOverlay();
         // 固定参数快照
@@ -3084,7 +3079,6 @@ function autoSaveSingleInput(inputId, value) {
 		console.warn('自动保存失败:', inputId, e);
 	}
 }
-
 // 初始化全站输入记忆：
 // - 对所有 number 类型输入框进行自动保存（页面与弹窗都生效）
 // - 采用捕获阶段监听，保证对子节点与动态弹窗输入同样有效
@@ -3307,7 +3301,7 @@ function computeRow(row) {
 	if (salePriceTiers.length === 0) {
 		if (!isFinite(std.salePrice) || std.salePrice <= 0) errors.push('含税售价P必填且>0');
 	} else {
-		// 如果启用了多档售价，含税售价P可以为0（表示只使用多档售价）
+		// 如果启用了多档售价，含税售价P可以为0（表示只使用多档售价），但必须是非负数
 		if (!isFinite(std.salePrice) || std.salePrice < 0) errors.push('含税售价P不能为负数');
 		// 注意：当启用多档售价时，含税售价P为0是合法的，表示只使用多档售价
 	}
@@ -3429,7 +3423,6 @@ function computeRangeResults(resMin, resMax) {
 		breakevenAdRate: range(resMin.breakevenAdRate, resMax.breakevenAdRate)
 	};
 }
-
 // 渲染表格
 function renderCatalogTable() {
 	const container = document.getElementById('catalogTableContainer'); if (!container) return;
@@ -3919,7 +3912,6 @@ function showCatalogProfitScenario(row){
 			return NaN;
 		}
 	};
-
 	const html = `
 		<div class="pv-mask">
 			<div class="pv-modal">
@@ -4167,21 +4159,77 @@ function renderCatalogRow(index) {
 function showPriceCheckModal(row) {
 	const globals = getGlobalDefaultsForCatalog();
 	const std = mergeGlobalsWithRow(row, globals);
-	const tiers = Array.isArray(row.costTiers) ? row.costTiers.filter(v => isFinite(Number(v)) && Number(v) >= 0).map(Number) : [];
+	
+	// 修复：检测多档售价，如果存在且有效，使用多档售价进行验证
+	const salePriceTiers = Array.isArray(row.salePriceTiers) ? row.salePriceTiers.filter(v => isFinite(Number(v)) && Number(v) > 0).map(Number) : [];
+	const costTiers = Array.isArray(row.costTiers) ? row.costTiers.filter(v => isFinite(Number(v)) && Number(v) >= 0).map(Number) : [];
+	
+	// 确定验证策略：优先使用多档售价，否则使用单一售价
+	let validationStrategy = 'single';
+	let validationPairs = [];
+	
+	if (salePriceTiers.length > 0 && costTiers.length > 0) {
+		// 多档售价 + 多档进货价：1:1配对验证
+		if (salePriceTiers.length === costTiers.length) {
+			validationStrategy = 'multi_tier';
+			validationPairs = salePriceTiers.map((price, i) => ({
+				price: price,
+				cost: costTiers[i],
+				label: `档位${i+1}`
+			}));
+		} else {
+			// 档数不匹配，使用第一个售价档位
+			validationStrategy = 'first_tier';
+			validationPairs = costTiers.map((cost, i) => ({
+				price: salePriceTiers[0],
+				cost: cost,
+				label: `档位${i+1}`
+			}));
+		}
+	} else if (salePriceTiers.length > 0) {
+		// 只有多档售价：使用第一个售价档位
+		validationStrategy = 'first_tier';
+		const firstPrice = salePriceTiers[0];
+		if (Array.isArray(std.costTiers) && std.costTiers.length > 0) {
+			validationPairs = std.costTiers.map((cost, i) => ({
+				price: firstPrice,
+				cost: cost,
+				label: `档位${i+1}`
+			}));
+		} else {
+			// 使用成本区间
+			const cmin = isFinite(std.costMin) ? std.costMin : std.costMax;
+			const cmax = isFinite(std.costMax) ? std.costMax : std.costMin;
+			if (isFinite(cmin)) validationPairs.push({ price: firstPrice, cost: cmin, label: '区间下限' });
+			if (isFinite(cmax) && Math.abs(cmax-cmin)>1e-9) validationPairs.push({ price: firstPrice, cost: cmax, label: '区间上限' });
+		}
+	} else {
+		// 单一售价场景：使用原有逻辑
+		validationStrategy = 'single';
+		const tiers = Array.isArray(row.costTiers) ? row.costTiers.filter(v => isFinite(Number(v)) && Number(v) >= 0).map(Number) : [];
+		if (tiers.length) {
+			validationPairs = tiers.map((c,i) => ({ price: std.salePrice, cost: c, label: `档位${i+1}` }));
+		} else {
+			const cmin = isFinite(std.costMin) ? std.costMin : std.costMax;
+			const cmax = isFinite(std.costMax) ? std.costMax : std.costMin;
+			if (isFinite(cmin)) validationPairs.push({ price: std.salePrice, cost: cmin, label: '区间下限' });
+			if (isFinite(cmax) && Math.abs(cmax-cmin)>1e-9) validationPairs.push({ price: std.salePrice, cost: cmax, label: '区间上限' });
+		}
+	}
+	
 	let sections = [];
-	const P = std.salePrice;
 	const VAT_RATE = 0.06;
-	const buildOne = (label, cost) => {
-		const inputs = { costPrice:cost, inputTaxRate:std.inputTaxRate, outputTaxRate:std.outputTaxRate, salesTaxRate:std.salesTaxRate, platformRate:std.platformRate, shippingCost:std.shippingCost, shippingInsurance:std.shippingInsurance, otherCost:std.otherCost, adRate:std.adRate, returnRate:std.returnRate, finalPrice:std.salePrice, targetProfitRate:0 };
+	
+	const buildOne = (label, cost, price) => {
+		const inputs = { costPrice:cost, inputTaxRate:std.inputTaxRate, outputTaxRate:std.outputTaxRate, salesTaxRate:std.salesTaxRate, platformRate:std.platformRate, shippingCost:std.shippingCost, shippingInsurance:std.shippingInsurance, otherCost:std.otherCost, adRate:std.adRate, returnRate:std.returnRate, finalPrice:price, targetProfitRate:0 };
 		const purchaseCost = calculatePurchaseCost(inputs);
 		const salesCost = calculateSalesCost(inputs, 0, purchaseCost);
-		const roiRes = calculateBreakevenROI({ costPrice:cost, inputTaxRate:inputs.inputTaxRate, outputTaxRate:inputs.outputTaxRate, salesTaxRate:inputs.salesTaxRate, platformRate:inputs.platformRate, shippingCost:inputs.shippingCost, shippingInsurance:inputs.shippingInsurance, otherCost:inputs.otherCost, returnRate:inputs.returnRate, finalPrice:std.salePrice });
+		const roiRes = calculateBreakevenROI({ costPrice:cost, inputTaxRate:inputs.inputTaxRate, outputTaxRate:inputs.outputTaxRate, salesTaxRate:inputs.salesTaxRate, platformRate:inputs.platformRate, shippingCost:inputs.shippingCost, shippingInsurance:inputs.shippingInsurance, otherCost:inputs.otherCost, returnRate:inputs.returnRate, finalPrice:price });
 		// 详细税额与费用拆解（考虑退货分摊）
-		const P = std.salePrice; const VAT_RATE = 0.06;
-		const netPrice = P / (1 + inputs.salesTaxRate);
+		const netPrice = price / (1 + inputs.salesTaxRate);
 		const outputVAT = netPrice * inputs.salesTaxRate;
-		const platformFee = P * inputs.platformRate;
-		const adCost = P * inputs.adRate;
+		const platformFee = price * inputs.platformRate;
+		const adCost = price * inputs.adRate;
 		const adVAT = (adCost / salesCost.effectiveRate) * VAT_RATE;
 		const platformVAT = platformFee * VAT_RATE;
 		const totalVATDeduction = purchaseCost.purchaseVAT + adVAT + platformVAT;
@@ -4208,7 +4256,7 @@ function showPriceCheckModal(row) {
 							</div>
 							<div style="display:flex; justify-content:space-between; align-items:baseline;">
 								<span style="color:#64748b">含税售价P</span>
-								<span>¥ ${P.toFixed(2)}</span>
+								<span>¥ ${Number(price).toFixed(2)}</span>
 							</div>
 							<div style="display:flex; justify-content:space-between; align-items:baseline;">
 								<span style="color:#64748b">不含税净价</span>
@@ -4297,13 +4345,11 @@ function showPriceCheckModal(row) {
 				</div>
 			</div>`;
 	};
-	if (tiers.length) {
-		sections = tiers.map((c,i)=>buildOne(`档位${i+1}`, c));
+	// 使用验证策略构建sections
+	if (validationPairs.length > 0) {
+		sections = validationPairs.map(pair => buildOne(pair.label, pair.cost, pair.price));
 	} else {
-		const cmin = isFinite(std.costMin) ? std.costMin : std.costMax;
-		const cmax = isFinite(std.costMax) ? std.costMax : std.costMin;
-		if (isFinite(cmin)) sections.push(buildOne('区间下限', cmin));
-		if (isFinite(cmax) && Math.abs(cmax-cmin)>1e-9) sections.push(buildOne('区间上限', cmax));
+		sections.push('<div style="color:#ef4444;">未找到可计算的成本，请先填写成本或多档价格。</div>');
 	}
 	const html = `
 		<div class="pv-mask">
@@ -4314,7 +4360,7 @@ function showPriceCheckModal(row) {
 				</div>
 				<div class="pv-body">
 					<div class="pv-meta">
-						<span class="pv-badge" style="background:#3b82f6;color:#fff;font-weight:700;border:2px solid #3b82f6;">售价 ¥ ${(Number(std.salePrice)||0).toFixed(2)}</span>
+						<span class="pv-badge" style="background:#3b82f6;color:#fff;font-weight:700;border:2px solid #3b82f6;">售价 ${validationStrategy === 'multi_tier' ? '多档售价' : validationStrategy === 'first_tier' ? '多档售价（首档）' : '单一售价'} ${validationStrategy === 'multi_tier' ? salePriceTiers.map(p=>'¥'+p.toFixed(2)).join(' / ') : validationStrategy === 'first_tier' ? '¥'+salePriceTiers[0].toFixed(2) : '¥'+(Number(std.salePrice)||0).toFixed(2)}</span>
 						<span class="pv-badge" style="background:#3b82f6;color:#fff;font-weight:700;border:2px solid #3b82f6;">进货价${Array.isArray(std.costTiers) && std.costTiers.length > 1 ? '（多档）' : ''} ${Array.isArray(std.costTiers) ? std.costTiers.map(c=>'¥'+c.toFixed(2)).join(' / ') : (isFinite(std.costMin) ? '¥'+std.costMin.toFixed(2) : (isFinite(std.costMax) ? '¥'+std.costMax.toFixed(2) : ''))}</span>
 						<span class="pv-badge">退货率 ${((std.returnRate||0)*100).toFixed(2)}%</span>
 						<span class="pv-badge">佣金 ${((std.platformRate||0)*100).toFixed(2)}%</span>
@@ -4323,7 +4369,16 @@ function showPriceCheckModal(row) {
 						<span class="pv-badge">运费险 ¥ ${(Number(std.shippingInsurance)||0).toFixed(2)}</span>
 						<span class="pv-badge">其他成本 ¥ ${(Number(std.otherCost)||0).toFixed(2)}</span>
 					</div>
-					${sections.join('') || '<div style="color:#ef4444;">未找到可计算的成本，请先填写成本或多档价格。</div>'}
+					${validationStrategy !== 'single' ? `<div style="background:#f0f9ff; border:1px solid #0ea5e9; border-radius:8px; padding:12px; margin-bottom:16px; color:#0c4a6e;">
+						<div style="font-weight:600; margin-bottom:4px;">📊 验证策略说明</div>
+						<div style="font-size:13px; line-height:1.4;">
+							${validationStrategy === 'multi_tier' ? 
+								`当前使用<strong>多档售价+多档进货价1:1配对验证</strong>，共${validationPairs.length}个档位。每个档位独立计算保本指标。` :
+								`当前使用<strong>多档售价首档验证</strong>，以第一个售价档位（¥${salePriceTiers[0].toFixed(2)}）为基础，验证各成本档位的保本指标。`
+							}
+						</div>
+					</div>` : ''}
+					${sections.join('')}
 			</div>
 		</div>`;
 	const wrapper = document.createElement('div'); wrapper.innerHTML = html; document.body.appendChild(wrapper);
