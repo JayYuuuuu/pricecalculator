@@ -3395,6 +3395,24 @@ function renderCatalogTable() {
 				`<option value=""${!val?' selected':''}>请选择平台</option>`+opts+
 			`</select>`;
 		}
+		// 退货率字段特殊处理：显示为百分比格式，但存储为小数值
+		if (key === 'returnRate') {
+			const displayValue = (() => {
+				if (val === undefined || val === null || val === '') return '';
+				const num = Number(val);
+				if (isFinite(num)) {
+					// 如果是小数值（0-1之间），转换为百分比显示
+					if (num >= 0 && num <= 1) {
+						return (num * 100).toFixed(2) + '%';
+					}
+					// 如果已经是百分比数值（>1），直接显示
+					return num.toFixed(2) + '%';
+				}
+				// 如果已经是字符串格式（如"12%"），直接显示
+				return String(val);
+			})();
+			return `<input data-key="${key}" class="${cls}" type="text" value="${displayValue}" placeholder="${placeholder||''}" style="width:${width};" title="支持百分比格式，如：12% 或 0.12">`;
+		}
 		return `<input data-key="${key}" class="${cls}" type="${type}" value="${val === undefined ? '' : String(val)}" placeholder="${placeholder||''}"${step}${disabled} style="width:${width};">`; 
 	};
 	const fmtRange = (v, asPercent, asMoney, clampZero) => {
@@ -3489,7 +3507,20 @@ function renderCatalogTable() {
 		input.addEventListener('input', (e) => {
 			const el = e.target;
 			const tr = el.closest('tr'); const index = Number(tr.getAttribute('data-index'));
-			const key = el.getAttribute('data-key'); const value = el.value; const row = catalogState.rows[index] || {};
+			const key = el.getAttribute('data-key'); let value = el.value; const row = catalogState.rows[index] || {};
+			
+			// 退货率字段特殊处理：支持百分比格式输入
+			if (key === 'returnRate') {
+				// 使用 parsePercent 函数解析输入值，确保存储为小数值
+				const parsedValue = parsePercent(value);
+				if (isFinite(parsedValue)) {
+					value = parsedValue; // 存储为小数值
+				} else {
+					// 如果解析失败，保持原值但标记为无效
+					console.warn(`退货率输入值 "${el.value}" 无法解析，将保持原值`);
+				}
+			}
+			
 			row[key] = value; catalogState.rows[index] = row; catalogState.dirty = true;
 			// 立即计算缓存，但仅更新行展示的非输入单元格，避免重建输入框
 			const computed = computeRow(row); catalogState.rows[index].__result = computed.__result; saveCatalogToStorage();
@@ -3663,11 +3694,124 @@ function showCatalogProfitScenario(row){
 	};
 	
 
+	// 生成到手价推演矩阵HTML
+	const generateTakeHomePriceTableHtml = (costTable) => {
+		const { cost, costIndex } = costTable;
+		
+		// 目标利润率范围：0%、3%、5%、7%、9%、10%、12%、15%
+		const targetProfitRates = [0, 0.03, 0.05, 0.07, 0.09, 0.10, 0.12, 0.15];
+		
+		// 表头：第一行显示目标利润率
+		const header = `
+			<tr>
+				<th style="border-bottom:1px solid #eee;padding:8px 10px;color:#333;font-weight:600;text-align:center;background:#f8fafc;" colspan="${targetProfitRates.length + 1}">
+					<span style="color:#10b981;font-weight:700;">成本${tiers.length > 1 ? (costIndex + 1) : ''}：¥${cost.toFixed(2)}</span>
+				</th>
+			</tr>
+			<tr>
+				<th style="border-bottom:1px solid #eee;padding:8px 10px;color:#666;font-weight:500;text-align:center;background:#f8fafc;">付费占比 \\ 目标利润率</th>
+				${targetProfitRates.map(rate => 
+					`<th style="border-bottom:1px solid #eee;padding:8px 10px;color:#666;font-weight:500;text-align:center;background:#f8fafc;">${(rate * 100).toFixed(1)}%</th>`
+				).join('')}
+			</tr>`;
+		
+		// 表格行：每行显示一个付费占比，每列显示对应目标利润率的到手价
+		const rows = adRates.map(adRate => {
+			const rowHeader = `<td style="padding:8px 10px;text-align:center;border-right:1px solid #f2f2f2;background:#f8fafc;font-weight:500;color:#3b82f6;">${(adRate * 100).toFixed(0)}%</td>`;
+			
+			const cells = targetProfitRates.map(targetRate => {
+				const takeHomePrice = calculateTakeHomePrice(cost, adRate, targetRate, std);
+				const color = takeHomePrice > 0 ? '#16a34a' : '#dc2626';
+				const tooltip = `目标利润率：${(targetRate * 100).toFixed(1)}%\n付费占比：${(adRate * 100).toFixed(0)}%\n进货价：¥${cost.toFixed(2)}\n到手价：¥${takeHomePrice.toFixed(2)}`;
+				
+				return `<td style="padding:8px 10px;text-align:center;border-right:1px solid #f2f2f2;color:${color};font-weight:600;" 
+					data-tooltip="${tooltip.replace(/"/g, '&quot;')}">${isFinite(takeHomePrice) ? ('¥' + takeHomePrice.toFixed(2)) : '-'}</td>`;
+			}).join('');
+			
+			return `<tr>${rowHeader}${cells}</tr>`;
+		}).join('');
+		
+		return `<table style="border-collapse:separate;border-spacing:0;width:100%;font-size:13px;margin-bottom:20px;">${header}${rows}</table>`;
+	};
+	
+	// 计算到手价的函数
+	const calculateTakeHomePrice = (costPrice, adRate, targetProfitRate, params) => {
+		try {
+			// 基于目标利润率和已知参数，反推到手价
+			// 使用迭代法求解：从成本价开始，逐步调整直到达到目标利润率
+			let lowPrice = costPrice;
+			let highPrice = costPrice * 10; // 上限设为成本的10倍
+			let midPrice;
+			let bestPrice = costPrice;
+			let bestDiff = Infinity;
+			
+			// 二分查找最优价格
+			for (let i = 0; i < 20; i++) {
+				midPrice = (lowPrice + highPrice) / 2;
+				
+				const inputs = { 
+					costPrice: costPrice, 
+					inputTaxRate: params.inputTaxRate, 
+					outputTaxRate: params.outputTaxRate, 
+					salesTaxRate: params.salesTaxRate, 
+					platformRate: params.platformRate, 
+					shippingCost: params.shippingCost, 
+					shippingInsurance: params.shippingInsurance, 
+					otherCost: params.otherCost, 
+					adRate: adRate, 
+					returnRate: params.returnRate, 
+					finalPrice: midPrice, 
+					targetProfitRate: 0 
+				};
+				
+				const purchaseCost = calculatePurchaseCost(inputs);
+				const salesCost = calculateSalesCost(inputs, 0, purchaseCost);
+				const P = midPrice;
+				const netPrice = P / (1 + inputs.salesTaxRate);
+				const outputVAT = netPrice * inputs.salesTaxRate;
+				const platformFee = P * inputs.platformRate;
+				const VAT_RATE = 0.06;
+				const adCost = P * adRate;
+				const adVAT = (adCost / salesCost.effectiveRate) * VAT_RATE;
+				const totalVATDeduction = purchaseCost.purchaseVAT + adVAT + (platformFee * VAT_RATE);
+				const actualVAT = outputVAT - totalVATDeduction;
+				const fixedCosts = (inputs.shippingCost + inputs.shippingInsurance + inputs.otherCost) / salesCost.effectiveRate;
+				const totalCost = purchaseCost.effectiveCost + platformFee + (adCost / salesCost.effectiveRate) + fixedCosts + actualVAT;
+				const profit = P - totalCost;
+				const actualProfitRate = profit / P;
+				
+				const diff = Math.abs(actualProfitRate - targetProfitRate);
+				if (diff < bestDiff) {
+					bestDiff = diff;
+					bestPrice = midPrice;
+				}
+				
+				if (Math.abs(actualProfitRate - targetProfitRate) < 0.001) {
+					break; // 精度足够，退出循环
+				}
+				
+				if (actualProfitRate < targetProfitRate) {
+					lowPrice = midPrice;
+				} else {
+					highPrice = midPrice;
+				}
+			}
+			
+			return bestPrice;
+		} catch (_) {
+			return NaN;
+		}
+	};
+
 	const html = `
 		<div class="pv-mask">
 			<div class="pv-modal">
 				<div class="pv-hd">
 					<div class="pv-title">利润推演 - ${row.name||''}（${row.sku||''}）<span style="color:#6b7280;font-size:0.9em;margin-left:8px;">${row.platform||''}</span></div>
+					<div class="pv-tabs" style="display:flex;gap:8px;margin-left:auto;">
+						<button id="profitTabBtn" class="pv-tab-btn active" style="padding:6px 12px;border:1px solid #3b82f6;background:#3b82f6;color:#fff;border-radius:6px;font-size:12px;cursor:pointer;">利润推演</button>
+						<button id="takeHomeTabBtn" class="pv-tab-btn" style="padding:6px 12px;border:1px solid #d1d5db;background:#fff;color:#6b7280;border-radius:6px;font-size:12px;cursor:pointer;">到手价推演</button>
+					</div>
 					<button id="catalogProfitScenarioClose" class="batch-modal-btn pv-close">关闭</button>
 				</div>
 				<div class="pv-body">
@@ -3681,10 +3825,17 @@ function showCatalogProfitScenario(row){
 						<span class="pv-badge">运费险 ¥ ${(Number(std.shippingInsurance)||0).toFixed(2)}</span>
 						<span class="pv-badge">其他成本 ¥ ${(Number(std.otherCost)||0).toFixed(2)}</span>
 					</div>
-					<div class="batch-table-container" style="overflow:auto;max-height:75vh;padding:16px;">
+					<div id="profitContent" class="batch-table-container" style="overflow:auto;max-height:75vh;padding:16px;">
 						${costTables.map((ct, i) => `
 							<div style="margin-bottom:30px;border:1px solid #e5e7eb;border-radius:12px;padding:16px;background:#fff;">
 								${generateTableHtml(ct)}
+							</div>
+						`).join('')}
+					</div>
+					<div id="takeHomeContent" class="batch-table-container" style="overflow:auto;max-height:75vh;padding:16px;display:none;">
+						${costTables.map((ct, i) => `
+							<div style="margin-bottom:30px;border:1px solid #e5e7eb;border-radius:12px;padding:16px;background:#fff;">
+								${generateTakeHomePriceTableHtml(ct)}
 							</div>
 						`).join('')}
 					</div>
@@ -3696,10 +3847,40 @@ function showCatalogProfitScenario(row){
 	wrapper.addEventListener('click', (e)=>{ if (e.target === wrapper) close(); });
 	const closeBtn = document.getElementById('catalogProfitScenarioClose'); if (closeBtn) closeBtn.addEventListener('click', close);
 	
+	// 标签页切换事件
+	const profitTabBtn = document.getElementById('profitTabBtn');
+	const takeHomeTabBtn = document.getElementById('takeHomeTabBtn');
+	const profitContent = document.getElementById('profitContent');
+	const takeHomeContent = document.getElementById('takeHomeContent');
+	
+	if (profitTabBtn && takeHomeTabBtn && profitContent && takeHomeContent) {
+		profitTabBtn.addEventListener('click', () => {
+			profitTabBtn.className = 'pv-tab-btn active';
+			profitTabBtn.style.cssText = 'padding:6px 12px;border:1px solid #3b82f6;background:#3b82f6;color:#fff;border-radius:6px;font-size:12px;cursor:pointer;';
+			takeHomeTabBtn.className = 'pv-tab-btn';
+			takeHomeTabBtn.style.cssText = 'padding:6px 12px;border:1px solid #d1d5db;background:#fff;color:#6b7280;border-radius:6px;font-size:12px;cursor:pointer;';
+			profitContent.style.display = 'block';
+			takeHomeContent.style.display = 'none';
+		});
+		
+		takeHomeTabBtn.addEventListener('click', () => {
+			takeHomeTabBtn.className = 'pv-tab-btn active';
+			takeHomeTabBtn.style.cssText = 'padding:6px 12px;border:1px solid #3b82f6;background:#3b82f6;color:#fff;border-radius:6px;font-size:12px;cursor:pointer;';
+			profitTabBtn.className = 'pv-tab-btn';
+			profitTabBtn.style.cssText = 'padding:6px 12px;border:1px solid #d1d5db;background:#fff;color:#6b7280;border-radius:6px;font-size:12px;cursor:pointer;';
+			takeHomeContent.style.display = 'block';
+			profitContent.style.display = 'none';
+		});
+	}
+	
 	// 悬浮提示：委托到表格容器，悬停即显
 	(function attachTooltipDelegation(){
-		const container = wrapper.querySelector('.batch-table-container');
-		if (!container) return;
+		const profitContainer = wrapper.querySelector('#profitContent');
+		const takeHomeContainer = wrapper.querySelector('#takeHomeContent');
+		if (!profitContainer || !takeHomeContainer) return;
+		
+		// 为两个容器都添加悬浮提示事件
+		[profitContainer, takeHomeContainer].forEach(container => {
 
 		let currentHighlightedRow = null;
 
@@ -3753,6 +3934,7 @@ function showCatalogProfitScenario(row){
 		container.addEventListener('mouseover', onOver);
 		container.addEventListener('mousemove', onMove);
 		container.addEventListener('mouseleave', onLeave);
+		});
 	})();
 }
 	// 新增：利润推演按钮事件
@@ -4053,6 +4235,21 @@ function recomputeAllCatalogRows() {
 		const e = performance.now();
 		const dt = e - s; if (dt < minMs) minMs = dt; if (dt > maxMs) maxMs = dt;
 		catalogState.rows[idx].__result = computed.__result;
+		
+		// 一键重算时自动格式化退货率显示：如果是小数值，转换为百分比格式
+		if (row.returnRate !== undefined && row.returnRate !== null && row.returnRate !== '') {
+			const num = Number(row.returnRate);
+			if (isFinite(num)) {
+				// 如果是小数值（0-1之间）且不是百分比格式，转换为百分比格式
+				if (num >= 0 && num <= 1 && typeof row.returnRate !== 'string') {
+					catalogState.rows[idx].returnRate = (num * 100).toFixed(2) + '%';
+				}
+				// 如果已经是百分比数值（>1），转换为百分比格式字符串
+				else if (num > 1 && typeof row.returnRate !== 'string') {
+					catalogState.rows[idx].returnRate = num.toFixed(2) + '%';
+				}
+			}
+		}
 	});
 	saveCatalogToStorage();
 	renderCatalogTable();
@@ -4153,7 +4350,13 @@ async function importCatalogFromCSV(file) {
 				if (!row.name || !row.sku || !row.platform) throw new Error('name/sku/platform 必填');
 				if (!isFinite(salePrice) || salePrice <= 0) throw new Error('salePrice 必须>0');
 				row.salePrice = salePrice;
-				row.returnRate = parsePercent(get('returnRate'));
+				// 退货率特殊处理：导入后直接转换为百分比格式字符串，确保显示一致性
+				const returnRateValue = parsePercent(get('returnRate'));
+				if (isFinite(returnRateValue)) {
+					row.returnRate = (returnRateValue * 100).toFixed(2) + '%';
+				} else {
+					row.returnRate = '';
+				}
 				row.adRate = parsePercent(get('adRate'));
 				// 解析多档进货价：支持 19;29;39 或用空格/逗号/竖线等分隔（不再支持上下限区间写法）
 				const rawCosts = String(get('costTiers')||'').trim();
@@ -4188,7 +4391,15 @@ async function importCatalogFromCSV(file) {
 				if (!isFinite(costMin) && !isFinite(costMax)) throw new Error('成本（进货价）为必填');
 				if (!isNaN(costMin) && costMin < 0) throw new Error('costMin 不得为负');
 				if (!isNaN(costMax) && costMax < 0) throw new Error('costMax 不得为负');
-				['returnRate','inputTaxRate','outputTaxRate','salesTaxRate','platformRate','adRate'].forEach(k => { const p = parsePercent(row[k]); row[k] = isFinite(p) ? p : ''; });
+				// 处理百分比字段，退货率特殊处理为百分比格式字符串
+				['inputTaxRate','outputTaxRate','salesTaxRate','platformRate','adRate'].forEach(k => { const p = parsePercent(row[k]); row[k] = isFinite(p) ? p : ''; });
+				// 退货率特殊处理：导入后直接转换为百分比格式字符串
+				const returnRateValue = parsePercent(row.returnRate);
+				if (isFinite(returnRateValue)) {
+					row.returnRate = (returnRateValue * 100).toFixed(2) + '%';
+				} else {
+					row.returnRate = '';
+				}
 				row.salePrice = salePrice; const mergedCost = isFinite(costMin) ? costMin : costMax; row.costMin = isFinite(mergedCost) ? mergedCost : ''; row.costMax = '';
 				const computed = computeRow(row); row.__result = computed.__result; okRows.push(row);
 			}
