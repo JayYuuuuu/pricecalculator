@@ -554,6 +554,63 @@
                     <button id="btnCatalogFullscreen" class="header-btn" style="margin:0;">全屏显示</button>
                     <button id="btnCatalogUndoImport" class="header-btn" style="margin:0; display:none;">撤销上次导入</button>
                 </div>
+                
+                <!-- 搜索和筛选工具栏 -->
+                <div id="catalogSearchToolbar" style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:16px; padding:16px; background:#f8fafc; border:1px solid #e5e7eb; border-radius:8px;">
+                    <!-- 搜索框 -->
+                    <div style="display:flex; flex-direction:column; gap:4px; min-width:200px;">
+                        <label style="font-size:12px; color:#374151; font-weight:500;">搜索商品</label>
+                        <input id="catalogSearchInput" type="text" placeholder="搜索商品名称或货号..." style="padding:8px 12px; border:1px solid #d1d5db; border-radius:6px; font-size:14px; width:100%;" />
+                    </div>
+                    
+                    <!-- 平台筛选 -->
+                    <div style="display:flex; flex-direction:column; gap:4px; min-width:120px;">
+                        <label style="font-size:12px; color:#374151; font-weight:500;">平台筛选</label>
+                        <select id="catalogPlatformFilter" style="padding:8px 12px; border:1px solid #d1d5db; border-radius:6px; font-size:14px; width:100%;">
+                            <option value="">全部平台</option>
+                        </select>
+                    </div>
+                    
+                    <!-- 退货率区间筛选 -->
+                    <div style="display:flex; flex-direction:column; gap:4px; min-width:140px;">
+                        <label style="font-size:12px; color:#374151; font-weight:500;">退货率区间</label>
+                        <div style="display:flex; gap:4px; align-items:center;">
+                            <input id="catalogReturnRateMin" type="number" placeholder="最小%" step="0.1" min="0" max="100" style="padding:8px 8px; border:1px solid #d1d5db; border-radius:6px; font-size:14px; width:60px; text-align:center;" />
+                            <span style="color:#6b7280; font-size:12px;">~</span>
+                            <input id="catalogReturnRateMax" type="number" placeholder="最大%" step="0.1" min="0" max="100" style="padding:8px 8px; border:1px solid #d1d5db; border-radius:6px; font-size:14px; width:60px; text-align:center;" />
+                        </div>
+                    </div>
+                    
+                    <!-- 排序选项 -->
+                    <div style="display:flex; flex-direction:column; gap:4px; min-width:140px;">
+                        <label style="font-size:12px; color:#374151; font-weight:500;">排序方式</label>
+                        <select id="catalogSortBy" style="padding:8px 12px; border:1px solid #d1d5db; border-radius:6px; font-size:14px; width:100%;">
+                            <option value="">默认排序</option>
+                            <option value="name">按名称排序</option>
+                            <option value="sku">按货号排序</option>
+                            <option value="returnRate">按退货率排序</option>
+                            <option value="salePrice">按售价排序</option>
+                        </select>
+                    </div>
+                    
+                    <!-- 排序方向 -->
+                    <div style="display:flex; flex-direction:column; gap:4px; min-width:100px;">
+                        <label style="font-size:12px; color:#374151; font-weight:500;">排序方向</label>
+                        <select id="catalogSortOrder" style="padding:8px 12px; border:1px solid #d1d5db; border-radius:6px; font-size:14px; width:100%;">
+                            <option value="asc">升序</option>
+                            <option value="desc">降序</option>
+                        </select>
+                    </div>
+                    
+                    <!-- 操作按钮 -->
+                    <div style="display:flex; flex-direction:column; gap:4px; min-width:120px;">
+                        <label style="font-size:12px; color:#374151; font-weight:500;">操作</label>
+                        <div style="display:flex; gap:8px;">
+                            <button id="btnCatalogApplyFilters" class="header-btn" style="margin:0; padding:8px 12px; font-size:14px;">应用筛选</button>
+                            <button id="btnCatalogClearFilters" class="header-btn" style="margin:0; padding:8px 12px; font-size:14px; background:#6b7280; border-color:#6b7280;">清除筛选</button>
+                        </div>
+                    </div>
+                </div>
                 <!-- 表格容器 -->
                 <div id="catalogTableContainer" class="lp-card" style="padding:0; overflow:auto;"></div>
                 <!-- 全屏弹窗：初始隐藏，打开时将表格容器临时移动到此处 -->
@@ -566,6 +623,63 @@
                                 <button id="btnCatalogFullscreenDeleteSelected" class="header-btn" style="margin:0; background:#ef4444; border-color:#ef4444;">批量删除所选</button>
                                 <button id="btnCatalogFullscreenRecompute" class="header-btn" style="margin:0;">一键重算</button>
                                 <button id="btnCatalogFullscreenClose" class="header-btn" style="margin:0;">退出全屏</button>
+                            </div>
+                        </div>
+                        
+                        <!-- 全屏模式搜索和筛选工具栏 -->
+                        <div id="catalogFullscreenSearchToolbar" style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin:12px; padding:16px; background:#f8fafc; border:1px solid #e5e7eb; border-radius:8px;">
+                            <!-- 搜索框 -->
+                            <div style="display:flex; flex-direction:column; gap:4px; min-width:200px;">
+                                <label style="font-size:12px; color:#374151; font-weight:500;">搜索商品</label>
+                                <input id="catalogFullscreenSearchInput" type="text" placeholder="搜索商品名称或货号..." style="padding:8px 12px; border:1px solid #d1d5db; border-radius:6px; font-size:14px; width:100%;" />
+                            </div>
+                            
+                            <!-- 平台筛选 -->
+                            <div style="display:flex; flex-direction:column; gap:4px; min-width:120px;">
+                                <label style="font-size:12px; color:#374151; font-weight:500;">平台筛选</label>
+                                <select id="catalogFullscreenPlatformFilter" style="padding:8px 12px; border:1px solid #d1d5db; border-radius:6px; font-size:14px; width:100%;">
+                                    <option value="">全部平台</option>
+                                </select>
+                            </div>
+                            
+                            <!-- 退货率区间筛选 -->
+                            <div style="display:flex; flex-direction:column; gap:4px; min-width:140px;">
+                                <label style="font-size:12px; color:#374151; font-weight:500;">退货率区间</label>
+                                <div style="display:flex; gap:4px; align-items:center;">
+                                    <input id="catalogFullscreenReturnRateMin" type="number" placeholder="最小%" step="0.1" min="0" max="100" style="padding:8px 8px; border:1px solid #d1d5db; border-radius:6px; font-size:14px; width:60px; text-align:center;" />
+                                    <span style="color:#6b7280; font-size:12px;">~</span>
+                                    <input id="catalogFullscreenReturnRateMax" type="number" placeholder="最大%" step="0.1" min="0" max="100" style="padding:8px 8px; border:1px solid #d1d5db; border-radius:6px; font-size:14px; width:60px; text-align:center;" />
+                                </div>
+                            </div>
+                            
+                            <!-- 排序选项 -->
+                            <div style="display:flex; flex-direction:column; gap:4px; min-width:140px;">
+                                <label style="font-size:12px; color:#374151; font-weight:500;">排序方式</label>
+                                <select id="catalogFullscreenSortBy" style="padding:8px 12px; border:1px solid #d1d5db; border-radius:6px; font-size:14px; width:100%;">
+                                    <option value="">默认排序</option>
+                                    <option value="name">按名称排序</option>
+                                    <option value="sku">按货号排序</option>
+                                    <option value="returnRate">按退货率排序</option>
+                                    <option value="salePrice">按售价排序</option>
+                                </select>
+                            </div>
+                            
+                            <!-- 排序方向 -->
+                            <div style="display:flex; flex-direction:column; gap:4px; min-width:100px;">
+                                <label style="font-size:12px; color:#374151; font-weight:500;">排序方向</label>
+                                <select id="catalogFullscreenSortOrder" style="padding:8px 12px; border:1px solid #d1d5db; border-radius:6px; font-size:14px; width:100%;">
+                                    <option value="asc">升序</option>
+                                    <option value="desc">降序</option>
+                                </select>
+                            </div>
+                            
+                            <!-- 操作按钮 -->
+                            <div style="display:flex; flex-direction:column; gap:4px; min-width:120px;">
+                                <label style="font-size:12px; color:#374151; font-weight:500;">操作</label>
+                                <div style="display:flex; gap:8px;">
+                                    <button id="btnCatalogFullscreenApplyFilters" class="header-btn" style="margin:0; padding:8px 12px; font-size:14px;">应用筛选</button>
+                                    <button id="btnCatalogFullscreenClearFilters" class="header-btn" style="margin:0; padding:8px 12px; font-size:14px; background:#6b7280; border-color:#6b7280;">清除筛选</button>
+                                </div>
                             </div>
                         </div>
                         <div id="catalogFullscreenBody" style="flex:1; overflow:auto; background:#f9fafb; padding:12px;"></div>

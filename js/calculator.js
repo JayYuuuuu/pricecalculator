@@ -3426,7 +3426,9 @@ function computeRangeResults(resMin, resMax) {
 // 渲染表格
 function renderCatalogTable() {
 	const container = document.getElementById('catalogTableContainer'); if (!container) return;
-	const rows = catalogState.rows || [];
+	
+	// 使用筛选后的数据或原始数据
+	const rows = catalogFilterState.filteredRows.length > 0 ? catalogFilterState.filteredRows : (catalogState.rows || []);
 	const thead = '<thead><tr>'+
 		'<th style="width:36px; text-align:center;"><input id="catalogCheckAll" type="checkbox"></th>'+
 		'<th style="width:120px;">商品名称</th><th style="width:100px;">货号</th><th style="width:80px;">平台</th><th class="lp-col-right" style="width:80px;">含税售价P</th><th class="lp-col-right" style="width:180px;">含税售价（多档）</th>'+
@@ -4462,10 +4464,165 @@ function showPriceCheckModal(row) {
 	const closeBtn = document.getElementById('catalogPriceCheckClose'); if (closeBtn) closeBtn.addEventListener('click', close);
 }
 
+// 搜索和筛选状态管理
+let catalogFilterState = {
+	searchText: '',
+	platform: '',
+	returnRateMin: '',
+	returnRateMax: '',
+	sortBy: '',
+	sortOrder: 'asc',
+	filteredRows: []
+};
+
+// 应用搜索和筛选
+function applyCatalogFilters() {
+	const searchText = document.getElementById('catalogSearchInput').value.toLowerCase();
+	const platform = document.getElementById('catalogPlatformFilter').value;
+	const returnRateMin = parseFloat(document.getElementById('catalogReturnRateMin').value) || 0;
+	const returnRateMax = parseFloat(document.getElementById('catalogReturnRateMax').value) || 100;
+	const sortBy = document.getElementById('catalogSortBy').value;
+	const sortOrder = document.getElementById('catalogSortOrder').value;
+	
+	// 更新筛选状态
+	catalogFilterState = {
+		searchText,
+		platform,
+		returnRateMin,
+		returnRateMax,
+		sortBy,
+		sortOrder
+	};
+	
+	// 获取所有行
+	let rows = [...(catalogState.rows || [])];
+	
+	// 应用筛选
+	rows = rows.filter(row => {
+		// 搜索筛选：名称或货号包含搜索文本
+		if (searchText && !(
+			(row.name || '').toLowerCase().includes(searchText) ||
+			(row.sku || '').toLowerCase().includes(searchText)
+		)) {
+			return false;
+		}
+		
+		// 平台筛选
+		if (platform && row.platform !== platform) {
+			return false;
+		}
+		
+		// 退货率区间筛选
+		if (returnRateMin > 0 || returnRateMax < 100) {
+			const returnRate = parsePercent(row.returnRate) * 100;
+			if (returnRate < returnRateMin || returnRate > returnRateMax) {
+				return false;
+			}
+		}
+		
+		return true;
+	});
+	
+	// 应用排序
+	if (sortBy) {
+		rows.sort((a, b) => {
+			let aVal, bVal;
+			
+			switch (sortBy) {
+				case 'name':
+					aVal = (a.name || '').toLowerCase();
+					bVal = (b.name || '').toLowerCase();
+					break;
+				case 'sku':
+					aVal = (a.sku || '').toLowerCase();
+					bVal = (b.sku || '').toLowerCase();
+					break;
+				case 'returnRate':
+					aVal = parsePercent(a.returnRate);
+					bVal = parsePercent(b.returnRate);
+					break;
+				case 'salePrice':
+					aVal = parseFloat(a.salePrice) || 0;
+					bVal = parseFloat(b.salePrice) || 0;
+					break;
+				default:
+					return 0;
+			}
+			
+			if (sortOrder === 'asc') {
+				return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+			} else {
+				return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+			}
+		});
+	}
+	
+	// 保存筛选结果
+	catalogFilterState.filteredRows = rows;
+	
+	// 重新渲染表格
+	renderCatalogTable();
+	
+	// 更新状态显示
+	updateCatalogStatus();
+}
+
+// 清除所有筛选
+function clearCatalogFilters() {
+	document.getElementById('catalogSearchInput').value = '';
+	document.getElementById('catalogPlatformFilter').value = '';
+	document.getElementById('catalogReturnRateMin').value = '';
+	document.getElementById('catalogReturnRateMax').value = '';
+	document.getElementById('catalogSortBy').value = '';
+	document.getElementById('catalogSortOrder').value = 'asc';
+	
+	catalogFilterState = {
+		searchText: '',
+		platform: '',
+		returnRateMin: '',
+		returnRateMax: '',
+		sortBy: '',
+		sortOrder: 'asc',
+		filteredRows: []
+	};
+	
+	renderCatalogTable();
+	updateCatalogStatus();
+}
+
+// 更新平台筛选选项
+function updatePlatformFilterOptions() {
+	const platformSelect = document.getElementById('catalogPlatformFilter');
+	if (!platformSelect) return;
+	
+	// 获取所有唯一的平台
+	const platforms = [...new Set((catalogState.rows || []).map(row => row.platform).filter(Boolean))];
+	
+	// 清空现有选项（保留"全部平台"）
+	platformSelect.innerHTML = '<option value="">全部平台</option>';
+	
+	// 添加平台选项
+	platforms.forEach(platform => {
+		const option = document.createElement('option');
+		option.value = platform;
+		option.textContent = platform;
+		platformSelect.appendChild(option);
+	});
+}
+
 function updateCatalogStatus() {
 	const el = document.getElementById('catalogStatus'); if (!el) return;
-	const rows = catalogState.rows || []; let err = 0; rows.forEach(r => { if (r && r.__result && (r.__result.errors||[]).length) err++; });
-	el.textContent = `共 ${rows.length} 条，${err} 条异常`;
+	const allRows = catalogState.rows || [];
+	const filteredRows = catalogFilterState.filteredRows.length > 0 ? catalogFilterState.filteredRows : allRows;
+	let err = 0; 
+	filteredRows.forEach(r => { if (r && r.__result && (r.__result.errors||[]).length) err++; });
+	
+	// 显示筛选状态
+	if (catalogFilterState.searchText || catalogFilterState.platform || catalogFilterState.returnRateMin || catalogFilterState.returnRateMax || catalogFilterState.sortBy) {
+		el.innerHTML = `共 ${allRows.length} 条，筛选后 ${filteredRows.length} 条，${err} 条异常 <span style="color:#6b7280; font-size:0.9em;">（已应用筛选）</span>`;
+	} else {
+		el.textContent = `共 ${allRows.length} 条，${err} 条异常`;
+	}
 }
 
 function loadCatalogFromStorage() {
@@ -4683,6 +4840,7 @@ async function importCatalogFromCSV(file) {
 	if (failed.length) { showToast(`导入完成：成功 ${okRows.length} 条 / 失败 ${failed.length} 条`); console.warn('[Catalog] 导入错误行：', failed); }
 	catalogState.lastImportBackup = JSON.parse(JSON.stringify(catalogState.rows || [])); const undoBtn = document.getElementById('btnCatalogUndoImport'); if (undoBtn) undoBtn.style.display='';
 	catalogState.rows = (catalogState.rows||[]).concat(okRows); recomputeAllCatalogRows();
+	updatePlatformFilterOptions();
 }
 
 function initCatalogTab() {
@@ -4699,10 +4857,10 @@ function initCatalogTab() {
 	const btnUndo = document.getElementById('btnCatalogUndoImport');
 	const btnPlat = document.getElementById('btnPlatformSettings');
 	const btnFullscreen = document.getElementById('btnCatalogFullscreen');
-	if (btnAdd) btnAdd.addEventListener('click', () => { catalogState.rows.push({ name:'', sku:'', platform:'', salePrice:'', returnRate:'', costMin:'', costMax:'' }); renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); });
+	if (btnAdd) btnAdd.addEventListener('click', () => { catalogState.rows.push({ name:'', sku:'', platform:'', salePrice:'', returnRate:'', costMin:'', costMax:'' }); renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); updatePlatformFilterOptions(); });
 	if (btnImport && fileInput) { btnImport.addEventListener('click', () => fileInput.click()); fileInput.addEventListener('change', async () => { const f = fileInput.files && fileInput.files[0]; if (!f) return; try { await importCatalogFromCSV(f); } finally { fileInput.value=''; } }); }
 	if (btnExport) btnExport.addEventListener('click', exportCatalogToCSV);
-	if (btnDelete) btnDelete.addEventListener('click', () => { const container = document.getElementById('catalogTableContainer'); const checks = Array.from(container.querySelectorAll('.catalog-check')); const remain = []; checks.forEach(cb => { const tr = cb.closest('tr'); const idx = Number(tr.getAttribute('data-index')); if (!cb.checked) remain.push(catalogState.rows[idx]); }); catalogState.rows = remain; renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); });
+	if (btnDelete) btnDelete.addEventListener('click', () => { const container = document.getElementById('catalogTableContainer'); const checks = Array.from(container.querySelectorAll('.catalog-check')); const remain = []; checks.forEach(cb => { const tr = cb.closest('tr'); const idx = Number(tr.getAttribute('data-index')); if (!cb.checked) remain.push(catalogState.rows[idx]); }); catalogState.rows = remain; renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); updatePlatformFilterOptions(); });
 	if (btnRecompute) btnRecompute.addEventListener('click', recomputeAllCatalogRows);
 	if (btnExamples) btnExamples.addEventListener('click', () => { const samples = [
 		// 摇粒绒马甲 - 单一售价 + 单一进货价
@@ -4769,8 +4927,8 @@ function initCatalogTab() {
 		{ name:'纯棉内裤4条', sku:'FWL2405141', platform:'淘宝', salePrice:69.75, returnRate:'8.21%', costTiers:[28.50, 30.00] },
 		// 纯棉内裤3条 - 单一售价 + 多档进货价
 		{ name:'纯棉内裤3条', sku:'FWL2505131', platform:'淘宝', salePrice:59, returnRate:'5.42%', costTiers:[23.40, 25.00] }
-	]; samples.forEach(s => { const c = computeRow(s); s.__result = c.__result; }); catalogState.rows = (catalogState.rows||[]).concat(samples); renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); });
-	if (btnUndo) btnUndo.addEventListener('click', () => { if (!catalogState.lastImportBackup) return; catalogState.rows = catalogState.lastImportBackup; catalogState.lastImportBackup = null; btnUndo.style.display='none'; renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); });
+	]; samples.forEach(s => { const c = computeRow(s); s.__result = c.__result; }); catalogState.rows = (catalogState.rows||[]).concat(samples); renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); updatePlatformFilterOptions(); });
+	if (btnUndo) btnUndo.addEventListener('click', () => { if (!catalogState.lastImportBackup) return; catalogState.rows = catalogState.lastImportBackup; catalogState.lastImportBackup = null; btnUndo.style.display='none'; renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); updatePlatformFilterOptions(); });
 	if (btnPlat) btnPlat.addEventListener('click', () => openPlatformSettingsModal());
 
 	// 全屏：将表格容器临时移动到全屏弹窗中显示，关闭时移回原位
@@ -4785,16 +4943,18 @@ function initCatalogTab() {
 		// 占位符：用于关闭时把容器放回原处
 		const placeholder = document.createElement('div');
 		placeholder.id = 'catalogTablePlaceholder';
-		btnFullscreen.addEventListener('click', () => {
-			if (!overlay || !body || !container) return;
-			if (!container.parentElement || container.parentElement.id !== 'catalogTablePlaceholder') {
-				container.after(placeholder);
-			}
-			body.appendChild(container);
-			overlay.style.display = 'flex';
-			// 全屏时再渲染一次，确保宽度自适应
-			try { renderCatalogTable(); } catch (_) {}
-		});
+					btnFullscreen.addEventListener('click', () => {
+				if (!overlay || !body || !container) return;
+				if (!container.parentElement || container.parentElement.id !== 'catalogTablePlaceholder') {
+					container.after(placeholder);
+				}
+				body.appendChild(container);
+				overlay.style.display = 'flex';
+				// 全屏时再渲染一次，确保宽度自适应
+				try { renderCatalogTable(); } catch (_) {}
+				// 全屏时同步筛选状态到全屏筛选器
+				syncFullscreenFilters();
+			});
 		const exitFullscreen = () => {
 			if (!overlay) return;
 			overlay.style.display = 'none';
@@ -4807,10 +4967,125 @@ function initCatalogTab() {
 		if (closeBtn) closeBtn.addEventListener('click', exitFullscreen);
 		if (overlay) overlay.addEventListener('click', (e) => { if (e.target === overlay) exitFullscreen(); });
 		if (recomputeBtn) recomputeBtn.addEventListener('click', recomputeAllCatalogRows);
-		if (addRowBtn) addRowBtn.addEventListener('click', () => { catalogState.rows.push({ name:'', sku:'', platform:'', salePrice:'', returnRate:'', costMin:'', costMax:'' }); renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); });
-		if (delBtn) delBtn.addEventListener('click', () => { const cont = document.getElementById('catalogTableContainer'); const checks = Array.from(cont.querySelectorAll('.catalog-check')); const remain = []; checks.forEach(cb => { const tr = cb.closest('tr'); const idx = Number(tr.getAttribute('data-index')); if (!cb.checked) remain.push(catalogState.rows[idx]); }); catalogState.rows = remain; renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); });
+		if (addRowBtn) addRowBtn.addEventListener('click', () => { catalogState.rows.push({ name:'', sku:'', platform:'', salePrice:'', returnRate:'', costMin:'', costMax:'' }); renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); updatePlatformFilterOptions(); updateFullscreenPlatformFilterOptions(); });
+		if (delBtn) delBtn.addEventListener('click', () => { const cont = document.getElementById('catalogTableContainer'); const checks = Array.from(cont.querySelectorAll('.catalog-check')); const remain = []; checks.forEach(cb => { const tr = cb.closest('tr'); const idx = Number(tr.getAttribute('data-index')); if (!cb.checked) remain.push(catalogState.rows[idx]); }); catalogState.rows = remain; renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); updatePlatformFilterOptions(); updateFullscreenPlatformFilterOptions(); });
 		// ESC 关闭
 		window.addEventListener('keydown', (e) => { if (overlay && overlay.style.display !== 'none' && e.key === 'Escape') { exitFullscreen(); } });
+	}
+	
+	// 搜索和筛选功能事件监听器
+	const searchInput = document.getElementById('catalogSearchInput');
+	const platformFilter = document.getElementById('catalogPlatformFilter');
+	const returnRateMin = document.getElementById('catalogReturnRateMin');
+	const returnRateMax = document.getElementById('catalogReturnRateMax');
+	const sortBy = document.getElementById('catalogSortBy');
+	const sortOrder = document.getElementById('catalogSortOrder');
+	const applyFiltersBtn = document.getElementById('btnCatalogApplyFilters');
+	const clearFiltersBtn = document.getElementById('btnCatalogClearFilters');
+	
+	// 实时搜索（输入时自动应用）
+	if (searchInput) {
+		searchInput.addEventListener('input', () => {
+			// 延迟300ms执行，避免频繁搜索
+			clearTimeout(searchInput.searchTimeout);
+			searchInput.searchTimeout = setTimeout(applyCatalogFilters, 300);
+		});
+	}
+	
+	// 平台筛选变化时自动应用
+	if (platformFilter) {
+		platformFilter.addEventListener('change', applyCatalogFilters);
+	}
+	
+	// 退货率区间变化时自动应用
+	if (returnRateMin) {
+		returnRateMin.addEventListener('input', () => {
+			clearTimeout(returnRateMin.filterTimeout);
+			returnRateMin.filterTimeout = setTimeout(applyCatalogFilters, 500);
+		});
+	}
+	if (returnRateMax) {
+		returnRateMax.addEventListener('input', () => {
+			clearTimeout(returnRateMax.filterTimeout);
+			returnRateMax.filterTimeout = setTimeout(applyCatalogFilters, 500);
+		});
+	}
+	
+	// 排序变化时自动应用
+	if (sortBy) {
+		sortBy.addEventListener('change', applyCatalogFilters);
+	}
+	if (sortOrder) {
+		sortOrder.addEventListener('change', applyCatalogFilters);
+	}
+	
+	// 应用筛选按钮
+	if (applyFiltersBtn) {
+		applyFiltersBtn.addEventListener('click', applyCatalogFilters);
+	}
+	
+	// 清除筛选按钮
+	if (clearFiltersBtn) {
+		clearFiltersBtn.addEventListener('click', clearCatalogFilters);
+	}
+	
+	// 初始化平台筛选选项
+	updatePlatformFilterOptions();
+	
+	// 全屏筛选功能事件监听器
+	const fullscreenSearchInput = document.getElementById('catalogFullscreenSearchInput');
+	const fullscreenPlatformFilter = document.getElementById('catalogFullscreenPlatformFilter');
+	const fullscreenReturnRateMin = document.getElementById('catalogFullscreenReturnRateMin');
+	const fullscreenReturnRateMax = document.getElementById('catalogFullscreenReturnRateMax');
+	const fullscreenSortBy = document.getElementById('catalogFullscreenSortBy');
+	const fullscreenSortOrder = document.getElementById('catalogFullscreenSortOrder');
+	const fullscreenApplyFiltersBtn = document.getElementById('btnCatalogFullscreenApplyFilters');
+	const fullscreenClearFiltersBtn = document.getElementById('btnCatalogFullscreenClearFilters');
+	
+	// 全屏实时搜索（输入时自动应用）
+	if (fullscreenSearchInput) {
+		fullscreenSearchInput.addEventListener('input', () => {
+			// 延迟300ms执行，避免频繁搜索
+			clearTimeout(fullscreenSearchInput.searchTimeout);
+			fullscreenSearchInput.searchTimeout = setTimeout(() => applyFullscreenFilters(), 300);
+		});
+	}
+	
+	// 全屏平台筛选变化时自动应用
+	if (fullscreenPlatformFilter) {
+		fullscreenPlatformFilter.addEventListener('change', () => applyFullscreenFilters());
+	}
+	
+	// 全屏退货率区间变化时自动应用
+	if (fullscreenReturnRateMin) {
+		fullscreenReturnRateMin.addEventListener('input', () => {
+			clearTimeout(fullscreenReturnRateMin.filterTimeout);
+			fullscreenReturnRateMin.filterTimeout = setTimeout(() => applyFullscreenFilters(), 500);
+		});
+	}
+	if (fullscreenReturnRateMax) {
+		fullscreenReturnRateMax.addEventListener('input', () => {
+			clearTimeout(fullscreenReturnRateMax.filterTimeout);
+			fullscreenReturnRateMax.filterTimeout = setTimeout(() => applyFullscreenFilters(), 500);
+		});
+	}
+	
+	// 全屏排序变化时自动应用
+	if (fullscreenSortBy) {
+		fullscreenSortBy.addEventListener('change', () => applyFullscreenFilters());
+	}
+	if (fullscreenSortOrder) {
+		fullscreenSortOrder.addEventListener('change', () => applyFullscreenFilters());
+	}
+	
+	// 全屏应用筛选按钮
+	if (fullscreenApplyFiltersBtn) {
+		fullscreenApplyFiltersBtn.addEventListener('click', () => applyFullscreenFilters());
+	}
+	
+	// 全屏清除筛选按钮
+	if (fullscreenClearFiltersBtn) {
+		fullscreenClearFiltersBtn.addEventListener('click', () => clearFullscreenFilters());
 	}
 }
 
@@ -4889,4 +5164,170 @@ function updateFormulaDescriptions(isTaxInclusive) {
     } catch (e) {
         console.warn('更新公式说明失败:', e);
     }
+}
+
+// 全屏筛选功能相关函数
+
+/**
+ * 同步筛选状态到全屏筛选器
+ */
+function syncFullscreenFilters() {
+	const fullscreenSearchInput = document.getElementById('catalogFullscreenSearchInput');
+	const fullscreenPlatformFilter = document.getElementById('catalogFullscreenPlatformFilter');
+	const fullscreenReturnRateMin = document.getElementById('catalogFullscreenReturnRateMin');
+	const fullscreenReturnRateMax = document.getElementById('catalogFullscreenReturnRateMax');
+	const fullscreenSortBy = document.getElementById('catalogFullscreenSortBy');
+	const fullscreenSortOrder = document.getElementById('catalogFullscreenSortOrder');
+	
+	if (fullscreenSearchInput) fullscreenSearchInput.value = catalogFilterState.searchText;
+	if (fullscreenPlatformFilter) fullscreenPlatformFilter.value = catalogFilterState.platform;
+	if (fullscreenReturnRateMin) fullscreenReturnRateMin.value = catalogFilterState.returnRateMin;
+	if (fullscreenReturnRateMax) fullscreenReturnRateMax.value = catalogFilterState.returnRateMax;
+	if (fullscreenSortBy) fullscreenSortBy.value = catalogFilterState.sortBy;
+	if (fullscreenSortOrder) fullscreenSortOrder.value = catalogFilterState.sortOrder;
+	
+	// 更新全屏平台筛选选项
+	updateFullscreenPlatformFilterOptions();
+}
+
+/**
+ * 更新全屏平台筛选选项
+ */
+function updateFullscreenPlatformFilterOptions() {
+	const platformSelect = document.getElementById('catalogFullscreenPlatformFilter');
+	if (!platformSelect) return;
+	
+	// 获取所有唯一的平台
+	const platforms = [...new Set((catalogState.rows || []).map(row => row.platform).filter(Boolean))];
+	
+	// 清空现有选项（保留"全部平台"）
+	platformSelect.innerHTML = '<option value="">全部平台</option>';
+	
+	// 添加平台选项
+	platforms.forEach(platform => {
+		const option = document.createElement('option');
+		option.value = platform;
+		option.textContent = platform;
+		platformSelect.appendChild(option);
+	});
+}
+
+/**
+ * 应用全屏筛选
+ */
+function applyFullscreenFilters() {
+	const searchText = document.getElementById('catalogFullscreenSearchInput').value.toLowerCase();
+	const platform = document.getElementById('catalogFullscreenPlatformFilter').value;
+	const returnRateMin = parseFloat(document.getElementById('catalogFullscreenReturnRateMin').value) || 0;
+	const returnRateMax = parseFloat(document.getElementById('catalogFullscreenReturnRateMax').value) || 100;
+	const sortBy = document.getElementById('catalogFullscreenSortBy').value;
+	const sortOrder = document.getElementById('catalogFullscreenSortOrder').value;
+	
+	// 更新筛选状态
+	catalogFilterState = {
+		searchText,
+		platform,
+		returnRateMin,
+		returnRateMax,
+		sortBy,
+		sortOrder,
+		filteredRows: []
+	};
+	
+	// 获取所有行
+	let rows = [...(catalogState.rows || [])];
+	
+	// 应用筛选
+	rows = rows.filter(row => {
+		// 搜索筛选：名称或货号包含搜索文本
+		if (searchText && !(
+			(row.name || '').toLowerCase().includes(searchText) ||
+			(row.sku || '').toLowerCase().includes(searchText)
+		)) {
+			return false;
+		}
+		
+		// 平台筛选
+		if (platform && row.platform !== platform) {
+			return false;
+		}
+		
+		// 退货率区间筛选
+		if (returnRateMin > 0 || returnRateMax < 100) {
+			const returnRate = parsePercent(row.returnRate) * 100;
+			if (returnRate < returnRateMin || returnRate > returnRateMax) {
+				return false;
+			}
+		}
+		
+		return true;
+	});
+	
+	// 应用排序
+	if (sortBy) {
+		rows.sort((a, b) => {
+			let aVal, bVal;
+			
+			switch (sortBy) {
+				case 'name':
+					aVal = (a.name || '').toLowerCase();
+					bVal = (b.name || '').toLowerCase();
+					break;
+				case 'sku':
+					aVal = (a.sku || '').toLowerCase();
+					bVal = (b.sku || '').toLowerCase();
+					break;
+				case 'returnRate':
+					aVal = parsePercent(a.returnRate);
+					bVal = parsePercent(b.returnRate);
+					break;
+				case 'salePrice':
+					aVal = parseFloat(a.salePrice) || 0;
+					bVal = parseFloat(b.salePrice) || 0;
+					break;
+				default:
+					return 0;
+			}
+			
+			if (sortOrder === 'asc') {
+				return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+			} else {
+				return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+			}
+		});
+	}
+	
+	// 保存筛选结果
+	catalogFilterState.filteredRows = rows;
+	
+	// 重新渲染表格
+	renderCatalogTable();
+	
+	// 更新状态显示
+	updateCatalogStatus();
+}
+
+/**
+ * 清除全屏筛选
+ */
+function clearFullscreenFilters() {
+	document.getElementById('catalogFullscreenSearchInput').value = '';
+	document.getElementById('catalogFullscreenPlatformFilter').value = '';
+	document.getElementById('catalogFullscreenReturnRateMin').value = '';
+	document.getElementById('catalogFullscreenReturnRateMax').value = '';
+	document.getElementById('catalogFullscreenSortBy').value = '';
+	document.getElementById('catalogFullscreenSortOrder').value = 'asc';
+	
+	catalogFilterState = {
+		searchText: '',
+		platform: '',
+		returnRateMin: '',
+		returnRateMax: '',
+		sortBy: '',
+		sortOrder: 'asc',
+		filteredRows: []
+	};
+	
+	renderCatalogTable();
+	updateCatalogStatus();
 }
