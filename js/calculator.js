@@ -3664,23 +3664,85 @@ function renderCatalogTable() {
 function showCatalogProfitScenario(row){
 	const globals = getGlobalDefaultsForCatalog();
 	const std = mergeGlobalsWithRow(row, globals);
-	const tiers = Array.isArray(row.costTiers) && row.costTiers.length
-		? row.costTiers.filter(v=>isFinite(Number(v)) && Number(v) >= 0).map(Number)
-		: [Number(isFinite(Number(std.costMin))? std.costMin : std.costMax)].filter(n=>isFinite(n));
+	
+	// 修复：检测多档售价，如果存在且有效，使用多档售价进行推演
+	const salePriceTiers = Array.isArray(row.salePriceTiers) ? row.salePriceTiers.filter(v => isFinite(Number(v)) && Number(v) > 0).map(Number) : [];
+	const costTiers = Array.isArray(row.costTiers) ? row.costTiers.filter(v => isFinite(Number(v)) && Number(v) >= 0).map(Number) : [];
+	
+	// 确定推演策略：优先使用多档售价，否则使用单一售价
+	let validationStrategy = 'single';
+	let validationPairs = [];
+	
+	if (salePriceTiers.length > 0 && costTiers.length > 0) {
+		// 多档售价 + 多档进货价：1:1配对推演
+		if (salePriceTiers.length === costTiers.length) {
+			validationStrategy = 'multi_tier';
+			validationPairs = salePriceTiers.map((price, i) => ({
+				price: price,
+				cost: costTiers[i],
+				label: `档位${i+1}`
+			}));
+		} else {
+			// 档数不匹配，使用第一个售价档位
+			validationStrategy = 'first_tier';
+			validationPairs = costTiers.map((cost, i) => ({
+				price: salePriceTiers[0],
+				cost: cost,
+				label: `档位${i+1}`
+			}));
+		}
+	} else if (salePriceTiers.length > 0) {
+		// 只有多档售价：使用第一个售价档位
+		validationStrategy = 'first_tier';
+		const firstPrice = salePriceTiers[0];
+		if (Array.isArray(std.costTiers) && std.costTiers.length > 0) {
+			validationPairs = std.costTiers.map((cost, i) => ({
+				price: firstPrice,
+				cost: cost,
+				label: `档位${i+1}`
+			}));
+		} else {
+			// 使用成本区间
+			const cmin = isFinite(std.costMin) ? std.costMin : std.costMax;
+			const cmax = isFinite(std.costMax) ? std.costMax : std.costMin;
+			if (isFinite(cmin)) validationPairs.push({ price: firstPrice, cost: cmin, label: '区间下限' });
+			if (isFinite(cmax) && Math.abs(cmax-cmin)>1e-9) validationPairs.push({ price: firstPrice, cost: cmax, label: '区间上限' });
+		}
+	} else {
+		// 单一售价场景：使用原有逻辑
+		validationStrategy = 'single';
+		const tiers = Array.isArray(row.costTiers) ? row.costTiers.filter(v => isFinite(Number(v)) && Number(v) >= 0).map(Number) : [];
+		if (tiers.length) {
+			validationPairs = tiers.map((c,i) => ({ price: std.salePrice, cost: c, label: `档位${i+1}` }));
+		} else {
+			const cmin = isFinite(std.costMin) ? std.costMin : std.costMax;
+			const cmax = isFinite(std.costMax) ? std.costMax : std.costMin;
+			if (isFinite(cmin)) validationPairs.push({ price: std.salePrice, cost: cmin, label: '区间下限' });
+			if (isFinite(cmax) && Math.abs(cmax-cmin)>1e-9) validationPairs.push({ price: std.salePrice, cost: cmax, label: '区间上限' });
+		}
+	}
+	
+	// 使用验证策略构建tiers
+	const tiers = validationPairs.map(pair => pair.cost);
 	const adRates = [0,0.05,0.10,0.15,0.20,0.25,0.30,0.35,0.40];
+	
 	const calc = (cost, adRate) => {
 		try{
-			const inputs = { costPrice:cost, inputTaxRate:std.inputTaxRate, outputTaxRate:std.outputTaxRate, salesTaxRate:std.salesTaxRate, platformRate:std.platformRate, shippingCost:std.shippingCost, shippingInsurance:std.shippingInsurance, otherCost:std.otherCost, adRate:adRate, returnRate:std.returnRate, finalPrice:std.salePrice, targetProfitRate:0 };
+			// 找到对应的价格
+			const pair = validationPairs.find(p => p.cost === cost);
+			const price = pair ? pair.price : std.salePrice;
+			
+			const inputs = { costPrice:cost, inputTaxRate:std.inputTaxRate, outputTaxRate:std.outputTaxRate, salesTaxRate:std.salesTaxRate, platformRate:std.platformRate, shippingCost:std.shippingCost, shippingInsurance:std.shippingInsurance, otherCost:std.otherCost, adRate:adRate, returnRate:std.returnRate, finalPrice:price, targetProfitRate:0 };
 			const purchaseCost = calculatePurchaseCost(inputs);
 			const salesCost = calculateSalesCost(inputs, 0, purchaseCost);
-			const P = std.salePrice; const netPrice = P / (1 + inputs.salesTaxRate);
-			const outputVAT = netPrice * inputs.salesTaxRate; const platformFee = P * inputs.platformRate;
-			const VAT_RATE = 0.06; const adCost = P * adRate; const adVAT = (adCost / salesCost.effectiveRate) * VAT_RATE;
+			const netPrice = price / (1 + inputs.salesTaxRate);
+			const outputVAT = netPrice * inputs.salesTaxRate; const platformFee = price * inputs.platformRate;
+			const VAT_RATE = 0.06; const adCost = price * adRate; const adVAT = (adCost / salesCost.effectiveRate) * VAT_RATE;
 			const totalVATDeduction = purchaseCost.purchaseVAT + adVAT + (platformFee * VAT_RATE);
 			const actualVAT = outputVAT - totalVATDeduction;
 			const fixedCosts = (inputs.shippingCost + inputs.shippingInsurance + inputs.otherCost) / salesCost.effectiveRate;
 			const totalCost = purchaseCost.effectiveCost + platformFee + (adCost / salesCost.effectiveRate) + fixedCosts + actualVAT;
-			const profit = P - totalCost; const rate = profit / P; return { profit, rate };
+			const profit = price - totalCost; const rate = profit / price; return { profit, rate };
 		}catch(_){ return { profit: NaN, rate: NaN }; }
 	};
 	// 为每个成本档位生成三列表格：付费占比 | 利润率 | 利润金额
@@ -3688,12 +3750,16 @@ function showCatalogProfitScenario(row){
 		const values = adRates.map(a => {
 			const r = calc(cost, a);
 			try {
-				const inputs = { costPrice: cost, inputTaxRate: std.inputTaxRate, outputTaxRate: std.outputTaxRate, salesTaxRate: std.salesTaxRate, platformRate: std.platformRate, shippingCost: std.shippingCost, shippingInsurance: std.shippingInsurance, otherCost: std.otherCost, adRate: a, returnRate: std.returnRate, finalPrice: std.salePrice, targetProfitRate: 0 };
+				// 找到对应的价格
+				const pair = validationPairs.find(p => p.cost === cost);
+				const price = pair ? pair.price : std.salePrice;
+				
+				const inputs = { costPrice: cost, inputTaxRate: std.inputTaxRate, outputTaxRate: std.outputTaxRate, salesTaxRate: std.salesTaxRate, platformRate: std.platformRate, shippingCost: std.shippingCost, shippingInsurance: std.shippingInsurance, otherCost: std.otherCost, adRate: a, returnRate: std.returnRate, finalPrice: price, targetProfitRate: 0 };
 				const purchaseCost = calculatePurchaseCost(inputs);
 				const salesCost = calculateSalesCost(inputs, 0, purchaseCost);
-				const P = std.salePrice; const netPrice = P / (1 + inputs.salesTaxRate);
-				const outputVAT = netPrice * inputs.salesTaxRate; const platformFee = P * inputs.platformRate;
-				const VAT_RATE = 0.06; const adCost = P * a; const adVAT = (adCost / salesCost.effectiveRate) * VAT_RATE;
+				const netPrice = price / (1 + inputs.salesTaxRate);
+				const outputVAT = netPrice * inputs.salesTaxRate; const platformFee = price * inputs.platformRate;
+				const VAT_RATE = 0.06; const adCost = price * a; const adVAT = (adCost / salesCost.effectiveRate) * VAT_RATE;
 				const shipSplit = inputs.shippingCost / salesCost.effectiveRate;
 				const insureSplit = inputs.shippingInsurance / salesCost.effectiveRate;
 				const otherSplit = inputs.otherCost / salesCost.effectiveRate;
@@ -3701,7 +3767,7 @@ function showCatalogProfitScenario(row){
 				const actualVAT = outputVAT - totalVATDeduction;
 				const totalCost = purchaseCost.effectiveCost + platformFee + (adCost / salesCost.effectiveRate) + shipSplit + insureSplit + otherSplit + actualVAT;
 				const detail = [
-					`含税售价：¥${P.toFixed(2)}`,
+					`含税售价：¥${price.toFixed(2)}`,
 					`不含税净价：¥${netPrice.toFixed(2)}`,
 					`进货有效成本：¥${purchaseCost.effectiveCost.toFixed(2)}`,
 					`平台佣金：¥${platformFee.toFixed(2)}`,
@@ -3713,7 +3779,7 @@ function showCatalogProfitScenario(row){
 					`进项抵扣合计：¥${totalVATDeduction.toFixed(2)}`,
 					`实缴增值税：¥${actualVAT.toFixed(2)}`,
 					`总成本：¥${totalCost.toFixed(2)}`,
-					`利润：¥${(P - totalCost).toFixed(2)}`,
+					`利润：¥${(price - totalCost).toFixed(2)}`,
 					`利润率：${(r.rate * 100).toFixed(2)}%`
 				].join('\n');
 				return { ...r, tooltip: detail };
@@ -3925,7 +3991,7 @@ function showCatalogProfitScenario(row){
 				</div>
 				<div class="pv-body">
 					<div class="pv-meta">
-						<span class="pv-badge" style="background:#3b82f6;color:#fff;font-weight:700;border:2px solid #3b82f6;">售价 ¥ ${(Number(std.salePrice)||0).toFixed(2)}</span>
+						<span class="pv-badge" style="background:#3b82f6;color:#fff;font-weight:700;border:2px solid #3b82f6;">售价 ${validationStrategy === 'multi_tier' ? '多档售价' : validationStrategy === 'first_tier' ? '多档售价（首档）' : '单一售价'} ${validationStrategy === 'multi_tier' ? salePriceTiers.map(p=>'¥'+p.toFixed(2)).join(' / ') : validationStrategy === 'first_tier' ? '¥'+salePriceTiers[0].toFixed(2) : '¥'+(Number(std.salePrice)||0).toFixed(2)}</span>
 						<span class="pv-badge" style="background:#3b82f6;color:#fff;font-weight:700;border:2px solid #3b82f6;">进货价${tiers.length>1?'（多档）':''} ${tiers.map(c=>'¥'+c.toFixed(2)).join(' / ')}</span>
 						<span class="pv-badge">退货率 ${((std.returnRate||0)*100).toFixed(2)}%</span>
 						<span class="pv-badge">佣金 ${((std.platformRate||0)*100).toFixed(2)}%</span>
@@ -3934,6 +4000,15 @@ function showCatalogProfitScenario(row){
 						<span class="pv-badge">运费险 ¥ ${(Number(std.shippingInsurance)||0).toFixed(2)}</span>
 						<span class="pv-badge">其他成本 ¥ ${(Number(std.otherCost)||0).toFixed(2)}</span>
 					</div>
+					${validationStrategy !== 'single' ? `<div style="background:#f0f9ff; border:1px solid #0ea5e9; border-radius:8px; padding:12px; margin-bottom:16px; color:#0c4a6e;">
+						<div style="font-weight:600; margin-bottom:4px;">📊 推演策略说明</div>
+						<div style="font-size:13px; line-height:1.4;">
+							${validationStrategy === 'multi_tier' ? 
+								`当前使用<strong>多档售价+多档进货价1:1配对推演</strong>，共${validationPairs.length}个档位。每个档位基于对应售价计算利润率变化。` :
+								`当前使用<strong>多档售价首档推演</strong>，以第一个售价档位（¥${salePriceTiers[0].toFixed(2)}）为基础，推演各成本档位的利润率变化。`
+							}
+						</div>
+					</div>` : ''}
 					<div id="profitContent" class="batch-table-container" style="overflow:auto;max-height:75vh;padding:16px;">
 						${costTables.map((ct, i) => `
 							<div style="margin-bottom:30px;border:1px solid #e5e7eb;border-radius:12px;padding:16px;background:#fff;">
