@@ -3231,7 +3231,11 @@ function getGlobalDefaultsForCatalog() {
 function mergeGlobalsWithRow(row, globals) {
 	const pick = (key, parser) => {
 		const v = row[key];
-		if (key === 'salePrice') { const n = Number(v); return isFinite(n)&&n>0 ? n : NaN; }
+		if (key === 'salePrice') { 
+			const n = Number(v); 
+			// 修复：允许salePrice为0（用于多档售价场景），但必须是非负数
+			return isFinite(n) && n >= 0 ? n : NaN; 
+		}
 		if (key === 'costMin' || key === 'costMax') { const n = Number(v); return isFinite(n)&&n>=0 ? n : NaN; }
 		if (parser === parsePercent) { const p = parsePercent(v); return isFinite(p) ? p : globals[key]; }
 		if (typeof v === 'number') return isFinite(v) ? v : globals[key];
@@ -3305,6 +3309,7 @@ function computeRow(row) {
 	} else {
 		// 如果启用了多档售价，含税售价P可以为0（表示只使用多档售价）
 		if (!isFinite(std.salePrice) || std.salePrice < 0) errors.push('含税售价P不能为负数');
+		// 注意：当启用多档售价时，含税售价P为0是合法的，表示只使用多档售价
 	}
 
 	// 支持"多档进货价"输入：row.costTiers = [cost1, cost2, ...]
@@ -4368,9 +4373,23 @@ function recomputeAllCatalogRows() {
 	const t1 = performance.now();
 	try {
 		const rows = catalogState.rows || [];
-		const errors = rows.filter(r => r.__result && (r.__result.errors||[]).length).length;
+		const errorRows = rows.filter(r => r.__result && (r.__result.errors||[]).length);
+		const errors = errorRows.length;
 		const span = (isFinite(minMs)&&isFinite(maxMs)) ? `${minMs.toFixed(2)}~${maxMs.toFixed(2)}ms/行` : '-';
 		console.log(`[Catalog] 计算完成：记录数=${rows.length}，计算耗时区间=${span}，总耗时=${(t1-t0).toFixed(1)}ms，异常行数=${errors}`);
+		
+		// 详细输出异常行信息（只输出有异常的日志）
+		if (errorRows.length > 0) {
+			console.group(`[Catalog] 异常详情（共${errors}行）：`);
+			errorRows.forEach((row, idx) => {
+				const rowIndex = rows.indexOf(row) + 1; // 获取在原始数组中的行号
+				const rowName = row.name || '未命名';
+				const rowSku = row.sku || '无货号';
+				const errorMessages = row.__result.errors.join('; ');
+				console.log(`[行${rowIndex}] ${rowName} (${rowSku}): ${errorMessages}`);
+			});
+			console.groupEnd();
+		}
 	} catch (_) {}
 }
 
