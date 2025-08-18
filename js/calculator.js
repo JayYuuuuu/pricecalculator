@@ -3717,18 +3717,60 @@ function showCatalogProfitScenario(row){
 		
 		// 表格行：每行显示一个付费占比，每列显示对应目标利润率的到手价
 		const rows = adRates.map(adRate => {
+			// 20%付费占比行高亮显示
+			const isHighlighted = adRate === 0.20;
+			const rowStyle = isHighlighted ? 'background:linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border:2px solid #f59e0b;' : '';
+			
 			const rowHeader = `<td style="padding:8px 10px;text-align:center;border-right:1px solid #f2f2f2;background:#f8fafc;font-weight:500;color:#3b82f6;">${(adRate * 100).toFixed(0)}%</td>`;
 			
 			const cells = targetProfitRates.map(targetRate => {
 				const takeHomePrice = calculateTakeHomePrice(cost, adRate, targetRate, std);
 				const color = takeHomePrice > 0 ? '#16a34a' : '#dc2626';
-				const tooltip = `目标利润率：${(targetRate * 100).toFixed(1)}%\n付费占比：${(adRate * 100).toFixed(0)}%\n进货价：¥${cost.toFixed(2)}\n到手价：¥${takeHomePrice.toFixed(2)}`;
+				
+				// 计算对应的利润金额
+				let profitAmount = 0;
+				if (isFinite(takeHomePrice) && takeHomePrice > 0) {
+					try {
+						const inputs = { 
+							costPrice: cost, 
+							inputTaxRate: std.inputTaxRate, 
+							outputTaxRate: std.outputTaxRate, 
+							salesTaxRate: std.salesTaxRate, 
+							platformRate: std.platformRate, 
+							shippingCost: std.shippingCost, 
+							shippingInsurance: std.shippingInsurance, 
+							otherCost: std.otherCost, 
+							adRate: adRate, 
+							returnRate: std.returnRate, 
+							finalPrice: takeHomePrice, 
+							targetProfitRate: 0 
+						};
+						const purchaseCost = calculatePurchaseCost(inputs);
+						const salesCost = calculateSalesCost(inputs, 0, purchaseCost);
+						const P = takeHomePrice;
+						const netPrice = P / (1 + inputs.salesTaxRate);
+						const outputVAT = netPrice * inputs.salesTaxRate;
+						const platformFee = P * inputs.platformRate;
+						const VAT_RATE = 0.06;
+						const adCost = P * adRate;
+						const adVAT = (adCost / salesCost.effectiveRate) * VAT_RATE;
+						const totalVATDeduction = purchaseCost.purchaseVAT + adVAT + (platformFee * VAT_RATE);
+						const actualVAT = outputVAT - totalVATDeduction;
+						const fixedCosts = (inputs.shippingCost + inputs.shippingInsurance + inputs.otherCost) / salesCost.effectiveRate;
+						const totalCost = purchaseCost.effectiveCost + platformFee + (adCost / salesCost.effectiveRate) + fixedCosts + actualVAT;
+						profitAmount = P - totalCost;
+					} catch (_) {
+						profitAmount = 0;
+					}
+				}
+				
+				const tooltip = `目标利润率：${(targetRate * 100).toFixed(1)}%\n付费占比：${(adRate * 100).toFixed(0)}%\n进货价：¥${cost.toFixed(2)}\n到手价：¥${takeHomePrice.toFixed(2)}\n利润金额：¥${profitAmount.toFixed(2)}`;
 				
 				return `<td style="padding:8px 10px;text-align:center;border-right:1px solid #f2f2f2;color:${color};font-weight:600;" 
 					data-tooltip="${tooltip.replace(/"/g, '&quot;')}">${isFinite(takeHomePrice) ? ('¥' + takeHomePrice.toFixed(2)) : '-'}</td>`;
 			}).join('');
 			
-			return `<tr>${rowHeader}${cells}</tr>`;
+			return `<tr style="${rowStyle}">${rowHeader}${cells}</tr>`;
 		}).join('');
 		
 		return `<table style="border-collapse:separate;border-spacing:0;width:100%;font-size:13px;margin-bottom:20px;">${header}${rows}</table>`;
