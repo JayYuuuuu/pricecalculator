@@ -446,7 +446,7 @@ button:hover {
 }
 .batch-badge.input input:focus { outline:none; box-shadow: 0 0 0 2px rgba(255,255,255,0.45); }
 
-/* 浮窗头部指标：与价格输入同一风格的“只读胶囊” */
+/* 浮窗头部指标：与价格输入同一风格的"只读胶囊" */
 .batch-badge.metric { display:inline-flex; align-items:center; gap:6px; }
 .batch-badge.metric b { font-weight:700; color:#fff; }
 
@@ -538,7 +538,7 @@ button:hover {
     justify-content: space-between;
 }
 
-/* 统一利润页“基础成本/税费分析”卡片内部的分割线为虚线，避免混入实线边框 */
+/* 统一利润页"基础成本/税费分析"卡片内部的分割线为虚线，避免混入实线边框 */
 .profit-composition .composition-item .cost-detail,
 .profit-composition .composition-item .tax-detail {
     border-top: 1px dashed #e0e0e0; /* 容器顶部统一虚线 */
@@ -550,7 +550,7 @@ button:hover {
     margin-top: 0.5rem;
 }
 
-/* 防御性覆盖：移除利润构成卡片内部任何“实线”分隔（包括内联样式带来的 solid） */
+/* 防御性覆盖：移除利润构成卡片内部任何"实线"分隔（包括内联样式带来的 solid） */
 .profit-composition .composition-item [style*="border-top: 1px solid"] { border-top: none !important; }
 .profit-composition .composition-item [style*="border-bottom: 1px solid"] { border-bottom: none !important; }
 .price-note {
@@ -743,7 +743,7 @@ button:hover {
     color: #666;
 }
 
-/* 保本ROI卡片右上角“小圆点”提示
+/* 保本ROI卡片右上角"小圆点"提示
    作用：提醒用户此卡片可悬停/点击查看详细说明（不影响原有交互） */
 #metricBreakevenROICard {
     position: relative; /* 为伪元素定位提供参照 */
@@ -756,13 +756,13 @@ button:hover {
     width: 8px;        /* 小圆点大小，尽量克制不抢占视觉 */
     height: 8px;
     border-radius: 50%;
-    background: #f59e0b; /* 橙色提示，呼应“提示/说明”语义 */
+    background: #f59e0b; /* 橙色提示，呼应"提示/说明"语义 */
     box-shadow: 0 0 0 2px #f8f9fa; /* 与卡片背景同色形成外环，增强可见性 */
     /* 呼吸动效：轻微放大与发光，节奏舒缓不打扰阅读 */
     animation: roiBreath 1.6s ease-in-out infinite;
 }
 
-/* 保本ROI提示点“呼吸动效”关键帧
+/* 保本ROI提示点"呼吸动效"关键帧
    - 轻微缩放 + 光晕强弱变化
    - 控制在 1.6s 周期，避免频闪与注意力过度吸引 */
 @keyframes roiBreath {
@@ -783,7 +783,7 @@ button:hover {
     }
 }
 
-/* 无动画降级：尊重系统“减少动态效果”的无障碍偏好设置 */
+/* 无动画降级：尊重系统"减少动态效果"的无障碍偏好设置 */
 @media (prefers-reduced-motion: reduce) {
     #metricBreakevenROICard::after { animation: none; }
 }
@@ -955,7 +955,7 @@ button:hover {
     transform: translateX(26px); /* 与简化版一致的移动距离 */
 }
 
-/* 将“免佣 文案 + 开关”融合成一枚紧凑的胶囊态控件 */
+/* 将"免佣 文案 + 开关"融合成一枚紧凑的胶囊态控件 */
 .switch-chip {
     background: #f5f6f7;
     border: 1px solid #e5e7eb;
@@ -1105,11 +1105,11 @@ button:hover {
     .input-wrapper input { flex: 1 1 0; min-width: 0; }
     input { margin-right: 0; }
     .save-button { margin: 0; flex: 0 0 auto; }
-    /* 修复移动端“平台抽佣比例”等紧凑数字输入过长挤压“保存”按钮的问题 */
+    /* 修复移动端"平台抽佣比例"等紧凑数字输入过长挤压"保存"按钮的问题 */
     .compact-number { width: 120px; min-width: 100px; flex: 0 0 auto; }
 
     .price-composition { grid-template-columns: 1fr 1fr; }
-    /* 移动端：利润页“价格指标”四卡片按两列排布 */
+    /* 移动端：利润页"价格指标"四卡片按两列排布 */
     .metrics-grid { grid-template-columns: repeat(2, 1fr) !important; }
     .final-price { padding: 1.25rem; }
     .final-price .price-value { font-size: 2rem; }
@@ -1126,10 +1126,10 @@ button:hover {
     .section-header { flex-wrap: wrap; gap: 8px; }
     .breakeven-right { align-items: flex-start; }
 
-    /* 结果页“成本概览”两列改为单列（覆盖组件内联样式） */
+    /* 结果页"成本概览"两列改为单列（覆盖组件内联样式） */
     .calculation-process .cost-overview { grid-template-columns: 1fr !important; }
 
-    /* 移动端隐藏“详细成本分析过程/详细售价计算过程”区块
+    /* 移动端隐藏"详细成本分析过程/详细售价计算过程"区块
        说明：两种模式（利润/售价）中的详细步骤与公式都放在 .calculation-steps 内
        因此在小屏直接隐藏该容器，保留概览与构成分析，提升移动端可读性 */
     .calculation-steps { display: none !important; }
@@ -1744,4 +1744,300 @@ button:hover {
         padding: 20px;
         margin-top: 20px;
     }
+}
+
+/* --------------------------- */
+/* 商品清单表格样式 */
+/* --------------------------- */
+
+/* 商品清单表格：使用传统表格样式，有边框和行分隔线 */
+#catalogTableContainer .lp-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #e5e7eb;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+#catalogTableContainer .lp-table thead {
+    display: table-header-group; /* 恢复表头显示 */
+    background: #f8fafc;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+#catalogTableContainer .lp-table thead th {
+    padding: 12px 8px;
+    text-align: left;
+    font-weight: 600;
+    color: #374151;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f8fafc;
+    font-size: 13px;
+}
+
+#catalogTableContainer .lp-table thead th:first-child {
+    border-left: none;
+}
+
+#catalogTableContainer .lp-table thead th:last-child {
+    border-right: none;
+}
+
+#catalogTableContainer .lp-table tbody {
+    display: table-row-group; /* 恢复表格行组显示 */
+}
+
+#catalogTableContainer .lp-table tbody tr {
+    display: table-row; /* 恢复表格行显示 */
+    border-bottom: 1px solid #f1f5f9;
+    background: white;
+    transition: background-color 0.2s ease;
+}
+
+#catalogTableContainer .lp-table tbody tr:hover {
+    background: #f9fafb;
+}
+
+#catalogTableContainer .lp-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+#catalogTableContainer .lp-table tbody td {
+    display: table-cell; /* 恢复表格单元格显示 */
+    padding: 12px 8px;
+    border: none;
+    vertical-align: middle;
+    font-size: 13px;
+    color: #374151;
+}
+
+#catalogTableContainer .lp-table tbody td:first-child {
+    border-left: none;
+}
+
+#catalogTableContainer .lp-table tbody td:last-child {
+    border-right: none;
+}
+
+/* 商品清单表格中的输入框样式 */
+#catalogTableContainer .catalog-input {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 13px;
+    transition: border-color 0.2s ease;
+}
+
+#catalogTableContainer .catalog-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* 商品清单表格中的按钮样式 */
+#catalogTableContainer .batch-modal-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    background: white;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#catalogTableContainer .batch-modal-btn:hover {
+    background: #f9fafb;
+    border-color: #9ca3af;
+}
+
+/* 商品清单表格中的多档输入区域样式 */
+#catalogTableContainer .catalog-price-tier,
+#catalogTableContainer .catalog-cost-tier {
+    width: 80px;
+    padding: 4px 6px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 12px;
+    text-align: center;
+}
+
+#catalogTableContainer .catalog-tier-add,
+#catalogTableContainer .catalog-tier-remove,
+#catalogTableContainer .catalog-price-tier-add,
+#catalogTableContainer .catalog-price-tier-remove {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+#catalogTableContainer .catalog-tier-add,
+#catalogTableContainer .catalog-price-tier-add {
+    background: #dbeafe;
+    color: #3b82f6;
+}
+
+#catalogTableContainer .catalog-tier-add:hover,
+#catalogTableContainer .catalog-price-tier-add:hover {
+    background: #bfdbfe;
+}
+
+#catalogTableContainer .catalog-tier-remove,
+#catalogTableContainer .catalog-price-tier-remove {
+    background: #fee2e2;
+    color: #ef4444;
+}
+
+#catalogTableContainer .catalog-tier-remove:hover,
+#catalogTableContainer .catalog-price-tier-remove:hover {
+    background: #fecaca;
+}
+
+/* 商品清单表格中的复选框样式 */
+#catalogTableContainer .catalog-check {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+/* 商品清单表格中的错误提示样式 */
+#catalogTableContainer .catalog-error {
+    color: #e11d48;
+    font-size: 12px;
+    margin-top: 4px;
+    display: none;
+}
+
+/* 商品清单表格中的对齐样式 */
+#catalogTableContainer .lp-col-right {
+    text-align: right;
+}
+
+#catalogTableContainer .lp-col-center {
+    text-align: center;
+}
+
+/* 商品清单表格中的选择框样式 */
+#catalogTableContainer select.catalog-input {
+    cursor: pointer;
+}
+
+/* 移动端适配：商品清单表格在小屏幕上的显示 */
+@media (max-width: 768px) {
+    #catalogTableContainer .lp-table {
+        font-size: 12px;
+    }
+    
+    #catalogTableContainer .lp-table thead th,
+    #catalogTableContainer .lp-table tbody td {
+        padding: 8px 6px;
+    }
+    
+    #catalogTableContainer .catalog-input {
+        font-size: 12px;
+        padding: 4px 6px;
+    }
+    
+    #catalogTableContainer .batch-modal-btn {
+        font-size: 11px;
+        padding: 4px 8px;
+    }
+}
+
+/* 全屏模式下的商品清单表格样式 */
+#catalogFullscreenBody .lp-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #e5e7eb;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+#catalogFullscreenBody .lp-table thead {
+    display: table-header-group;
+    background: #f8fafc;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+#catalogFullscreenBody .lp-table thead th {
+    padding: 12px 8px;
+    text-align: left;
+    font-weight: 600;
+    color: #374151;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f8fafc;
+    font-size: 13px;
+}
+
+#catalogFullscreenBody .lp-table thead th:first-child {
+    border-left: none;
+}
+
+#catalogFullscreenBody .lp-table thead th:last-child {
+    border-right: none;
+}
+
+#catalogFullscreenBody .lp-table tbody {
+    display: table-row-group;
+}
+
+#catalogFullscreenBody .lp-table tbody tr {
+    display: table-row;
+    border-bottom: 1px solid #f1f5f9;
+    background: white;
+    transition: background-color 0.2s ease;
+}
+
+#catalogFullscreenBody .lp-table tbody tr:hover {
+    background: #f9fafb;
+}
+
+#catalogFullscreenBody .lp-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+#catalogFullscreenBody .lp-table tbody td {
+    display: table-cell;
+    padding: 12px 8px;
+    border: none;
+    vertical-align: middle;
+    font-size: 13px;
+    color: #374151;
+}
+
+#catalogFullscreenBody .lp-table tbody td:first-child {
+    border-left: none;
+}
+
+#catalogFullscreenBody .lp-table tbody td:last-child {
+    border-right: none;
+}
+
+/* 全屏模式下的输入框、按钮等样式继承 */
+#catalogFullscreenBody .catalog-input,
+#catalogFullscreenBody .batch-modal-btn,
+#catalogFullscreenBody .catalog-price-tier,
+#catalogFullscreenBody .catalog-cost-tier,
+#catalogFullscreenBody .catalog-tier-add,
+#catalogFullscreenBody .catalog-tier-remove,
+#catalogFullscreenBody .catalog-price-tier-add,
+#catalogFullscreenBody .catalog-price-tier-remove,
+#catalogFullscreenBody .catalog-check,
+#catalogFullscreenBody .catalog-error,
+#catalogFullscreenBody .lp-col-right,
+#catalogFullscreenBody .lp-col-center {
+    /* 继承商品清单表格的样式 */
 }
