@@ -585,6 +585,255 @@
             font-size: 1rem;
         }
 
+        /* 佣金控制区域样式 */
+        .commission-control {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .commission-control input {
+            flex: 1;
+        }
+
+        /* 免佣复选框样式 */
+        .commission-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            user-select: none;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .commission-checkbox:hover {
+            background: #e9ecef;
+            border-color: #28a745;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.15);
+        }
+
+        .commission-checkbox input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            margin: 0;
+            cursor: pointer;
+            accent-color: #28a745;
+        }
+
+        .checkbox-label {
+            font-size: 0.9rem;
+            color: #495057;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .commission-checkbox:has(input:checked) {
+            background: linear-gradient(135deg, #e8f5e8 0%, #f0f8f0 100%);
+            border-color: #28a745;
+            color: #155724;
+        }
+
+        .commission-checkbox:has(input:checked) .checkbox-label {
+            color: #155724;
+        }
+
+        /* 备用样式：为不支持:has()的浏览器 */
+        .commission-checkbox.checked {
+            background: linear-gradient(135deg, #e8f5e8 0%, #f0f8f0 100%);
+            border-color: #28a745;
+            color: #155724;
+        }
+
+        .commission-checkbox.checked .checkbox-label {
+            color: #155724;
+        }
+
+        /* 开关样式 */
+        .switch-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .switch-wrapper.switch-chip {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 8px 16px;
+            border-radius: 25px;
+            border: 2px solid #dee2e6;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .switch-wrapper.switch-chip:hover {
+            border-color: #28a745;
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .switch-label {
+            font-size: 0.9rem;
+            color: #495057;
+            font-weight: 600;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #e9ecef;
+            transition: .3s ease;
+            border-radius: 24px;
+            border: 2px solid #dee2e6;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 1px;
+            bottom: 1px;
+            background-color: white;
+            transition: .3s ease;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        input:checked + .slider {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            border-color: #28a745;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+
+        .current-price {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .price-display {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #28a745;
+        }
+
+        .price-note {
+            font-size: 0.85rem;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        /* 优化免佣开关样式 */
+        .switch-wrapper.switch-chip {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 8px 16px;
+            border-radius: 25px;
+            border: 2px solid #dee2e6;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .switch-wrapper.switch-chip:hover {
+            border-color: #28a745;
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .switch-wrapper.switch-chip .switch-label {
+            font-size: 0.9rem;
+            color: #495057;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #e9ecef;
+            transition: .3s ease;
+            border-radius: 24px;
+            border: 2px solid #dee2e6;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 1px;
+            bottom: 1px;
+            background-color: white;
+            transition: .3s ease;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        input:checked + .slider {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            border-color: #28a745;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+
+        /* 移动端响应式调整 */
+        @media (max-width: 768px) {
+            .current-price {
+                flex-direction: column;
+                align-items: center;
+                gap: 15px;
+            }
+            
+            .price-section {
+                align-items: center;
+            }
+        }
+
         /* 移动端响应式调整 */
         @media (max-width: 768px) {
             .taxpayer-options {
@@ -1690,7 +1939,13 @@
                     </div>
                     <div class="input-group">
                         <label>平台佣金（%）</label>
-                        <input type="number" id="platformFee" placeholder="请输入平台佣金" step="0.1" value="5.5">
+                        <div class="commission-control">
+                            <input type="number" id="platformFee" placeholder="请输入平台佣金" step="0.1" value="5.5">
+                            <label class="commission-checkbox">
+                                <input type="checkbox" id="commissionFreeToggle" onchange="toggleCommissionFree()">
+                                <span class="checkbox-label">免佣</span>
+                            </label>
+                        </div>
                     </div>
                     <div class="input-group">
                         <label>物流费用（元/单）</label>
@@ -2651,6 +2906,8 @@
             // 初始化推演面板中的纳税人类型和税率设置
             updateExplorationTaxRates();
             
+
+            
             // 为推演面板中的输入框添加事件监听器，实现实时重算
             setTimeout(() => {
                 addExplorationPanelEventListeners();
@@ -3292,7 +3549,6 @@
             // 获取当前输入参数
             const costPrice = parseFloat(document.getElementById('costPrice').value) || 0;
             const invoiceCost = parseFloat(document.getElementById('invoiceCost').value) || 0;
-            const platformFee = parseFloat(document.getElementById('platformFee').value) || 0;
             const logisticsCost = parseFloat(document.getElementById('logisticsCost').value) || 0;
             const shippingInsurance = parseFloat(document.getElementById('shippingInsurance').value) || 0;
             const otherCost = parseFloat(document.getElementById('otherCost').value) || 0;
@@ -3301,6 +3557,15 @@
             const modalTaxpayerType = document.querySelector('input[name="explorationTaxpayerType"]:checked').value;
             const modalInputTaxRate = parseFloat(document.getElementById('explorationInputTaxRate').value) || 0;
             const modalOutputTaxRate = parseFloat(document.getElementById('explorationOutputTaxRate').value) || 0;
+            
+            // 获取免佣开关状态，决定平台佣金费率
+            const commissionFreeToggle = document.getElementById('commissionFreeToggle');
+            let platformFee = 0;
+            if (commissionFreeToggle && !commissionFreeToggle.checked) {
+                // 不免佣：使用主窗口输入的佣金费率
+                platformFee = parseFloat(document.getElementById('platformFee').value) || 0;
+            }
+            // 免佣时：platformFee = 0
 
                             for (let i = 0; i < returnRates.length; i++) {
                     matrix[i] = [];
@@ -3793,6 +4058,9 @@
             // 加载口径开关状态
             loadTaxViewToggle();
             
+            // 初始化免佣开关状态
+            initializeCommissionFreeToggle();
+            
             // 页面加载完成后自动计算一次
             setTimeout(calculateProfit, 100);
         });
@@ -4184,6 +4452,95 @@
                 // 重新计算利润矩阵
                 calculateProfitMatrix();
             }
+        }
+
+        /**
+         * 主窗口免佣开关切换函数
+         * 功能说明：
+         * 1. 切换免佣开关状态
+         * 2. 免佣开启时，平台佣金输入框设为0并禁用
+         * 3. 免佣关闭时，恢复平台佣金输入框的可用状态
+         * 4. 自动重新计算利润
+         * 5. 同步推演窗口中的免佣开关状态
+         */
+        function toggleCommissionFree() {
+            const commissionFreeToggle = document.getElementById('commissionFreeToggle');
+            const platformFeeInput = document.getElementById('platformFee');
+            const commissionCheckbox = document.querySelector('.commission-checkbox');
+            
+            if (commissionFreeToggle.checked) {
+                // 免佣开启：佣金设为0，输入框禁用
+                platformFeeInput.value = '0';
+                platformFeeInput.disabled = true;
+                platformFeeInput.style.opacity = '0.6';
+                platformFeeInput.style.cursor = 'not-allowed';
+                
+                // 添加选中状态的CSS类
+                if (commissionCheckbox) {
+                    commissionCheckbox.classList.add('checked');
+                }
+            } else {
+                // 免佣关闭：恢复输入框可用状态，佣金设为默认值5.5%
+                platformFeeInput.disabled = false;
+                platformFeeInput.style.opacity = '1';
+                platformFeeInput.style.cursor = 'auto';
+                if (platformFeeInput.value === '0') {
+                    platformFeeInput.value = '5.5';
+                }
+                
+                // 移除选中状态的CSS类
+                if (commissionCheckbox) {
+                    commissionCheckbox.classList.remove('checked');
+                }
+            }
+            
+            // 重新计算利润
+            calculateProfit();
+            
+            // 如果推演窗口打开且有结果，重新计算推演矩阵
+            if (document.getElementById('explorationPanel')?.classList.contains('active')) {
+                const explorationResults = document.getElementById('explorationResults');
+                if (explorationResults && explorationResults.style.display !== 'none') {
+                    console.log('主窗口免佣开关变化，重新计算推演矩阵...');
+                    calculateProfitMatrix();
+                }
+            }
+        }
+
+
+
+        /**
+         * 初始化免佣开关状态
+         * 功能说明：
+         * 1. 页面加载时初始化免佣开关状态
+         * 2. 从localStorage恢复免佣开关状态
+         * 3. 设置平台佣金输入框的初始状态
+         */
+        function initializeCommissionFreeToggle() {
+            const commissionFreeToggle = document.getElementById('commissionFreeToggle');
+            const platformFeeInput = document.getElementById('platformFee');
+            const commissionCheckbox = document.querySelector('.commission-checkbox');
+            
+            // 从localStorage恢复免佣开关状态
+            const savedCommissionFree = localStorage.getItem('commissionFreeToggle');
+            if (savedCommissionFree === 'true') {
+                commissionFreeToggle.checked = true;
+                // 应用免佣状态
+                platformFeeInput.value = '0';
+                platformFeeInput.disabled = true;
+                platformFeeInput.style.opacity = '0.6';
+                platformFeeInput.style.cursor = 'not-allowed';
+                
+                // 设置复选框的视觉状态
+                if (commissionCheckbox) {
+                    commissionCheckbox.classList.add('checked');
+                }
+            }
+            
+            // 保存免佣开关状态到localStorage
+            commissionFreeToggle.addEventListener('change', function() {
+                localStorage.setItem('commissionFreeToggle', this.checked);
+            });
         }
 
         // 更新进项税率和销项税率
