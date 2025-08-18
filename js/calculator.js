@@ -201,10 +201,16 @@ function calculateProfit() {
         profitStatus.textContent = statusText;
         profitStatus.className = statusClass;
 
-        // 计算并更新价格指标（基于进货价与含税售价）
+        // 计算并更新价格指标（基于含税口径）
         try {
-            const metricMultiple = (actualPrice / costPrice).toFixed(2); // 进货倍率 = 售价 ÷ 进货价
-            const metricGrossMargin = (((actualPrice - costPrice) / actualPrice) * 100).toFixed(2) + '%'; // 毛利率
+            // 计算进货实际成本（含税）
+            const effectiveCost = costPrice + invoiceCost; // 进货价 + 开票费用
+            
+            // 加价倍率：含税售价 ÷ 进货实际成本（含税）
+            const metricMultiple = (actualPrice / effectiveCost).toFixed(2); // 加价倍率 = 含税售价 ÷ 进货实际成本
+            
+            // 毛利率：(含税售价 - 进货实际成本) ÷ 含税售价
+            const metricGrossMargin = (((actualPrice - effectiveCost) / actualPrice) * 100).toFixed(2) + '%'; // 毛利率（基于含税口径）
 
             const elMultiple = document.getElementById('metricMultiple');
             const elGross = document.getElementById('metricGrossMargin');
@@ -1792,9 +1798,12 @@ function initBatchProfitScenario() {
         });
 
         // 渲染表格（使用内联样式，避免侵入全局CSS）
-        // 价格相关即时指标：加价倍率、毛利率（按"仅基于价格"的直观口径计算）
-        const markup = (base.costPrice > 0 && base.actualPrice > 0) ? (base.actualPrice / base.costPrice) : NaN;
-        const grossMargin = (base.actualPrice > 0 && base.costPrice > 0) ? ((base.actualPrice - base.costPrice) / base.actualPrice) : NaN;
+        // 价格相关即时指标：加价倍率、毛利率（基于含税口径计算）
+        // 计算进货实际成本（含税）
+        const baseCost = base.costPrice + (base.costPrice * base.inputTaxRate / 100); // 进货价 + 开票费用
+        
+        const markup = (baseCost > 0 && base.actualPrice > 0) ? (base.actualPrice / baseCost) : NaN;
+        const grossMargin = (baseCost > 0 && base.actualPrice > 0) ? ((base.actualPrice - baseCost) / base.actualPrice) : NaN;
         const markupText = isFinite(markup) ? markup.toFixed(2) : '-';
         const grossText = isFinite(grossMargin) ? (grossMargin * 100).toFixed(2) : '-';
 
@@ -1809,7 +1818,7 @@ function initBatchProfitScenario() {
                     <input id=\"batchActualPrice\" type=\"number\" step=\"0.01\" min=\"0.01\" value=\"${base.actualPrice.toFixed(2)}\" />
                 </label>
                 <label class=\"batch-badge emphasis metric\" title=\"加价倍率 = 实际售价 ÷ 进货价\">加价倍率：<b id=\"badgeMarkupValue\">${markupText}</b></label>
-                <label class=\"batch-badge emphasis metric\" title=\"毛利率 = (实际售价 − 进货价) ÷ 实际售价\">毛利率：<b id=\"badgeGrossMarginValue\">${grossText === '-' ? '-' : grossText + '%'}\n</b></label>
+                <label class=\"batch-badge emphasis metric\" title=\"毛利率 = (实际售价 − 进货实际成本) ÷ 实际售价\">毛利率：<b id=\"badgeGrossMarginValue\">${grossText === '-' ? '-' : grossText + '%'}\n</b></label>
             </div>
             <div class="batch-badges">
                 <span class="batch-badge">平台佣金：${(base.platformRate*100).toFixed(1)}%</span>

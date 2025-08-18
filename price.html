@@ -394,9 +394,15 @@
                 const totalPurchaseCost = costPrice + actualInvoiceCost; // 总进货成本（实际支付给供应商的金额）
                 const purchaseVAT = costPrice * (inputTaxRate / 100); // 进项税额（基于不含税进价）
 
-                // 计算基础指标
-                const markupRatio = (sellingPrice / costPrice).toFixed(2); // 加价倍率（基于不含税进价）
-                const grossMargin = (((sellingPrice - costPrice) / sellingPrice) * 100).toFixed(2); // 毛利率（基于不含税进价）
+                // 计算基础指标（基于含税口径）
+                // 计算进货实际成本（含税）
+                const baseCost = costPrice + actualInvoiceCost; // 进货价 + 开票费用
+                
+                // 加价倍率：含税售价 ÷ 进货实际成本（含税）
+                const markupRatio = (sellingPrice / baseCost).toFixed(2); // 加价倍率 = 含税售价 ÷ 进货实际成本
+                
+                // 毛利率：(含税售价 - 进货实际成本) ÷ 含税售价
+                const grossMargin = (((sellingPrice - baseCost) / sellingPrice) * 100).toFixed(2); // 毛利率（基于含税口径）
 
                 // 计算有效销售率（考虑退货率）
                 const effectiveSalesRate = 1 - (riskRate / 100);

@@ -246,19 +246,19 @@
                         </div>
                     </div>
                 </div>
-                <!-- 价格指标：基于输入的进货价与含税售价，展示常用倍率/加成/毛利率指标 -->
+                <!-- 价格指标：基于含税口径，展示常用倍率/加成/毛利率指标 -->
                 <div class="section" style="margin-top: 1rem;">
-                    <h3>价格指标（基于进货价与含税售价）</h3>
+                    <h3>价格指标（基于含税口径）</h3>
                     <div class="metrics-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
                         <div style="background:#f8f9fa; border-radius:8px; padding:12px; text-align:center;">
                             <div style="color:#666; font-size:0.9rem;">加价倍率</div>
                             <div id="metricMultiple" style="font-size:1.25rem; font-weight:600; margin-top:4px;">-</div>
-                            <div style="color:#999; font-size:0.8rem; margin-top:2px;">售价÷进货价</div>
+                            <div style="color:#999; font-size:0.8rem; margin-top:2px;">售价÷进货实际成本</div>
                         </div>
                         <div style="background:#f8f9fa; border-radius:8px; padding:12px; text-align:center;">
                             <div style="color:#666; font-size:0.9rem;">毛利率</div>
                             <div id="metricGrossMargin" style="font-size:1.25rem; font-weight:600; margin-top:4px;">-</div>
-                            <div style="color:#999; font-size:0.8rem; margin-top:2px;">(售价-进货价)÷售价</div>
+                            <div style="color:#999; font-size:0.8rem; margin-top:2px;">(售价-进货实际成本)÷售价</div>
                         </div>
                         <div id="metricBreakevenROICard" style="background:#f8f9fa; border-radius:8px; padding:12px; text-align:center; cursor: help;">
                             <div style="color:#666; font-size:0.9rem;">保本 ROI</div>
