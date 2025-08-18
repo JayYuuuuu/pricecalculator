@@ -146,7 +146,7 @@ function calculateProfit() {
         const platformFee = actualPrice * platformRate; // 平台佣金（可退回）
         const adCost = actualPrice * adRate; // 广告费（不可退回，需分摊）
         const adCostEffective = adCost / effectiveRate; // 分摊后的广告费
-        const adVAT = adCostEffective * 0.06; // 广告费可抵扣进项税（6%）
+        const adVAT = adCostEffective * 0.06 / 1.06; // 广告费可抵扣进项税（6%）：从含税金额中剥离税额
         
         // 运营成本（不可退回，需分摊）
         const operationalCostBase = shippingCost + shippingInsurance + otherCost;
@@ -157,7 +157,7 @@ function calculateProfit() {
         const outputVAT = netPrice * salesTaxRate; // 销项税额
 
         // 计算总可抵扣进项税
-        const totalVATDeduction = purchaseVAT + adVAT + (platformFee * 0.06); // 商品+广告+平台佣金的进项税
+        const totalVATDeduction = purchaseVAT + adVAT + (platformFee * 0.06 / 1.06); // 商品+广告+平台佣金的进项税：平台佣金从含税金额中剥离税额
         const actualVAT = outputVAT - totalVATDeduction; // 实际应缴税额
 
         // 计算总成本（分别计算各项不可退回成本的分摊）
@@ -2377,14 +2377,14 @@ function initPriceExploration() {
                 const platformFee = priceCandidates[state.activeIndex] * fixed.platformRate;
                 const adCost = priceCandidates[state.activeIndex] * ar;
                 const adCostEffective = adCost / effectiveRate;
-                const adVAT = adCostEffective * 0.06;
+                const adVAT = adCostEffective * 0.06 / 1.06; // 广告费进项税：从含税金额中剥离税额
                 const shippingCostEffective = fixed.shippingCost / effectiveRate;
                 const insuranceCostEffective = fixed.shippingInsurance / effectiveRate;
                 const otherCostEffective = fixed.otherCost / effectiveRate;
                 const netPrice = priceCandidates[state.activeIndex] / (1 + fixed.salesTaxRate);
                 const outputVAT = netPrice * fixed.salesTaxRate;
                 const purchaseVAT = fixed.costPrice * fixed.outputTaxRate;
-                const totalVATDeduction = purchaseVAT + adVAT + (platformFee * 0.06);
+                const totalVATDeduction = purchaseVAT + adVAT + (platformFee * 0.06 / 1.06); // 平台佣金进项税：从含税金额中剥离税额
                 const actualVAT = outputVAT - totalVATDeduction;
                 const totalCost = purchaseCost + platformFee + adCostEffective + shippingCostEffective + insuranceCostEffective + otherCostEffective + actualVAT;
                 const tooltipData = `售价：¥${priceCandidates[state.activeIndex].toFixed(2)}\n退货率：${(rr*100).toFixed(0)}%\n付费占比：${(ar*100).toFixed(0)}%\n\n成本明细：\n• 进货成本：¥${purchaseCost.toFixed(2)}\n• 平台佣金：¥${platformFee.toFixed(2)}\n• 广告费（分摊）：¥${adCostEffective.toFixed(2)}\n• 物流费（分摊）：¥${shippingCostEffective.toFixed(2)}\n• 运费险（分摊）：¥${insuranceCostEffective.toFixed(2)}\n• 其他成本（分摊）：¥${otherCostEffective.toFixed(2)}\n• 销项税：¥${outputVAT.toFixed(2)}\n• 进项抵扣：¥${totalVATDeduction.toFixed(2)}\n• 实际税负：¥${actualVAT.toFixed(2)}\n\n总成本：¥${totalCost.toFixed(2)}\n利润：¥${r.profit.toFixed(2)}\n利润率：${rate}%`;
@@ -2445,7 +2445,7 @@ function initPriceExploration() {
                 const netPrice = S / (1 + fixed.salesTaxRate);
                 const outputVAT = netPrice * fixed.salesTaxRate;
                 const purchaseVAT = fixed.costPrice * fixed.outputTaxRate;
-                const totalVATDeduction = purchaseVAT + adVAT + (platformFee * 0.06);
+                const totalVATDeduction = purchaseVAT + adVAT + (platformFee * 0.06 / 1.06); // 平台佣金进项税：从含税金额中剥离税额
                 const actualVAT = outputVAT - totalVATDeduction;
                 const totalCost = purchaseCost + platformFee + adCostEffective + shippingCostEffective + insuranceCostEffective + otherCostEffective + actualVAT;
                 const profit = S - totalCost;
@@ -2903,7 +2903,7 @@ function computeProfitScenario(base, adRate, returnRate) {
     const platformFee = base.actualPrice * base.platformRate;          // 平台佣金（可退回）
     const adCost = base.actualPrice * adRate;                          // 广告费（不可退回，需分摊）
     const adCostEffective = adCost / effectiveRate;                    // 广告费分摊
-    const adVAT = adCostEffective * 0.06;                              // 广告费进项税抵扣（6%）
+    const adVAT = adCostEffective * 0.06 / 1.06;                              // 广告费进项税抵扣（6%）：从含税金额中剥离税额
 
     const shippingCostEffective = base.shippingCost / effectiveRate;   // 物流费分摊
     const insuranceCostEffective = base.shippingInsurance / effectiveRate; // 运费险分摊
@@ -2914,7 +2914,7 @@ function computeProfitScenario(base, adRate, returnRate) {
     const outputVAT = netPrice * base.salesTaxRate;                    // 销项税额
 
     // 进项抵扣合计（商品 + 广告费 + 平台佣金）
-    const totalVATDeduction = purchaseVAT + adVAT + (platformFee * 0.06);
+    const totalVATDeduction = purchaseVAT + adVAT + (platformFee * 0.06 / 1.06); // 平台佣金进项税：从含税金额中剥离税额
     const actualVAT = outputVAT - totalVATDeduction;                   // 实缴税费
 
     // 总成本与利润

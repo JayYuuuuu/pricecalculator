@@ -1832,8 +1832,8 @@
                 // 根据纳税人类型计算广告费可抵扣进项税
                 let adVAT = 0;
                 if (taxpayerType === 'general') {
-                    // 一般纳税人：可以抵扣广告费进项税
-                    adVAT = adCostEffective * v;
+                    // 一般纳税人：可以抵扣广告费进项税（从含税金额中剥离税额）
+                    adVAT = adCostEffective * v / (1 + v);
                 } else {
                     // 小规模纳税人：不可抵扣进项税
                     adVAT = 0;
@@ -1852,7 +1852,7 @@
                     outputVAT = netPrice * (outputTaxRate / 100);
                     
                     // 计算总可抵扣进项税
-                    const totalVATDeduction = purchaseVAT + adVAT + (platformFeeAmount * v);
+                    const totalVATDeduction = purchaseVAT + adVAT + (platformFeeAmount * v / (1 + v)); // 平台佣金进项税：从含税金额中剥离税额
                     actualVAT = outputVAT - totalVATDeduction; // 实际应缴税额
                 } else {
                     // 小规模纳税人：征收率计算方式
@@ -2051,8 +2051,8 @@
             // 根据纳税人类型计算广告费可抵扣进项税
             let adVAT = 0;
             if (taxpayerType === 'general') {
-                // 一般纳税人：可以抵扣广告费进项税
-                adVAT = adCostEffective * 0.06;
+                // 一般纳税人：可以抵扣广告费进项税（从含税金额中剥离税额）
+                adVAT = adCostEffective * 0.06 / 1.06;
             } else {
                 // 小规模纳税人：不可抵扣进项税
                 adVAT = 0;
@@ -2065,8 +2065,8 @@
             // 根据纳税人类型计算平台佣金可抵扣进项税
             let platformVAT = 0;
             if (taxpayerType === 'general') {
-                // 一般纳税人：可以抵扣平台佣金进项税
-                platformVAT = platformFeeAmount * 0.06;
+                // 一般纳税人：可以抵扣平台佣金进项税（从含税金额中剥离税额）
+                platformVAT = platformFeeAmount * 0.06 / 1.06;
             } else {
                 // 小规模纳税人：不可抵扣进项税
                 platformVAT = 0;
@@ -3152,8 +3152,8 @@
                 // 根据纳税人类型计算广告费可抵扣进项税
                 let adVAT = 0;
                 if (taxpayerType === 'general') {
-                    // 一般纳税人：可以抵扣广告费进项税
-                    adVAT = adCostEffective * v;
+                    // 一般纳税人：可以抵扣广告费进项税（从含税金额中剥离税额）
+                    adVAT = adCostEffective * v / (1 + v);
                 } else {
                     // 小规模纳税人：不可抵扣进项税
                     adVAT = 0;
@@ -3172,7 +3172,7 @@
                     outputVAT = netPrice * (outputTaxRate / 100);
                     
                     // 计算总可抵扣进项税
-                    const totalVATDeduction = purchaseVAT + adVAT + (platformFeeAmount * v);
+                    const totalVATDeduction = purchaseVAT + adVAT + (platformFeeAmount * v / (1 + v)); // 平台佣金进项税：从含税金额中剥离税额
                     actualVAT = outputVAT - totalVATDeduction; // 实际应缴税额
                 } else {
                     // 小规模纳税人：征收率计算方式
@@ -3815,8 +3815,8 @@
             if (taxpayerType === 'general') {
                 // 一般纳税人计算
                 purchaseVAT = costPrice * (taxRate / 100);
-                adVAT = adCostEffective * 0.06;
-                platformVAT = platformFeeAmount * 0.06;
+                adVAT = adCostEffective * 0.06 / 1.06; // 广告费进项税：从含税金额中剥离税额
+                platformVAT = platformFeeAmount * 0.06 / 1.06; // 平台佣金进项税：从含税金额中剥离税额
                 
                 netPrice = sellingPrice / (1 + taxRate / 100);
                 outputVAT = netPrice * (taxRate / 100);

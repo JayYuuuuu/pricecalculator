@@ -109,7 +109,7 @@ function generateResultHtml({ purchaseCost, salesCost, priceInfo, inputs }) {
                             <div style="margin-top: 0.5rem; padding-left: 1rem; font-size: 0.85rem; color: #666;">
                                 <div class="cost-item">• 商品进项税：¥${purchaseCost.purchaseVAT.toFixed(2)}</div>
                                 <div class="cost-item">• 广告费进项税：¥${priceInfo.adVAT.toFixed(2)}</div>
-                                <div class="cost-item">• 平台佣金进项税：¥${(priceInfo.platformFee * 0.06).toFixed(2)}</div>
+                                <div class="cost-item">• 平台佣金进项税：¥${(priceInfo.platformFee * 0.06 / 1.06).toFixed(2)}</div>
                             </div>
                         </div>
                         <div class="cost-item" style="font-weight: 500;">
@@ -234,8 +234,8 @@ function generateResultHtml({ purchaseCost, salesCost, priceInfo, inputs }) {
                                 </tr>
                                 <tr>
                                     <td>平台佣金进项税（6%）</td>
-                                    <td class="formula">${priceInfo.platformFee.toFixed(2)} × 6%</td>
-                                    <td class="amount">${(priceInfo.platformFee * 0.06).toFixed(2)}元</td>
+                                    <td class="formula">${priceInfo.platformFee.toFixed(2)} × 6% ÷ 1.06</td>
+                                    <td class="amount">${(priceInfo.platformFee * 0.06 / 1.06).toFixed(2)}元</td>
                                 </tr>
                                 <tr class="total">
                                     <td>可抵扣进项税合计</td>
