@@ -1791,6 +1791,11 @@
     </div>
 
     <script>
+        // 从含税金额剥离服务业进项税的计算函数
+        function serviceVATFromTaxInclusive(amount, rate = 0.06) {
+            return amount * rate / (1 + rate);
+        }
+
         // 利润计算主函数
         function calculateProfit() {
             try {
@@ -1869,7 +1874,7 @@
                 let adVAT = 0;
                 if (taxpayerType === 'general') {
                     // 一般纳税人：可以抵扣广告费进项税（从含税金额中剥离税额）
-                    adVAT = adCostEffective * v / (1 + v);
+                    adVAT = serviceVATFromTaxInclusive(adCostEffective, v);
                 } else {
                     // 小规模纳税人：不可抵扣进项税
                     adVAT = 0;
@@ -1888,7 +1893,7 @@
                     outputVAT = netPrice * (outputTaxRate / 100);
                     
                     // 计算总可抵扣进项税
-                    const totalVATDeduction = purchaseVAT + adVAT + (platformFeeAmount * v / (1 + v)); // 平台佣金进项税：从含税金额中剥离税额
+                    const totalVATDeduction = purchaseVAT + adVAT + serviceVATFromTaxInclusive(platformFeeAmount, v); // 平台佣金进项税：从含税金额中剥离税额
                     actualVAT = outputVAT - totalVATDeduction; // 实际应缴税额
                 } else {
                     // 小规模纳税人：征收率计算方式
@@ -2080,15 +2085,18 @@
             }
             
             const effectiveSalesRate = 1 - (riskRate / 100);
+            // 平台佣金以"含税售价 P"计提（含税口径），保持与平台实际结算一致
             const platformFeeAmount = sellingPrice * (platformFee / 100);
             const adCost = sellingPrice * (marketingCost / 100);
             const adCostEffective = adCost / effectiveSalesRate;
             
+            const v = 0.06; // 服务业增值税率（广告/平台等），与主计算保持一致
+            
             // 根据纳税人类型计算广告费可抵扣进项税
             let adVAT = 0;
             if (taxpayerType === 'general') {
-                // 一般纳税人：可以抵扣广告费进项税（从含税金额中剥离税额）
-                adVAT = adCostEffective * 0.06 / 1.06;
+                // 从"含税费用"剥离出可抵扣税额
+                adVAT = serviceVATFromTaxInclusive(adCostEffective, v);
             } else {
                 // 小规模纳税人：不可抵扣进项税
                 adVAT = 0;
@@ -2101,8 +2109,8 @@
             // 根据纳税人类型计算平台佣金可抵扣进项税
             let platformVAT = 0;
             if (taxpayerType === 'general') {
-                // 一般纳税人：可以抵扣平台佣金进项税（从含税金额中剥离税额）
-                platformVAT = platformFeeAmount * 0.06 / 1.06;
+                // 从"含税费用"剥离出可抵扣税额
+                platformVAT = serviceVATFromTaxInclusive(platformFeeAmount, v);
             } else {
                 // 小规模纳税人：不可抵扣进项税
                 platformVAT = 0;
@@ -2134,7 +2142,6 @@
             // 保本计算（使用与主函数完全一致的逻辑）
             const effectiveCost = costPrice + actualInvoiceCost;
             const fixedCosts = (logisticsCost + shippingInsurance + otherCost) / effectiveSalesRate;
-            const v = 0.06;
             const B = effectiveCost - purchaseVAT + fixedCosts;
             const platformRateDecimal = platformFee / 100;
             
@@ -3180,6 +3187,7 @@
                 const effectiveSalesRate = 1 - (returnRate / 100);
 
                 // 计算销售相关费用
+                // 平台佣金以"含税售价 P"计提（含税口径）
                 const platformFeeAmount = sellingPrice * (platformFee / 100);
                 const v = 0.06; // 服务业进项税率
                 const adCost = sellingPrice * (adRate / 100);
@@ -3189,7 +3197,7 @@
                 let adVAT = 0;
                 if (taxpayerType === 'general') {
                     // 一般纳税人：可以抵扣广告费进项税（从含税金额中剥离税额）
-                    adVAT = adCostEffective * v / (1 + v);
+                    adVAT = serviceVATFromTaxInclusive(adCostEffective, v);
                 } else {
                     // 小规模纳税人：不可抵扣进项税
                     adVAT = 0;
@@ -3613,6 +3621,9 @@
                 }
             });
             
+            // 加载口径开关状态
+            loadTaxViewToggle();
+            
             // 页面加载完成后自动计算一次
             setTimeout(calculateProfit, 100);
         });
@@ -3639,6 +3650,39 @@
                 }
             } catch (e) {
                 console.warn('无法从localStorage加载纳税人类型:', e);
+            }
+        }
+
+        // 保存口径开关状态到localStorage
+        function saveTaxViewToggle() {
+            try {
+                const taxViewToggle = document.getElementById('simpleTaxViewToggle');
+                if (taxViewToggle) {
+                    localStorage.setItem('simpleTaxViewToggle', taxViewToggle.checked);
+                }
+            } catch (e) {
+                console.warn('无法保存口径开关状态到localStorage:', e);
+            }
+        }
+
+        // 从localStorage加载口径开关状态
+        function loadTaxViewToggle() {
+            try {
+                const savedTaxViewToggle = localStorage.getItem('simpleTaxViewToggle');
+                const taxViewToggle = document.getElementById('simpleTaxViewToggle');
+                if (taxViewToggle) {
+                    if (savedTaxViewToggle !== null) {
+                        // 加载保存的状态
+                        taxViewToggle.checked = savedTaxViewToggle === 'true';
+                    } else {
+                        // 第一次使用，设置默认值（含税视图）
+                        taxViewToggle.checked = false;
+                    }
+                    // 更新标签和描述
+                    toggleSimpleTaxView();
+                }
+            } catch (e) {
+                console.warn('无法从localStorage加载口径开关状态:', e);
             }
         }
 
@@ -3837,6 +3881,7 @@
             const effectiveSalesRate = 1 - (riskRate / 100);
             
             // 计算销售相关费用
+            // 平台佣金以"含税售价 P"计提（含税口径）
             const platformFeeAmount = sellingPrice * (platformFee / 100);
             const adCost = sellingPrice * (marketingCost / 100);
             const adCostEffective = adCost / effectiveSalesRate;
@@ -3851,8 +3896,8 @@
             if (taxpayerType === 'general') {
                 // 一般纳税人计算
                 purchaseVAT = costPrice * (taxRate / 100);
-                adVAT = adCostEffective * 0.06 / 1.06; // 广告费进项税：从含税金额中剥离税额
-                platformVAT = platformFeeAmount * 0.06 / 1.06; // 平台佣金进项税：从含税金额中剥离税额
+                adVAT = serviceVATFromTaxInclusive(adCostEffective, 0.06); // 广告费进项税：从含税金额中剥离税额
+                platformVAT = serviceVATFromTaxInclusive(platformFeeAmount, 0.06); // 平台佣金进项税：从含税金额中剥离税额
                 
                 netPrice = sellingPrice / (1 + taxRate / 100);
                 outputVAT = netPrice * (taxRate / 100);
@@ -4050,38 +4095,25 @@
          * 3. 切换后自动重新计算并更新显示
          */
         function toggleSimpleTaxView() {
-            const toggle = document.getElementById('simpleTaxViewToggle');
             const label = document.getElementById('simpleTaxViewLabel');
-            const description = document.getElementById('simpleTaxViewDescription');
-            
-            if (!toggle || !label || !description) return;
-            
-            const isTaxInclusive = !toggle.checked;
-            
-            if (isTaxInclusive) {
-                // 含税视图
-                label.textContent = '含税视图';
-                label.style.color = '#2ea44f';
-                description.innerHTML = '当前口径：含税售价 vs 进货实际成本（不含进项税）';
-                
-                // 更新公式说明
-                updateSimpleFormulaDescriptions(true);
-            } else {
-                // 不含税视图
+            const desc = document.getElementById('simpleTaxViewDescription');
+            const checked = document.getElementById('simpleTaxViewToggle').checked; // 勾选=不含税视图
+
+            if (checked) {
                 label.textContent = '不含税视图';
                 label.style.color = '#e65100';
-                description.innerHTML = '当前口径：不含税售价 vs 不含税进价';
-                
-                // 更新公式说明
-                updateSimpleFormulaDescriptions(false);
+                desc.textContent = '当前口径：不含税售价 vs 不含税进价';
+            } else {
+                label.textContent = '含税视图';
+                label.style.color = '#2ea44f';
+                desc.textContent = '当前口径：含税售价 vs 进货实际成本（不含进项税）';
             }
             
-            // 重新计算价格指标
-            try {
-                calculateProfit();
-            } catch (e) {
-                console.warn('切换口径后重新计算失败:', e);
-            }
+            // 立即重算以刷新"加价倍率/毛利润"两张卡片
+            calculateProfit();
+            
+            // 保存口径开关状态到localStorage
+            saveTaxViewToggle();
         }
 
         /**
