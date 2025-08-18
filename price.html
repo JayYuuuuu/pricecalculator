@@ -272,6 +272,129 @@
             border: 2px solid #f5c6cb;
         }
 
+        /* 使用说明样式 */
+        .usage-guide {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            margin: 20px;
+            border-radius: 15px;
+            border: 2px solid #dee2e6;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .usage-guide:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+
+        .guide-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .usage-guide:hover .guide-header {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        }
+
+        .guide-header h3 {
+            margin: 0;
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+
+        .guide-hint {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            opacity: 0.9;
+            transition: all 0.3s ease;
+        }
+
+        .guide-content {
+            padding: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.4s ease;
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        .guide-content.show {
+            padding: 25px;
+            max-height: 1000px;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .guide-section {
+            margin-bottom: 25px;
+        }
+
+        .guide-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .guide-section h4 {
+            color: #495057;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #667eea;
+            font-weight: 600;
+        }
+
+        .guide-section p {
+            color: #6c757d;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .guide-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .guide-item {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid #e9ecef;
+        }
+
+        .guide-item strong {
+            color: #495057;
+            display: block;
+            margin-bottom: 12px;
+            font-size: 1.1rem;
+        }
+
+        .guide-item ul {
+            margin: 0;
+            padding-left: 20px;
+            color: #6c757d;
+        }
+
+        .guide-item li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .guide-item li strong {
+            color: #667eea;
+            display: inline;
+            margin-bottom: 0;
+            font-size: 1rem;
+        }
+
         @media (max-width: 768px) {
             .container {
                 margin: 10px;
@@ -286,8 +409,45 @@
                 font-size: 2rem;
             }
             
+            .input-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+            
             .metrics-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .usage-guide {
+                margin: 15px;
+            }
+
+            .guide-header {
+                padding: 15px;
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+                cursor: pointer;
+                -webkit-tap-highlight-color: rgba(0,0,0,0.1);
+                user-select: none;
+            }
+
+            .guide-header:active {
+                background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+                transform: scale(0.98);
+            }
+
+            .guide-content.show {
+                padding: 20px;
+            }
+
+            .guide-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .guide-item {
+                padding: 15px;
             }
         }
     </style>
@@ -295,9 +455,78 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>利润计算器</h1>
-            <p>税务合规版</p>
-            <p style="margin-top: 8px; font-size: 0.85rem; opacity: 0.7;">算法错误反馈：微信 <span style="color: #ffffff; font-weight: bold;">jayyuuuuuu</span></p>
+            <h1>利润计算（税务合规）</h1>
+            <p style="margin-top: 8px; font-size: 0.85rem; opacity: 0.7;">如有算法错误联系微信 <span style="color: #ffffff; font-weight: bold;">jayyuuuuuu</span>反馈</p>
+        </div>
+
+        <!-- 使用说明 -->
+        <div class="usage-guide" id="usageGuide">
+            <div class="guide-header">
+                <h3>📖 使用说明</h3>
+                <span class="guide-hint" id="guideHint">鼠标悬停查看详情</span>
+            </div>
+            <div class="guide-content" id="guideContent">
+                <div class="guide-section">
+                    <h4>🎯 核心功能</h4>
+                    <p>本工具帮助电商卖家计算商品利润，考虑税费、平台费用、广告成本等各项支出，提供准确的利润分析和定价建议。</p>
+                </div>
+                
+                <div class="guide-section">
+                    <h4>📊 输入说明</h4>
+                    <div class="guide-grid">
+                        <div class="guide-item">
+                            <strong>核心财务指标：</strong>
+                            <ul>
+                                <li><strong>进货价：</strong>商品不含税进价</li>
+                                <li><strong>开票成本：</strong>供应商开票额外费用比例</li>
+                                <li><strong>售价（含税）：</strong>最终销售价格（含税）</li>
+                            </ul>
+                        </div>
+                        <div class="guide-item">
+                            <strong>费用设置：</strong>
+                            <ul>
+                                <li><strong>付费占比：</strong>广告费用占售价比例</li>
+                                <li><strong>退货率：</strong>预期退货比例</li>
+                                <li><strong>税率：</strong>进项税和销项税率</li>
+                                <li><strong>平台佣金：</strong>电商平台收取费用比例</li>
+                                <li><strong>其他成本：</strong>物流、包装等固定费用</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="guide-section">
+                    <h4>💡 计算结果说明</h4>
+                    <div class="guide-grid">
+                        <div class="guide-item">
+                            <strong>利润分析：</strong>
+                            <ul>
+                                <li><strong>实际利润：</strong>扣除所有成本后的净利润</li>
+                                <li><strong>利润率：</strong>利润占售价的百分比</li>
+                                <li><strong>加价倍率：</strong>售价与进货成本的比值</li>
+                                <li><strong>毛利润：</strong>售价与进货成本的差额比例</li>
+                            </ul>
+                        </div>
+                        <div class="guide-item">
+                            <strong>保本分析：</strong>
+                            <ul>
+                                <li><strong>保本ROI：</strong>广告投入回报率临界值</li>
+                                <li><strong>保本广告占比：</strong>实现保本的最大广告费用比例</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="guide-section">
+                    <h4>⚡ 使用技巧</h4>
+                    <ul>
+                        <li>输入数据后系统会自动计算，无需手动点击按钮</li>
+                        <li>所有输入数据会自动保存到本地，刷新页面不会丢失</li>
+                        <li>调整参数时注意观察利润变化，找到最佳定价策略</li>
+                        <li>保本ROI越低越好，表示广告效率越高</li>
+                    </ul>
+                </div>
+            </div>
         </div>
 
         <div class="content">
@@ -386,8 +615,6 @@
                     <span class="result-label">利润率：</span>
                     <span class="result-value" id="profitRate">0%</span>
                 </div>
-
-                <div class="status" id="profitStatus"></div>
 
                 <!-- 价格指标一览 -->
                 <h3 style="margin-top: 30px; color: #495057; font-size: 1.4rem;">价格指标一览</h3>
@@ -515,27 +742,6 @@
                 }
                 document.getElementById('breakevenAdRate').value = breakevenAdRateDisplay;
 
-                const profitStatus = document.getElementById('profitStatus');
-                let statusText = '';
-                let statusClass = '';
-
-                if (profit < 0) {
-                    statusText = '⚠️ Loss';
-                    statusClass = 'status-bad';
-                } else if (profitRate < 5) {
-                    statusText = '⚠️ Low profit margin';
-                    statusClass = 'status-warning';
-                } else if (profitRate > 30) {
-                    statusText = '✅ Excellent profit margin';
-                    statusClass = 'status-good';
-                } else {
-                    statusText = '✅ Normal profit margin';
-                    statusClass = 'status-good';
-                }
-
-                profitStatus.textContent = statusText;
-                profitStatus.className = `status ${statusClass}`;
-
                 document.getElementById('results').style.display = 'block';
 
             } catch (error) {
@@ -576,6 +782,42 @@
             }
         }
 
+        function showGuide() {
+            document.getElementById('guideContent').classList.add('show');
+        }
+
+        function hideGuide() {
+            document.getElementById('guideContent').classList.remove('show');
+        }
+
+        function toggleGuide() {
+            const guideContent = document.getElementById('guideContent');
+            const guideHint = document.getElementById('guideHint');
+            if (guideContent.classList.contains('show')) {
+                guideContent.classList.remove('show');
+                guideHint.textContent = '点击查看详情';
+            } else {
+                guideContent.classList.add('show');
+                guideHint.textContent = '点击收起';
+            }
+        }
+
+        function initGuideInteraction() {
+            const usageGuide = document.getElementById('usageGuide');
+            const guideHint = document.getElementById('guideHint');
+            
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+            
+            if (isMobile) {
+                guideHint.textContent = '点击查看详情';
+                usageGuide.addEventListener('click', toggleGuide);
+            } else {
+                guideHint.textContent = '鼠标悬停查看详情';
+                usageGuide.addEventListener('mouseenter', showGuide);
+                usageGuide.addEventListener('mouseleave', hideGuide);
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             loadFromLocalStorage();
             
@@ -590,12 +832,13 @@
             });
             
             setTimeout(calculateProfit, 100);
+            initGuideInteraction();
         });
     </script>
 
     <!-- 版权声明 -->
     <footer style="text-align: center; padding: 20px; color: #495057; font-size: 1rem; border-top: 1px solid #e9ecef; margin-top: 40px; background: #f8f9fa;">
-        <p style="font-weight: 500;">© 已根据电商税法合规计算，数据仅供参考.</p>
+        <p style="font-weight: 500;">© 已根据电商税法合规计算，数据仅供参考。如有算法错误联系微信 jayyuuuuuu 反馈</p>
     </footer>
 </body>
 </html>
