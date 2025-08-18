@@ -338,7 +338,6 @@ function calculateProfit() {
                 profitRate
             }
         });
-
         // 生成结果HTML
         document.getElementById('result').innerHTML = generateResultHtml({
             purchaseCost: {
@@ -672,7 +671,6 @@ function calculatePrices(purchaseCost, salesCost, inputs) {
     // 7. 计算实际利润（收入减去所有成本和费用）
     const totalCost = purchaseCost.effectiveCost + platformFee + (adCost / salesCost.effectiveRate) + fixedCosts + actualVAT;
     const profit = finalPrice - totalCost;
-
     // 8. 计算"有效成本"用于结果展示（不参与联立，便于理解口径）
     // 有效成本 = C（进货成本） + F_不可退回/(1-R)
     // 其中 F_不可退回 = 广告费 + 发货物流费 + 运费险 + 其他固定成本
@@ -1299,7 +1297,6 @@ function initShareButtons() {
 
     // 暴露到全局，供计算完成后调用
     window.__setShareButtonsEnabled = setButtonsEnabled;
-
     // 统一的渲染函数：将容器渲染为画布
     const renderResultToCanvas = async () => {
         const container = document.querySelector('.container');
@@ -1957,7 +1954,6 @@ function initBatchProfitScenario() {
             <div style="margin-top:10px;color:#999;font-size:12px;">提示：绿色为盈利，红色为亏损。单元格悬停可查看对应组合的利润金额与利润率。</div>
         `;
     };
-
     /**
      * 只生成利润表格内容，用于实时更新而不重新渲染整个弹窗
      * 参数：base - 计算参数
@@ -2956,7 +2952,6 @@ function computeProfitScenario(base, adRate, returnRate) {
 
     return { profit, profitRate };
 }
-
 /**
  * 初始化"平台免佣"开关，并与输入框联动
  * 功能说明：
@@ -3253,10 +3248,20 @@ function mergeGlobalsWithRow(row, globals) {
 		inputTaxRate: forceGlobal.inputTaxRate,
 		outputTaxRate: forceGlobal.outputTaxRate,
 		salesTaxRate: forceGlobal.salesTaxRate,
-		// 平台佣金：优先使用行内（平台选择自动写入或CSV导入指定），否则回退全局
+		// 平台佣金：优先使用行内指定，其次根据平台名称获取，最后回退全局
 		platformRate: (function(){
+			// 1. 优先使用行内明确指定的平台佣金
 			const p = parsePercent(row.platformRate);
-			return isFinite(p) ? p : globals.platformRate;
+			if (isFinite(p)) return p;
+			
+			// 2. 如果行内没有指定，根据平台名称获取对应佣金率
+			if (row.platform) {
+				const platformRate = getPlatformRateByName(row.platform);
+				if (isFinite(platformRate)) return platformRate;
+			}
+			
+			// 3. 最后回退到全局默认佣金率
+			return globals.platformRate;
 		})(),
 		shippingCost: forceGlobal.shippingCost,
 		shippingInsurance: forceGlobal.shippingInsurance,
@@ -3286,7 +3291,6 @@ function computeRowWithCost(rowStd, costPrice) {
 	const roiRes = calculateBreakevenROI({ costPrice, inputTaxRate:inputs.inputTaxRate, outputTaxRate:inputs.outputTaxRate, salesTaxRate:inputs.salesTaxRate, platformRate:inputs.platformRate, shippingCost:inputs.shippingCost, shippingInsurance:inputs.shippingInsurance, otherCost:inputs.otherCost, returnRate:inputs.returnRate, finalPrice:P });
 	return { profit, profitRate: profit / P, breakevenROI: roiRes.breakevenROI, breakevenAdRate: roiRes.breakevenAdRate };
 }
-
 // 行级计算（支持区间）
 function computeRow(row) {
 	const globals = getGlobalDefaultsForCatalog();
@@ -4293,7 +4297,6 @@ function showPriceCheckModal(row) {
 			if (isFinite(cmax) && Math.abs(cmax-cmin)>1e-9) validationPairs.push({ price: std.salePrice, cost: cmax, label: '区间上限' });
 		}
 	}
-	
 	let sections = [];
 	const VAT_RATE = 0.06;
 	
@@ -4724,10 +4727,62 @@ function exportCatalogToCSV() {
 	const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `商品清单_${ts}.csv`; document.body.appendChild(link); link.click(); document.body.removeChild(link);
 }
 
-async function importCatalogFromCSV(file) {
-	const text = await file.text(); const content = text.replace(/^\uFEFF/, '');
-	const lines = content.split(/\r?\n/).filter(l => l.trim().length>0); if (!lines.length) return;
-	const header = lines[0].split(',');
+async function importCatalogFromFile(file) {
+	// 检查文件类型
+	const fileName = file.name.toLowerCase();
+	const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls');
+	const isCSV = fileName.endsWith('.csv');
+	
+	if (!isExcel && !isCSV) {
+		throw new Error('不支持的文件格式，请选择 .csv、.xlsx 或 .xls 文件');
+	}
+	
+	let lines = [];
+	let header = [];
+	
+	if (isExcel) {
+		// 处理Excel文件
+		try {
+			const arrayBuffer = await file.arrayBuffer();
+			const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+			const sheetName = workbook.SheetNames[0]; // 使用第一个工作表
+			const worksheet = workbook.Sheets[sheetName];
+			
+			// 将Excel数据转换为数组格式
+			const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+			
+			if (jsonData.length === 0) {
+				throw new Error('Excel文件为空或格式不正确');
+			}
+			
+			// 第一行作为表头
+			header = jsonData[0].map(cell => String(cell || ''));
+			// 其余行作为数据
+			lines = jsonData.slice(1).map(row => 
+				row.map(cell => String(cell || '')).join(',')
+			);
+			
+			console.log(`[Catalog] Excel文件解析成功：工作表=${sheetName}，行数=${jsonData.length}`);
+		} catch (e) {
+			throw new Error(`Excel文件解析失败：${e.message}`);
+		}
+	} else {
+		// 处理CSV文件
+		const text = await file.text();
+		const content = text.replace(/^\uFEFF/, ''); // 移除BOM
+		const csvLines = content.split(/\r?\n/).filter(l => l.trim().length > 0);
+		
+		if (csvLines.length === 0) {
+			throw new Error('CSV文件为空');
+		}
+		
+		header = csvLines[0].split(',');
+		lines = csvLines.slice(1);
+	}
+	
+	if (lines.length === 0) {
+		throw new Error('文件中没有数据行');
+	}
 	// 兼容中文/英文列名
 	const normalize = (name)=>{
 		switch(name.trim()){
@@ -4759,9 +4814,11 @@ async function importCatalogFromCSV(file) {
 	const isNew = normHeader.includes('costTiers') || normHeader.includes('salePriceTiers');
 	const idx = (k)=>normHeader.indexOf(k);
 	const failed = []; const okRows = [];
-	for (let i=1;i<lines.length;i++) {
+	for (let i=0;i<lines.length;i++) {
 		try {
-			const cells = lines[i].split(','); const get = (k)=>{ const j=idx(k); return j>=0 ? cells[j] : ''; };
+			const currentLine = lines[i];
+			if (!currentLine || String(currentLine).trim() === '') { continue; }
+			const cells = currentLine.split(','); const get = (k)=>{ const j=idx(k); return j>=0 ? cells[j] : ''; };
 			if (isNew) {
 				const row = { name:get('name'), sku:get('sku'), platform:get('platform') };
 				const salePrice = Number(get('salePrice'));
@@ -4834,10 +4891,28 @@ async function importCatalogFromCSV(file) {
 				const computed = computeRow(row); row.__result = computed.__result; okRows.push(row);
 			}
 		} catch (e) {
-			failed.push({ line: i+1, reason: e.message || '格式错误' });
+			const fileLine = i + 2; // 文件中的真实行号（包含表头）
+			let name = '', sku = '';
+			try {
+				const cells = (lines[i] || '').split(',');
+				const jName = idx('name');
+				const jSku = idx('sku');
+				name = jName>=0 ? (cells[jName]||'') : '';
+				sku = jSku>=0 ? (cells[jSku]||'') : '';
+			} catch(_) {}
+			failed.push({ line: fileLine, sku, name, reason: (e && e.message) ? e.message : '格式错误' });
 		}
 	}
-	if (failed.length) { showToast(`导入完成：成功 ${okRows.length} 条 / 失败 ${failed.length} 条`); console.warn('[Catalog] 导入错误行：', failed); }
+	if (failed.length) {
+		showToast(`导入完成：成功 ${okRows.length} 条 / 失败 ${failed.length} 条`);
+		console.group('[Catalog] 导入错误详情');
+		failed.forEach(f => {
+			const tag = (f.name || f.sku) ? `${f.name||''} (${f.sku||'无货号'})` : '';
+			console.warn(`行${f.line}${tag? ' - '+tag : ''}：${f.reason}`);
+		});
+		console.groupEnd();
+		console.warn('[Catalog] 导入错误行（结构化）:', failed);
+	}
 	catalogState.lastImportBackup = JSON.parse(JSON.stringify(catalogState.rows || [])); const undoBtn = document.getElementById('btnCatalogUndoImport'); if (undoBtn) undoBtn.style.display='';
 	catalogState.rows = (catalogState.rows||[]).concat(okRows); recomputeAllCatalogRows();
 	updatePlatformFilterOptions();
@@ -4858,7 +4933,7 @@ function initCatalogTab() {
 	const btnPlat = document.getElementById('btnPlatformSettings');
 	const btnFullscreen = document.getElementById('btnCatalogFullscreen');
 	if (btnAdd) btnAdd.addEventListener('click', () => { catalogState.rows.push({ name:'', sku:'', platform:'', salePrice:'', returnRate:'', costMin:'', costMax:'' }); renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); updatePlatformFilterOptions(); });
-	if (btnImport && fileInput) { btnImport.addEventListener('click', () => fileInput.click()); fileInput.addEventListener('change', async () => { const f = fileInput.files && fileInput.files[0]; if (!f) return; try { await importCatalogFromCSV(f); } finally { fileInput.value=''; } }); }
+	if (btnImport && fileInput) { btnImport.addEventListener('click', () => fileInput.click()); fileInput.addEventListener('change', async () => { const f = fileInput.files && fileInput.files[0]; if (!f) return; try { await importCatalogFromFile(f); } finally { fileInput.value=''; } }); }
 	if (btnExport) btnExport.addEventListener('click', exportCatalogToCSV);
 	if (btnDelete) btnDelete.addEventListener('click', () => { const container = document.getElementById('catalogTableContainer'); const checks = Array.from(container.querySelectorAll('.catalog-check')); const remain = []; checks.forEach(cb => { const tr = cb.closest('tr'); const idx = Number(tr.getAttribute('data-index')); if (!cb.checked) remain.push(catalogState.rows[idx]); }); catalogState.rows = remain; renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); updatePlatformFilterOptions(); });
 	if (btnRecompute) btnRecompute.addEventListener('click', recomputeAllCatalogRows);
@@ -4931,18 +5006,20 @@ function initCatalogTab() {
 	if (btnUndo) btnUndo.addEventListener('click', () => { if (!catalogState.lastImportBackup) return; catalogState.rows = catalogState.lastImportBackup; catalogState.lastImportBackup = null; btnUndo.style.display='none'; renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); updatePlatformFilterOptions(); });
 	if (btnPlat) btnPlat.addEventListener('click', () => openPlatformSettingsModal());
 
-	// 全屏：将表格容器临时移动到全屏弹窗中显示，关闭时移回原位
-	if (btnFullscreen) {
-		const overlay = document.getElementById('catalogFullscreenOverlay');
-		const body = document.getElementById('catalogFullscreenBody');
-		const closeBtn = document.getElementById('btnCatalogFullscreenClose');
-		const recomputeBtn = document.getElementById('btnCatalogFullscreenRecompute');
-		const addRowBtn = document.getElementById('btnCatalogFullscreenAddRow');
-		const delBtn = document.getElementById('btnCatalogFullscreenDeleteSelected');
-		const container = document.getElementById('catalogTableContainer');
-		// 占位符：用于关闭时把容器放回原处
-		const placeholder = document.createElement('div');
-		placeholder.id = 'catalogTablePlaceholder';
+			// 全屏：将表格容器临时移动到全屏弹窗中显示，关闭时移回原位
+		if (btnFullscreen) {
+			const overlay = document.getElementById('catalogFullscreenOverlay');
+			const body = document.getElementById('catalogFullscreenBody');
+			const closeBtn = document.getElementById('btnCatalogFullscreenClose');
+			const recomputeBtn = document.getElementById('btnCatalogFullscreenRecompute');
+			const addRowBtn = document.getElementById('btnCatalogFullscreenAddRow');
+			const importBtn = document.getElementById('btnCatalogFullscreenImport');
+			const fullscreenFileInput = document.getElementById('catalogFullscreenImportFile');
+			const delBtn = document.getElementById('btnCatalogFullscreenDeleteSelected');
+			const container = document.getElementById('catalogTableContainer');
+			// 占位符：用于关闭时把容器放回原处
+			const placeholder = document.createElement('div');
+			placeholder.id = 'catalogTablePlaceholder';
 					btnFullscreen.addEventListener('click', () => {
 				if (!overlay || !body || !container) return;
 				if (!container.parentElement || container.parentElement.id !== 'catalogTablePlaceholder') {
@@ -4966,9 +5043,10 @@ function initCatalogTab() {
 		};
 		if (closeBtn) closeBtn.addEventListener('click', exitFullscreen);
 		if (overlay) overlay.addEventListener('click', (e) => { if (e.target === overlay) exitFullscreen(); });
-		if (recomputeBtn) recomputeBtn.addEventListener('click', recomputeAllCatalogRows);
-		if (addRowBtn) addRowBtn.addEventListener('click', () => { catalogState.rows.push({ name:'', sku:'', platform:'', salePrice:'', returnRate:'', costMin:'', costMax:'' }); renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); updatePlatformFilterOptions(); updateFullscreenPlatformFilterOptions(); });
-		if (delBtn) delBtn.addEventListener('click', () => { const cont = document.getElementById('catalogTableContainer'); const checks = Array.from(cont.querySelectorAll('.catalog-check')); const remain = []; checks.forEach(cb => { const tr = cb.closest('tr'); const idx = Number(tr.getAttribute('data-index')); if (!cb.checked) remain.push(catalogState.rows[idx]); }); catalogState.rows = remain; renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); updatePlatformFilterOptions(); updateFullscreenPlatformFilterOptions(); });
+					if (recomputeBtn) recomputeBtn.addEventListener('click', recomputeAllCatalogRows);
+			if (addRowBtn) addRowBtn.addEventListener('click', () => { catalogState.rows.push({ name:'', sku:'', platform:'', salePrice:'', returnRate:'', costMin:'', costMax:'' }); renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); updatePlatformFilterOptions(); updateFullscreenPlatformFilterOptions(); });
+			if (importBtn && fullscreenFileInput) { importBtn.addEventListener('click', () => fullscreenFileInput.click()); fullscreenFileInput.addEventListener('change', async () => { const f = fullscreenFileInput.files && fullscreenFileInput.files[0]; if (!f) return; try { await importCatalogFromFile(f); } finally { fullscreenFileInput.value=''; } }); }
+			if (delBtn) delBtn.addEventListener('click', () => { const cont = document.getElementById('catalogTableContainer'); const checks = Array.from(cont.querySelectorAll('.catalog-check')); const remain = []; checks.forEach(cb => { const tr = cb.closest('tr'); const idx = Number(tr.getAttribute('data-index')); if (!cb.checked) remain.push(catalogState.rows[idx]); }); catalogState.rows = remain; renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); updatePlatformFilterOptions(); updateFullscreenPlatformFilterOptions(); });
 		// ESC 关闭
 		window.addEventListener('keydown', (e) => { if (overlay && overlay.style.display !== 'none' && e.key === 'Escape') { exitFullscreen(); } });
 	}
@@ -5262,7 +5340,6 @@ function applyFullscreenFilters() {
 		
 		return true;
 	});
-	
 	// 应用排序
 	if (sortBy) {
 		rows.sort((a, b) => {

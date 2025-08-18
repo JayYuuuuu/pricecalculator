@@ -544,8 +544,8 @@
                 <!-- 工具栏 -->
                 <div id="catalogToolbar" style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:12px;">
                     <button id="btnCatalogAddRow" class="header-btn" style="margin:0;">新增一行</button>
-                    <input id="catalogImportFile" type="file" accept=".csv" style="display:none;" />
-                    <button id="btnCatalogImport" class="header-btn" style="margin:0;">导入 CSV</button>
+                    <input id="catalogImportFile" type="file" accept=".csv,.xlsx,.xls" style="display:none;" />
+                    <button id="btnCatalogImport" class="header-btn" style="margin:0;">导入文件</button>
                     <button id="btnCatalogExport" class="header-btn" style="margin:0;">导出 CSV 模板</button>
                     <button id="btnCatalogDeleteSelected" class="header-btn" style="margin:0; background:#ef4444; border-color:#ef4444;">批量删除所选</button>
                     <button id="btnCatalogRecomputeAll" class="header-btn" style="margin:0;">一键重算</button>
@@ -614,12 +614,15 @@
                 <!-- 表格容器 -->
                 <div id="catalogTableContainer" class="lp-card" style="padding:0; overflow:auto;"></div>
                 <!-- 全屏弹窗：初始隐藏，打开时将表格容器临时移动到此处 -->
-                <div id="catalogFullscreenOverlay" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
+                                        <div id="catalogFullscreenOverlay" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
                     <div role="dialog" aria-modal="true" aria-label="商品清单全屏" style="background:#fff; width:96vw; height:92vh; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.2); display:flex; flex-direction:column; overflow:hidden;">
+                        <!-- 全屏模式隐藏的文件输入框 -->
+                        <input id="catalogFullscreenImportFile" type="file" accept=".csv,.xlsx,.xls" style="display:none;" />
                         <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid #e5e7eb;">
                             <div style="font-weight:600; color:#111827;">商品清单（全屏）</div>
                             <div style="display:flex; gap:8px; align-items:center;">
                                 <button id="btnCatalogFullscreenAddRow" class="header-btn" style="margin:0;">新增一行</button>
+                                <button id="btnCatalogFullscreenImport" class="header-btn" style="margin:0;">导入文件</button>
                                 <button id="btnCatalogFullscreenDeleteSelected" class="header-btn" style="margin:0; background:#ef4444; border-color:#ef4444;">批量删除所选</button>
                                 <button id="btnCatalogFullscreenRecompute" class="header-btn" style="margin:0;">一键重算</button>
                                 <button id="btnCatalogFullscreenClose" class="header-btn" style="margin:0;">退出全屏</button>
@@ -725,6 +728,8 @@
 
     <!-- html2canvas：用于将结果区域渲染为图片（CDN 引入） -->
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <!-- xlsx：用于导入Excel文件（CDN 引入） -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="js/calculator.js"></script>
     <script src="js/result-template.js"></script>
     <script src="js/price-template.js"></script>
