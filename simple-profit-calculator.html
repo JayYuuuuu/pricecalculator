@@ -2410,6 +2410,50 @@
             };
         }
 
+        /**
+         * 刷新右侧面板内容（如果打开的话）
+         * 功能说明：
+         * 1. 检查当前哪个右侧面板处于打开状态
+         * 2. 根据面板类型，重新计算并更新内容
+         * 3. 实现左右分屏时的实时数据同步
+         */
+        function refreshRightPanelIfOpen() {
+            try {
+                // 检查验证面板是否打开
+                const verificationPanel = document.getElementById('verificationPanel');
+                if (verificationPanel && verificationPanel.classList.contains('active')) {
+                    console.log('检测到验证面板打开，重新计算验证内容...');
+                    // 重新显示验证内容
+                    showVerification();
+                    return;
+                }
+                
+                // 检查推演面板是否打开
+                const explorationPanel = document.getElementById('explorationPanel');
+                if (explorationPanel && explorationPanel.classList.contains('active')) {
+                    console.log('检测到推演面板打开，重新计算推演内容...');
+                    // 重新显示推演内容
+                    showExploration();
+                    return;
+                }
+                
+                // 检查对比面板是否打开
+                const comparisonPanel = document.getElementById('comparisonPanel');
+                if (comparisonPanel && comparisonPanel.classList.contains('active')) {
+                    console.log('检测到对比面板打开，重新计算对比内容...');
+                    // 重新生成对比内容
+                    if (typeof compareTaxpayerTypesCompact === 'function') {
+                        compareTaxpayerTypesCompact();
+                    }
+                    return;
+                }
+                
+                console.log('当前没有右侧面板打开，无需刷新');
+            } catch (error) {
+                console.warn('刷新右侧面板时出现错误:', error);
+            }
+        }
+
         // 自动保存输入数据到localStorage
         function saveToLocalStorage() {
             const inputs = document.querySelectorAll('input[type="number"]');
@@ -2568,7 +2612,7 @@
                                     <div class="rate-range">
                                         <input type="number" id="minReturnRate" placeholder="最低" step="1" value="5">
                                         <span>至</span>
-                                        <input type="number" id="maxReturnRate" placeholder="最高" step="1" value="20">
+                                        <input type="number" id="maxReturnRate" placeholder="最高" step="1" value="29">
                                         <span>%</span>
                                     </div>
                                     <div class="rate-note">💡 退货率使用3%步进值，范围5%-95%</div>
@@ -2607,6 +2651,11 @@
             // 初始化推演面板中的纳税人类型和税率设置
             updateExplorationTaxRates();
             
+            // 为推演面板中的输入框添加事件监听器，实现实时重算
+            setTimeout(() => {
+                addExplorationPanelEventListeners();
+            }, 100);
+            
             // 显示推演面板和启用分屏模式
             document.getElementById('explorationPanel').classList.add('active');
             document.querySelector('.container').classList.add('split-mode');
@@ -2620,6 +2669,111 @@
             // 恢复原始布局
             document.querySelector('.container').classList.remove('split-mode');
             document.body.classList.remove('split-mode');
+        }
+
+        /**
+         * 为推演面板中的输入框添加事件监听器
+         * 功能说明：
+         * 1. 为退货率范围和广告占比范围的输入框添加事件监听器
+         * 2. 当这些参数变化时，自动重新计算推演矩阵
+         * 3. 实现推演面板内部的实时重算功能
+         */
+        function addExplorationPanelEventListeners() {
+            try {
+                // 为退货率范围输入框添加事件监听器
+                const minReturnRateInput = document.getElementById('minReturnRate');
+                const maxReturnRateInput = document.getElementById('maxReturnRate');
+                
+                if (minReturnRateInput) {
+                    minReturnRateInput.addEventListener('input', function() {
+                        // 延迟重算，避免频繁计算
+                        clearTimeout(this.timeout);
+                        this.timeout = setTimeout(() => {
+                            if (document.getElementById('explorationPanel')?.classList.contains('active')) {
+                                console.log('退货率范围变化，重新计算推演矩阵...');
+                                calculateProfitMatrix();
+                            }
+                        }, 500);
+                    });
+                }
+                
+                if (maxReturnRateInput) {
+                    maxReturnRateInput.addEventListener('input', function() {
+                        // 延迟重算，避免频繁计算
+                        clearTimeout(this.timeout);
+                        this.timeout = setTimeout(() => {
+                            if (document.getElementById('explorationPanel')?.classList.contains('active')) {
+                                console.log('退货率范围变化，重新计算推演矩阵...');
+                                calculateProfitMatrix();
+                            }
+                        }, 500);
+                    });
+                }
+                
+                // 为广告占比范围输入框添加事件监听器
+                const minAdRateInput = document.getElementById('minAdRate');
+                const maxAdRateInput = document.getElementById('maxAdRate');
+                
+                if (minAdRateInput) {
+                    minAdRateInput.addEventListener('input', function() {
+                        // 延迟重算，避免频繁计算
+                        clearTimeout(this.timeout);
+                        this.timeout = setTimeout(() => {
+                            if (document.getElementById('explorationPanel')?.classList.contains('active')) {
+                                console.log('广告占比范围变化，重新计算推演矩阵...');
+                                calculateProfitMatrix();
+                            }
+                        }, 500);
+                    });
+                }
+                
+                if (maxAdRateInput) {
+                    maxAdRateInput.addEventListener('input', function() {
+                        // 延迟重算，避免频繁计算
+                        clearTimeout(this.timeout);
+                        this.timeout = setTimeout(() => {
+                            if (document.getElementById('explorationPanel')?.classList.contains('active')) {
+                                console.log('广告占比范围变化，重新计算推演矩阵...');
+                                calculateProfitMatrix();
+                            }
+                        }, 500);
+                    });
+                }
+                
+                // 为推演面板中的纳税人类型选择添加事件监听器
+                const explorationTaxpayerOptions = document.querySelectorAll('input[name="explorationTaxpayerType"]');
+                explorationTaxpayerOptions.forEach(option => {
+                    option.addEventListener('change', function() {
+                        // 延迟重算，避免频繁计算
+                        clearTimeout(this.timeout);
+                        this.timeout = setTimeout(() => {
+                            if (document.getElementById('explorationPanel')?.classList.contains('active')) {
+                                console.log('推演面板纳税人类型变化，重新计算推演矩阵...');
+                                calculateProfitMatrix();
+                            }
+                        }, 500);
+                    });
+                });
+                
+                // 为推演面板中的税率选择框添加事件监听器
+                const explorationTaxRateSelects = document.querySelectorAll('#explorationInputTaxRate, #explorationOutputTaxRate');
+                explorationTaxRateSelects.forEach(select => {
+                    select.addEventListener('change', function() {
+                        // 延迟重算，避免频繁计算
+                        clearTimeout(this.timeout);
+                        this.timeout = setTimeout(() => {
+                            if (document.getElementById('explorationPanel')?.classList.contains('active')) {
+                                console.log('推演面板税率变化，重新计算推演矩阵...');
+                                calculateProfitMatrix();
+                            }
+                        }, 500);
+                    });
+                });
+                
+                console.log('推演面板事件监听器添加完成');
+            } catch (error) {
+                console.warn('为推演面板添加事件监听器时出现错误:', error);
+            }
         }
 
         // 添加弹窗样式
@@ -3563,6 +3717,11 @@
                     saveTaxpayerType();
                     // 更新税率选项
                     updateTaxRates();
+                    
+                    // 延迟检查右侧面板状态，如果打开则重新计算
+                    setTimeout(() => {
+                        refreshRightPanelIfOpen();
+                    }, 100);
                 });
             });
             
@@ -3575,7 +3734,12 @@
                     
                     // 延迟计算，避免频繁计算
                     clearTimeout(this.timeout);
-                    this.timeout = setTimeout(calculateProfit, 500);
+                    this.timeout = setTimeout(() => {
+                        // 主窗口重新计算
+                        calculateProfit();
+                        // 检查右侧面板状态，如果打开则重新计算
+                        refreshRightPanelIfOpen();
+                    }, 500);
                 });
             });
             
@@ -3588,7 +3752,12 @@
                     
                     // 延迟计算，避免频繁计算
                     clearTimeout(this.timeout);
-                    this.timeout = setTimeout(calculateProfit, 500);
+                    this.timeout = setTimeout(() => {
+                        // 主窗口重新计算
+                        calculateProfit();
+                        // 检查右侧面板状态，如果打开则重新计算
+                        refreshRightPanelIfOpen();
+                    }, 500);
                 });
             });
             
@@ -4039,11 +4208,14 @@
                 outputTaxRateSelect.disabled = true;
             }
             
-            // 如果已经有推演结果，则重新计算并更新显示
-            const explorationResults = document.getElementById('explorationResults');
-            if (explorationResults && explorationResults.style.display !== 'none') {
-                // 重新计算利润矩阵
-                calculateProfitMatrix();
+            // 如果推演面板打开且有推演结果，则重新计算并更新显示
+            if (document.getElementById('explorationPanel')?.classList.contains('active')) {
+                const explorationResults = document.getElementById('explorationResults');
+                if (explorationResults && explorationResults.style.display !== 'none') {
+                    console.log('纳税人类型变化，重新计算推演矩阵...');
+                    // 重新计算利润矩阵
+                    calculateProfitMatrix();
+                }
             }
         }
 
@@ -4059,11 +4231,14 @@
                 outputTaxRateSelect.value = inputTaxRate;
             }
             
-            // 如果已经有推演结果，则重新计算并更新显示
-            const explorationResults = document.getElementById('explorationResults');
-            if (explorationResults && explorationResults.style.display !== 'none') {
-                // 重新计算利润矩阵
-                calculateProfitMatrix();
+            // 如果推演面板打开且有推演结果，则重新计算并更新显示
+            if (document.getElementById('explorationPanel')?.classList.contains('active')) {
+                const explorationResults = document.getElementById('explorationResults');
+                if (explorationResults && explorationResults.style.display !== 'none') {
+                    console.log('进项税率变化，重新计算推演矩阵...');
+                    // 重新计算利润矩阵
+                    calculateProfitMatrix();
+                }
             }
         }
 
@@ -4079,11 +4254,14 @@
                 inputTaxRateSelect.value = outputTaxRate;
             }
             
-            // 如果已经有推演结果，则重新计算并更新显示
-            const explorationResults = document.getElementById('explorationResults');
-            if (explorationResults && explorationResults.style.display !== 'none') {
-                // 重新计算利润矩阵
-                calculateProfitMatrix();
+            // 如果推演面板打开且有推演结果，则重新计算并更新显示
+            if (document.getElementById('explorationPanel')?.classList.contains('active')) {
+                const explorationResults = document.getElementById('explorationResults');
+                if (explorationResults && explorationResults.style.display !== 'none') {
+                    console.log('销项税率变化，重新计算推演矩阵...');
+                    // 重新计算利润矩阵
+                    calculateProfitMatrix();
+                }
             }
         }
 
@@ -4111,6 +4289,9 @@
             
             // 立即重算以刷新"加价倍率/毛利润"两张卡片
             calculateProfit();
+            
+            // 检查右侧面板状态，如果打开则重新计算
+            refreshRightPanelIfOpen();
             
             // 保存口径开关状态到localStorage
             saveTaxViewToggle();
