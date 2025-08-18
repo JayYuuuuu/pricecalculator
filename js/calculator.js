@@ -3208,8 +3208,10 @@ function formatMoney(n) { if (!isFinite(n)) return '-'; return '¥ ' + Number(n)
 
 // 根据显示索引获取正确的行数据（支持筛选后的表格）
 function getRowByDisplayIndex(displayIndex) {
-	// 如果有筛选，使用筛选后的数据；否则使用原始数据
-	const rows = catalogFilterState.filteredRows || catalogState.rows;
+	// 如果有筛选且筛选数据存在，使用筛选后的数据；否则使用原始数据
+	const rows = catalogFilterState.filteredRows && catalogFilterState.filteredRows.length > 0 
+		? catalogFilterState.filteredRows 
+		: catalogState.rows;
 	return rows[displayIndex] || null;
 }
 
