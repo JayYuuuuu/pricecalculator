@@ -64,14 +64,14 @@ window.CATALOG_SAMPLE_ROWS = [
 	{ name:'网眼内裤4条', sku:'FWL2505541', platform:'淘宝', salePrice:79.8, returnRate:'5.10%', costTiers:[30.50, 33.00] },
 	// 胖童内裤 - 单一售价 + 单一进货价
 	{ name:'胖童内裤', sku:'HYXN11221', platform:'淘宝', salePrice:59, returnRate:'10.95%', costTiers:[25.5] },
-	// 纯棉内裤3条 - 多档售价 + 多档进货价
-	{ name:'纯棉内裤3条', sku:'HYX1801', platform:'淘宝', salePrice:0, salePriceTiers:[53.10, 53.10, 62.10], returnRate:'4.96%', costTiers:[27.50, 29.00, 30.50] },
+	// 纯棉内裤100%棉裆 - 多档售价 + 多档进货价
+	{ name:'纯棉内裤100%棉裆', sku:'HYX1801', platform:'淘宝', salePrice:0, salePriceTiers:[53.10, 53.10, 62.10], returnRate:'4.96%', costTiers:[27.50, 29.00, 30.50] },
 	// 纯棉内裤4条 - 单一售价 + 多档进货价
 	{ name:'纯棉内裤4条', sku:'HYX2003', platform:'淘宝', salePrice:69.75, returnRate:'4.96%', costTiers:[36.50, 39.50] },
 	// 纯棉内裤4条 - 单一售价 + 多档进货价
 	{ name:'纯棉内裤4条', sku:'FWL2405141', platform:'淘宝', salePrice:69.75, returnRate:'8.21%', costTiers:[28.50, 30.00] },
-	// 纯棉内裤3条 - 单一售价 + 多档进货价
-	{ name:'纯棉内裤3条', sku:'FWL2505131', platform:'淘宝', salePrice:59, returnRate:'5.42%', costTiers:[23.40, 25.00] },
+	// 纯棉内裤100%棉裆 - 单一售价 + 多档进货价
+	{ name:'纯棉内裤100%棉裆', sku:'FWL2505131', platform:'淘宝', salePrice:59, returnRate:'5.42%', costTiers:[23.40, 25.00] },
 	
 	// 天猫平台商品
 	// 色纱空气层单裤 - 多档售价 + 多档进货价
@@ -128,14 +128,14 @@ window.CATALOG_SAMPLE_ROWS = [
 	{ name:'网眼内裤4条', sku:'FWL2505541', platform:'天猫', salePrice:79.8, returnRate:'5.10%', costTiers:[30.50, 33.00] },
 	// 胖童内裤 - 单一售价 + 单一进货价
 	{ name:'胖童内裤', sku:'HYXN11221', platform:'天猫', salePrice:59, returnRate:'8.41%', costTiers:[25.5] },
-	// 纯棉内裤3条 - 多档售价 + 多档进货价
-	{ name:'纯棉内裤3条', sku:'HYX1801', platform:'天猫', salePrice:0, salePriceTiers:[53.10, 53.10, 62.10], returnRate:'3.90%', costTiers:[27.50, 29.00, 30.50] },
+	// 纯棉内裤100%棉裆 - 多档售价 + 多档进货价
+	{ name:'纯棉内裤100%棉裆', sku:'HYX1801', platform:'天猫', salePrice:0, salePriceTiers:[53.10, 53.10, 62.10], returnRate:'3.90%', costTiers:[27.50, 29.00, 30.50] },
 	// 纯棉内裤4条 - 单一售价 + 多档进货价
 	{ name:'纯棉内裤4条', sku:'HYX2003', platform:'天猫', salePrice:69.75, returnRate:'2.77%', costTiers:[36.50, 39.50] },
 	// 纯棉内裤4条 - 单一售价 + 多档进货价
 	{ name:'纯棉内裤4条', sku:'FWL2405141', platform:'天猫', salePrice:69.75, returnRate:'1.18%', costTiers:[28.50, 30.00] },
-	// 纯棉内裤3条 - 单一售价 + 多档进货价
-	{ name:'纯棉内裤3条', sku:'FWL2505131', platform:'天猫', salePrice:59, returnRate:'5.50%', costTiers:[23.40, 25.00] }
+	// 纯棉内裤100%棉裆 - 单一售价 + 多档进货价
+	{ name:'纯棉内裤100%棉裆', sku:'FWL2505131', platform:'天猫', salePrice:59, returnRate:'5.50%', costTiers:[23.40, 25.00] }
 ];
 
 
