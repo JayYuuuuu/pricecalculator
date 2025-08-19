@@ -1,3 +1,144 @@
+// 价格指标计算过程浮窗函数（主页面价格指标专用）
+function showPriceMetricTooltip(event, metricType) {
+    // 移除已存在的浮层
+    hidePriceMetricTooltip();
+    
+    // 获取当前价格指标的计算数据
+    const costPrice = parseFloat(document.getElementById('profitCostPrice')?.value || '0');
+    const actualPrice = parseFloat(document.getElementById('actualPrice')?.value || '0');
+    const inputTaxRate = parseFloat(document.getElementById('profitInputTaxRate')?.value || '0') / 100;
+    
+    if (!costPrice || !actualPrice) {
+        return; // 如果没有有效数据，不显示浮窗
+    }
+    
+    // 计算进货实际成本
+    const invoiceCost = costPrice * inputTaxRate;
+    const effectiveCost = costPrice + invoiceCost;
+    
+    // 根据指标类型生成不同的计算过程说明
+    let tooltipContent = '';
+    let tooltipTitle = '';
+    
+    if (metricType === 'multiple') {
+        tooltipTitle = '加价倍率计算过程';
+        tooltipContent = `加价倍率 = 含税售价 ÷ 进货实际成本
+
+具体计算：
+• 含税售价：¥${actualPrice.toFixed(2)}
+• 进货价（不含税）：¥${costPrice.toFixed(2)}
+• 开票成本：¥${costPrice.toFixed(2)} × ${(inputTaxRate * 100).toFixed(1)}% = ¥${invoiceCost.toFixed(2)}
+• 进货实际成本：¥${costPrice.toFixed(2)} + ¥${invoiceCost.toFixed(2)} = ¥${effectiveCost.toFixed(2)}
+
+加价倍率 = ¥${actualPrice.toFixed(2)} ÷ ¥${effectiveCost.toFixed(2)} = ${(actualPrice / effectiveCost).toFixed(2)}倍`;
+    } else if (metricType === 'gross') {
+        tooltipTitle = '毛利率计算过程';
+        tooltipContent = `毛利率 = (含税售价 - 进货实际成本) ÷ 含税售价 × 100%
+
+具体计算：
+• 含税售价：¥${actualPrice.toFixed(2)}
+• 进货价（不含税）：¥${costPrice.toFixed(2)}
+• 开票成本：¥${costPrice.toFixed(2)} × ${(inputTaxRate * 100).toFixed(1)}% = ¥${invoiceCost.toFixed(2)}
+• 进货实际成本：¥${costPrice.toFixed(2)} + ¥${invoiceCost.toFixed(2)} = ¥${effectiveCost.toFixed(2)}
+
+毛利率 = (¥${actualPrice.toFixed(2)} - ¥${effectiveCost.toFixed(2)}) ÷ ¥${actualPrice.toFixed(2)} × 100%
+      = ¥${(actualPrice - effectiveCost).toFixed(2)} ÷ ¥${actualPrice.toFixed(2)} × 100%
+      = ${(((actualPrice - effectiveCost) / actualPrice) * 100).toFixed(2)}%`;
+    }
+    
+    // 创建浮层元素，使用与税费占比浮窗相同的样式
+    const tooltip = document.createElement('div');
+    tooltip.id = 'price-metric-tooltip';
+    
+    // 使用与税费占比浮窗完全相同的样式
+    Object.assign(tooltip.style, {
+        position: 'fixed',
+        zIndex: '10001',
+        padding: '8px 10px',
+        borderRadius: '8px',
+        background: 'rgba(17,24,39,0.92)',
+        color: '#fff',
+        fontSize: '12px',
+        lineHeight: '1.4',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+        pointerEvents: 'none',
+        whiteSpace: 'pre',
+        transition: 'opacity .08s ease',
+        opacity: '0',
+        maxWidth: '400px'
+    });
+    
+    // 设置浮窗内容
+    tooltip.innerHTML = `${tooltipTitle}
+
+${tooltipContent}`;
+    
+    // 添加到页面
+    document.body.appendChild(tooltip);
+    
+    // 显示浮窗并设置初始位置
+    displayPriceMetricTooltip(event, tooltip);
+    
+    // 为当前元素添加鼠标移动事件，实现跟随鼠标移动
+    const currentElement = event.currentTarget;
+    
+    // 鼠标移动事件（更新浮层位置）
+    const mousemoveHandler = (e) => {
+        updatePriceMetricTooltipPosition(e, tooltip);
+    };
+    
+    // 鼠标离开事件
+    const mouseleaveHandler = () => {
+        hidePriceMetricTooltip();
+        // 清理事件监听器
+        currentElement.removeEventListener('mousemove', mousemoveHandler);
+        currentElement.removeEventListener('mouseleave', mouseleaveHandler);
+    };
+    
+    // 添加事件监听器
+    currentElement.addEventListener('mousemove', mousemoveHandler);
+    currentElement.addEventListener('mouseleave', mouseleaveHandler);
+}
+
+// 显示价格指标浮窗
+function displayPriceMetricTooltip(event, tooltip) {
+    // 检查tooltip参数是否存在
+    if (!tooltip) {
+        console.warn('displayPriceMetricTooltip: tooltip参数为空');
+        return;
+    }
+    // 即显：不做延时，直接更新位置与内容
+    updatePriceMetricTooltipPosition(event, tooltip);
+    tooltip.style.opacity = '1';
+}
+
+// 隐藏价格指标浮窗
+function hidePriceMetricTooltip() {
+    const tooltip = document.getElementById('price-metric-tooltip');
+    if (tooltip) {
+        tooltip.style.opacity = '0';
+        // 延迟移除DOM元素，确保过渡动画完成
+        setTimeout(() => {
+            if (tooltip && tooltip.parentNode) {
+                tooltip.remove();
+            }
+        }, 80);
+    }
+}
+
+// 更新价格指标浮窗位置
+function updatePriceMetricTooltipPosition(event, tooltip) {
+    // 检查参数是否存在
+    if (!event || !tooltip) {
+        console.warn('updatePriceMetricTooltipPosition: 参数为空', { event: !!event, tooltip: !!tooltip });
+        return;
+    }
+    
+    const offset = 12;
+    tooltip.style.left = `${event.clientX + offset}px`;
+    tooltip.style.top = `${event.clientY + offset}px`;
+}
+
 // 自定义浮层提示函数（商品清单利润推演专用）
 function showCatalogTooltip(text, x, y) {
 	// 移除已存在的浮层
@@ -2152,7 +2293,15 @@ function initBatchProfitScenario() {
                         finalPrice: base.actualPrice
                     });
                     const roiText = isFinite(res.breakevenROI) ? res.breakevenROI.toFixed(2) : '∞';
-                    const adText = isFinite(res.breakevenAdRate) ? `${(res.breakevenAdRate*100).toFixed(2)}%` : '-';
+                    // 为保本广告占比添加危险标识
+                    let adText = '-';
+                    if (isFinite(res.breakevenAdRate)) {
+                        const adRate = res.breakevenAdRate;
+                        const isDanger = adRate > 0 && adRate < 0.21;
+                        const dangerStyle = isDanger ? 'background:#dc2626; color:#fff; padding:1px 4px; border-radius:3px; font-weight:700;' : '';
+                        const dangerIcon = isDanger ? '⚠️' : '';
+                        adText = `<div style="display:inline-block; ${dangerStyle}">${dangerIcon}${(adRate*100).toFixed(2)}%</div>`;
+                    }
                     return {roiText, adText};
                 }catch(_){ return {roiText:'-', adText:'-'} }
             })();
@@ -2264,7 +2413,15 @@ function initBatchProfitScenario() {
                         finalPrice: base.actualPrice
                     });
                     const roiText = isFinite(res.breakevenROI) ? res.breakevenROI.toFixed(2) : '∞';
-                    const adText = isFinite(res.breakevenAdRate) ? `${(res.breakevenAdRate*100).toFixed(2)}%` : '-';
+                    // 为保本广告占比添加危险标识
+                    let adText = '-';
+                    if (isFinite(res.breakevenAdRate)) {
+                        const adRate = res.breakevenAdRate;
+                        const isDanger = adRate > 0 && adRate < 0.21;
+                        const dangerStyle = isDanger ? 'background:#dc2626; color:#fff; padding:1px 4px; border-radius:3px; font-weight:700;' : '';
+                        const dangerIcon = isDanger ? '⚠️' : '';
+                        adText = `<div style="display:inline-block; ${dangerStyle}">${dangerIcon}${(adRate*100).toFixed(2)}%</div>`;
+                    }
                     return {roiText, adText};
                 }catch(_){ return {roiText:'-', adText:'-'} }
             })();
@@ -2681,7 +2838,15 @@ function initPriceExploration() {
                 finalPrice: priceCandidates[state.activeIndex]
             });
             const roiText = isFinite(roiRes.breakevenROI) ? roiRes.breakevenROI.toFixed(2) : '∞';
-            const adText = isFinite(roiRes.breakevenAdRate) ? `${(roiRes.breakevenAdRate*100).toFixed(2)}%` : '-';
+            // 为保本广告占比添加危险标识
+            let adText = '-';
+            if (isFinite(roiRes.breakevenAdRate)) {
+                const adRate = roiRes.breakevenAdRate;
+                const isDanger = adRate > 0 && adRate < 0.21;
+                const dangerStyle = isDanger ? 'background:#dc2626; color:#fff; padding:1px 4px; border-radius:3px; font-weight:700;' : '';
+                const dangerIcon = isDanger ? '⚠️' : '';
+                adText = `<div style="display:inline-block; ${dangerStyle}">${dangerIcon}${(adRate*100).toFixed(2)}%</div>`;
+            }
             const extraCol = `<td style=\"padding:8px 10px;text-align:right;color:#333;\"><div style=\"font-weight:600;\">${roiText}</div><div style=\"font-size:12px;opacity:0.9;\">${adText}</div></td>`;
             return `<tr>${firstCol}${tds}${extraCol}</tr>`;
         }).join('');
@@ -3815,9 +3980,23 @@ function renderCatalogTable() {
 	const buildAdCell = (v) => {
 		const text = fmtRange(v, true, false, true);
 		let over1 = false;
-		if (v && typeof v==='object' && 'min' in v) { over1 = isFinite(v.min) && v.min >= 1; }
-		else { over1 = isFinite(v) && v >= 1; }
-		if (!over1) return text;
+		let isDanger = false;
+		
+		if (v && typeof v==='object' && 'min' in v) { 
+			over1 = isFinite(v.min) && v.min >= 1; 
+			isDanger = isFinite(v.min) && v.min > 0 && v.min < 0.21;
+		} else { 
+			over1 = isFinite(v) && v >= 1; 
+			isDanger = isFinite(v) && v > 0 && v < 0.21;
+		}
+		
+		// 危险标识样式：红色背景、白色文字、加粗显示
+		const dangerStyle = isDanger ? 'background:#dc2626; color:#fff; padding:2px 6px; border-radius:4px; font-weight:700;' : '';
+		const dangerIcon = isDanger ? '⚠️ ' : '';
+		
+		if (!over1) {
+			return `<div style="display:inline-block; ${dangerStyle}">${dangerIcon}${text}</div>`;
+		}
 		return `<div style="position:relative; display:inline-block;">${text}<span title="需≥100%付费占比才保本" style="position:absolute; right:-8px; top:-4px; width:6px; height:6px; background:#ef4444; border-radius:50%;"></span></div>`;
 	};
 	const tbody = '<tbody>' + rows.map((row, idx) => {
@@ -3839,7 +4018,17 @@ function renderCatalogTable() {
 				return roiText;
 			})()}</td>`+
 			`<td class=\"lp-col-right\" style=\"white-space:nowrap;\">${(function(){
-				const renderAd = (a)=>{ const text = (!isFinite(a)||isNaN(a))? '-' : (a<=0? '0%' : (a*100).toFixed(2)+'%'); const over = isFinite(a)&&a>=1; return `<div style=\\\"position:relative; display:inline-block;\\\">${text}${over?'<span title=\\\"需≥100%付费占比才保本\\\" style=\\\"position:absolute; right:-8px; top:-4px; width:6px; height:6px; background:#ef4444; border-radius:50%;\\\"></span>':''}</div>`; };
+				const renderAd = (a)=>{
+					const text = (!isFinite(a)||isNaN(a))? '-' : (a<=0? '0%' : (a*100).toFixed(2)+'%');
+					const over = isFinite(a)&&a>=1;
+					const isDanger = isFinite(a) && a > 0 && a < 0.21; // 低于21%的危险标识
+					
+					// 危险标识样式：红色背景、白色文字、加粗显示
+					const dangerStyle = isDanger ? 'background:#dc2626; color:#fff; padding:2px 6px; border-radius:4px; font-weight:700;' : '';
+					const dangerIcon = isDanger ? '⚠️ ' : '';
+					
+					return `<div style=\\\"position:relative; display:inline-block; ${dangerStyle}\\\">${dangerIcon}${text}${over?'<span title=\\\"需≥100%付费占比才保本\\\" style=\\\"position:absolute; right:-8px; top:-4px; width:6px; height:6px; background:#ef4444; border-radius:50%;\\\"></span>':''}</div>`;
+				};
 				if (Array.isArray(res.list)) return res.list.map(x=>renderAd(x.breakevenAdRate)).join('');
 				if (Array.isArray(res.priceRangeResults)) return res.priceRangeResults.map(x=>`<div>${fmtRange(x.breakevenAdRate,true,false,true)}</div>`).join('');
 				if (Array.isArray(res.combinations)) return res.combinations.map(x=>renderAd(x.breakevenAdRate)).join('');
