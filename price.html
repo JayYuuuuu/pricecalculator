@@ -19,13 +19,211 @@
         }
 
         .container {
-            max-width: 800px;
+            max-width: 1500px; /* 增加容器宽度以容纳左右分屏 */
             margin: 0 auto;
             background: white;
             border-radius: 20px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
             overflow: hidden;
         }
+
+        /* 电脑端左右分屏布局 */
+        .desktop-layout {
+            display: flex;
+            gap: 30px;
+            min-height: 600px;
+            padding: 0 20px;
+        }
+
+        .left-panel {
+            flex: 1;
+            min-width: 0; /* 防止flex子项溢出 */
+            position: relative;
+        }
+
+        .right-panel {
+            flex: 1;
+            min-width: 0; /* 防止flex子项溢出 */
+            border-left: 2px solid #e9ecef;
+            padding-left: 30px;
+            position: relative;
+        }
+
+        .right-panel::before {
+            content: '';
+            position: absolute;
+            left: -1px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 1px;
+        }
+
+        /* 手机端保持原有布局 */
+        .mobile-layout {
+            display: block;
+        }
+
+        /* 响应式布局切换 */
+        @media (min-width: 1024px) {
+            .desktop-layout {
+                display: flex;
+            }
+            
+            .mobile-layout {
+                display: none;
+            }
+            
+            .content {
+                padding: 30px;
+            }
+            
+            .right-panel .content {
+                padding: 30px 0 30px 0;
+            }
+
+            /* 电脑端优化表格显示 - 移除固定高度限制，让表格完整显示 */
+            .simulation-table-container {
+                max-height: none; /* 移除固定高度限制 */
+                overflow: visible; /* 移除滚动条 */
+            }
+
+            .simulation-table th {
+                position: static; /* 移除粘性定位，因为不再需要滚动 */
+                z-index: auto;
+            }
+
+            /* 确保表格在电脑端有足够的显示空间 */
+            .profit-simulation-results {
+                min-height: auto;
+            }
+        }
+
+        @media (max-width: 1023px) {
+            .desktop-layout {
+                display: none;
+            }
+            
+            .mobile-layout {
+                display: block;
+            }
+            
+            .container {
+                max-width: 800px;
+            }
+            
+            .content {
+                padding: 40px;
+            }
+        }
+
+        /* 电脑端左右分屏时的特殊样式 */
+        @media (min-width: 1024px) {
+            .desktop-layout .section {
+                margin-bottom: 30px;
+            }
+
+            .desktop-layout .section:last-child {
+                margin-bottom: 0;
+            }
+
+            .desktop-layout .input-grid {
+                gap: 15px;
+            }
+
+            .desktop-layout .input-group {
+                margin-bottom: 20px;
+            }
+
+            .desktop-layout .profit-simulation-controls {
+                margin-bottom: 20px;
+            }
+
+            .desktop-layout .profit-simulation-results {
+                margin-top: 15px;
+            }
+
+            /* 电脑端优化表格显示 - 移除固定高度限制，让表格完整显示 */
+            .simulation-table-container {
+                max-height: none; /* 移除固定高度限制 */
+                overflow: visible; /* 移除滚动条 */
+                border-radius: 10px;
+                border: 2px solid #e9ecef;
+            }
+
+            .simulation-table th {
+                position: static; /* 移除粘性定位，因为不再需要滚动 */
+                z-index: auto;
+            }
+
+            /* 确保表格在电脑端有足够的显示空间 */
+            .profit-simulation-results {
+                min-height: auto;
+            }
+
+            /* 电脑端表格样式优化 */
+            .desktop-layout .simulation-table {
+                font-size: 0.9rem;
+                width: 100%;
+                table-layout: auto; /* 让表格根据内容自动调整列宽 */
+            }
+
+            .desktop-layout .simulation-table th,
+            .desktop-layout .simulation-table td {
+                padding: 10px 6px;
+                min-width: 60px;
+                white-space: nowrap; /* 防止文字换行 */
+                text-align: center;
+            }
+
+            /* 电脑端右侧面板内容区域优化 */
+            .desktop-layout .right-panel .content {
+                padding: 30px 0 30px 0;
+                height: fit-content; /* 根据内容自适应高度 */
+            }
+
+            /* 确保右侧面板能够完整显示所有内容 */
+            .desktop-layout .right-panel {
+                height: auto;
+                min-height: 600px;
+            }
+
+            /* 电脑端表格容器优化 */
+            .desktop-layout .simulation-table-container {
+                margin-bottom: 0;
+                border: 2px solid #e9ecef;
+                border-radius: 10px;
+                background: white;
+            }
+
+            /* 确保利润推演结果区域能够完整显示 */
+            .desktop-layout .profit-simulation-results {
+                height: auto;
+                min-height: 0;
+                overflow: visible;
+            }
+        }
+
+        @media (max-width: 1023px) {
+            .desktop-layout {
+                display: none;
+            }
+            
+            .mobile-layout {
+                display: block;
+            }
+            
+            .container {
+                max-width: 800px;
+            }
+            
+            .content {
+                padding: 40px;
+            }
+        }
+
+
 
         .header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -151,8 +349,8 @@
         .results {
             background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
             border-radius: 15px;
-            padding: 30px;
-            margin-top: 30px;
+            padding: 25px;
+            margin-top: 20px;
             border: 2px solid #dee2e6;
         }
 
@@ -222,28 +420,7 @@
             font-weight: 500;
         }
 
-        .calculate-btn {
-            width: 100%;
-            padding: 18px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 1.4rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 20px;
-        }
 
-        .calculate-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
-        }
-
-        .calculate-btn:active {
-            transform: translateY(0);
-        }
 
         .status {
             text-align: center;
@@ -272,128 +449,7 @@
             border: 2px solid #f5c6cb;
         }
 
-        /* 使用说明样式 */
-        .usage-guide {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            margin: 20px;
-            border-radius: 15px;
-            border: 2px solid #dee2e6;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
 
-        .usage-guide:hover {
-            border-color: #667eea;
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
-        }
-
-        .guide-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .usage-guide:hover .guide-header {
-            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
-        }
-
-        .guide-header h3 {
-            margin: 0;
-            font-size: 1.4rem;
-            font-weight: 600;
-        }
-
-        .guide-hint {
-            background: rgba(255,255,255,0.2);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            opacity: 0.9;
-            transition: all 0.3s ease;
-        }
-
-        .guide-content {
-            padding: 0;
-            max-height: 0;
-            overflow: hidden;
-            transition: all 0.4s ease;
-            opacity: 0;
-            transform: translateY(-10px);
-        }
-
-        .guide-content.show {
-            padding: 25px;
-            max-height: 1000px;
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .guide-section {
-            margin-bottom: 25px;
-        }
-
-        .guide-section:last-child {
-            margin-bottom: 0;
-        }
-
-        .guide-section h4 {
-            color: #495057;
-            font-size: 1.2rem;
-            margin-bottom: 15px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #667eea;
-            font-weight: 600;
-        }
-
-        .guide-section p {
-            color: #6c757d;
-            line-height: 1.6;
-            margin-bottom: 15px;
-        }
-
-        .guide-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-        }
-
-        .guide-item {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            border: 2px solid #e9ecef;
-        }
-
-        .guide-item strong {
-            color: #495057;
-            display: block;
-            margin-bottom: 12px;
-            font-size: 1.1rem;
-        }
-
-        .guide-item ul {
-            margin: 0;
-            padding-left: 20px;
-            color: #6c757d;
-        }
-
-        .guide-item li {
-            margin-bottom: 8px;
-            line-height: 1.5;
-        }
-
-        .guide-item li strong {
-            color: #667eea;
-            display: inline;
-            margin-bottom: 0;
-            font-size: 1rem;
-        }
 
         /* 利润推演功能样式 */
         .profit-simulation-controls {
@@ -421,7 +477,6 @@
         }
 
         .range-inputs {
-            display: flex;
             align-items: center;
             gap: 15px;
             flex-wrap: wrap;
@@ -577,37 +632,7 @@
                 grid-template-columns: 1fr;
             }
 
-            .usage-guide {
-                margin: 15px;
-            }
 
-            .guide-header {
-                padding: 15px;
-                flex-direction: column;
-                gap: 15px;
-                text-align: center;
-                cursor: pointer;
-                -webkit-tap-highlight-color: rgba(0,0,0,0.1);
-                user-select: none;
-            }
-
-            .guide-header:active {
-                background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
-                transform: scale(0.98);
-            }
-
-            .guide-content.show {
-                padding: 20px;
-            }
-
-            .guide-grid {
-                grid-template-columns: 1fr;
-                gap: 15px;
-            }
-
-            .guide-item {
-                padding: 15px;
-            }
 
             .range-inputs {
                 flex-direction: row;
@@ -656,218 +681,278 @@
             <p style="margin-top: 8px; font-size: 0.85rem; opacity: 0.7;">如有算法错误联系微信 <span style="color: #ffffff; font-weight: bold;">jayyuuuuuu</span>反馈</p>
         </div>
 
-        <!-- 使用说明 -->
-        <div class="usage-guide" id="usageGuide">
-            <div class="guide-header">
-                <h3>📖 使用说明</h3>
-                <span class="guide-hint" id="guideHint">鼠标悬停查看详情</span>
+
+
+        <!-- 电脑端左右分屏布局 -->
+        <div class="desktop-layout">
+            <!-- 左侧面板：主页面内容 -->
+            <div class="left-panel">
+                <div class="content">
+                    <!-- 核心财务指标 -->
+                    <div class="section">
+                        <h2>核心财务指标</h2>
+                        <div class="input-grid">
+                            <div class="input-group">
+                                <label>进货价</label>
+                                <input type="number" id="costPrice" placeholder="请输入商品进价" step="0.01" value="58">
+                            </div>
+                            <div class="input-group">
+                                <label>开票成本（%）</label>
+                                <input type="number" id="invoiceCost" placeholder="开票成本比例" step="0.1" value="6">
+                            </div>
+                            <div class="input-group">
+                                <label>售价（含税）</label>
+                                <input type="number" id="sellingPrice" placeholder="请输入商品售价" step="0.01" value="109">
+                            </div>
+                            <div class="input-group">
+                                <label>你的利润</label>
+                                <input type="text" id="profit" readonly placeholder="自动计算">
+                            </div>
+                            <div class="input-group">
+                                <label>保本ROI</label>
+                                <input type="text" id="breakevenROI" readonly placeholder="自动计算">
+                            </div>
+                            <div class="input-group">
+                                <label>保本广告占比</label>
+                                <input type="text" id="breakevenAdRate" readonly placeholder="自动计算">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 费用设置 -->
+                    <div class="section">
+                        <h2>费用设置</h2>
+                        <div class="input-grid">
+                            <div class="input-group">
+                                <label>付费占比（%）</label>
+                                <input type="number" id="marketingCost" placeholder="请输入预期广告占比占比" step="0.1" value="20">
+                            </div>
+                            <div class="input-group">
+                                <label>退货率（%）</label>
+                                <input type="number" id="riskRate" placeholder="请输入退货率" step="0.1" value="20">
+                            </div>
+                            <div class="input-group">
+                                <label>进项税率（%）</label>
+                                <input type="number" id="inputTaxRate" placeholder="进项税率" step="0.1" value="13">
+                            </div>
+                            <div class="input-group">
+                                <label>销项税率（%）</label>
+                                <input type="number" id="outputTaxRate" placeholder="销项税率" step="0.1" value="13">
+                            </div>
+                            <div class="input-group">
+                                <label>平台佣金（%）</label>
+                                <input type="number" id="platformFee" placeholder="请输入平台佣金" step="0.1" value="5.5">
+                            </div>
+                            <div class="input-group">
+                                <label>每单快递费</label>
+                                <input type="number" id="logisticsCost" placeholder="请输入物流费用" step="0.01" value="2.8">
+                            </div>
+                            <div class="input-group">
+                                <label>运费险</label>
+                                <input type="number" id="shippingInsurance" placeholder="请输入运费险费用" step="0.01" value="1.5">
+                            </div>
+                            <div class="input-group">
+                                <label>其它成本</label>
+                                <input type="number" id="otherCost" placeholder="请输入其他费用" step="0.01" value="2.5">
+                            </div>
+                        </div>
+                    </div>
+
+
+
+                    <!-- 价格指标一览 -->
+                    <div class="results" id="results" style="display: none;">
+                        <h2 style="margin-bottom: 20px;">价格指标一览</h2>
+                        <div class="metrics-grid">
+                            <div class="metric-card">
+                                <div class="metric-value" id="markupRatio">0倍</div>
+                                <div class="metric-label">加价倍率</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-value" id="grossMargin">0%</div>
+                                <div class="metric-label">毛利润</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="guide-content" id="guideContent">
-                <div class="guide-section">
-                    <h4>🎯 核心功能</h4>
-                    <p>本工具帮助电商卖家计算商品利润，考虑税费、平台费用、广告成本等各项支出，提供准确的利润分析和定价建议。</p>
-                </div>
-                
-                <div class="guide-section">
-                    <h4>📊 输入说明</h4>
-                    <div class="guide-grid">
-                        <div class="guide-item">
-                            <strong>核心财务指标：</strong>
-                            <ul>
-                                <li><strong>进货价：</strong>商品不含税进价</li>
-                                <li><strong>开票成本：</strong>供应商开票额外费用比例</li>
-                                <li><strong>售价（含税）：</strong>最终销售价格（含税）</li>
-                            </ul>
+
+            <!-- 右侧面板：利润推演模块 -->
+            <div class="right-panel">
+                <div class="content">
+                    <div class="section">
+                        <h2>利润推演分析</h2>
+                        <p style="color: #6c757d; margin-bottom: 20px; line-height: 1.6;">
+                            分析不同退货率和付费占比组合下的利润率情况，帮助您找到最优的运营策略组合。
+                        </p>
+                        
+                        <div class="profit-simulation-controls">
+                            <div class="control-groups-container">
+                                <div class="control-group">
+                                    <label>退货率范围（%）</label>
+                                    <div class="range-inputs">
+                                        <input type="number" id="minReturnRate" placeholder="最小值" step="1" value="5" min="0" max="50">
+                                        <span>至</span>
+                                        <input type="number" id="maxReturnRate" placeholder="最大值" step="1" value="35" min="0" max="50">
+                                    </div>
+                                </div>
+                                <div class="control-group">
+                                    <label>付费占比范围（%）</label>
+                                    <div class="range-inputs">
+                                        <input type="number" id="minMarketingCost" placeholder="最小值" step="1" value="10" min="0" max="100">
+                                        <span>至</span>
+                                        <input type="number" id="maxMarketingCost" placeholder="最大值" step="1" value="40" min="0" max="100">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="guide-item">
-                            <strong>费用设置：</strong>
-                            <ul>
-                                <li><strong>付费占比：</strong>广告费用占售价比例</li>
-                                <li><strong>退货率：</strong>预期退货比例</li>
-                                <li><strong>税率：</strong>进项税和销项税率</li>
-                                <li><strong>平台佣金：</strong>电商平台收取费用比例</li>
-                                <li><strong>其他成本：</strong>物流、包装等固定费用</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="guide-section">
-                    <h4>💡 计算结果说明</h4>
-                    <div class="guide-grid">
-                        <div class="guide-item">
-                            <strong>利润分析：</strong>
-                            <ul>
-                                <li><strong>实际利润：</strong>扣除所有成本后的净利润</li>
-                                <li><strong>利润率：</strong>利润占售价的百分比</li>
-                                <li><strong>加价倍率：</strong>售价与进货成本的比值</li>
-                                <li><strong>毛利润：</strong>售价与进货成本的差额比例</li>
-                            </ul>
-                        </div>
-                        <div class="guide-item">
-                            <strong>保本分析：</strong>
-                            <ul>
-                                <li><strong>保本ROI：</strong>广告投入回报率临界值</li>
-                                <li><strong>保本广告占比：</strong>实现保本的最大广告费用比例</li>
-                            </ul>
+
+                        <div class="profit-simulation-results" id="profitSimulationResults">
+                            <h3 style="margin-bottom: 20px; color: #495057;">利润推演结果</h3>
+                            <div class="simulation-table-container">
+                                <table class="simulation-table" id="simulationTable">
+                                    <tbody>
+                                        <!-- 动态生成内容 -->
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
-                </div>
-                
-                <div class="guide-section">
-                    <h4>⚡ 使用技巧</h4>
-                    <ul>
-                        <li>输入数据后系统会自动计算，无需手动点击按钮</li>
-                        <li>所有输入数据会自动保存到本地，刷新页面不会丢失</li>
-                        <li>调整参数时注意观察利润变化，找到最佳定价策略</li>
-                        <li>保本ROI越低越好，表示广告效率越高</li>
-                    </ul>
                 </div>
             </div>
         </div>
 
-        <div class="content">
-            <!-- 核心财务指标 -->
-            <div class="section">
-                <h2>核心财务指标</h2>
-                <div class="input-grid">
-                    <div class="input-group">
-                        <label>进货价</label>
-                        <input type="number" id="costPrice" placeholder="请输入商品进价" step="0.01" value="58">
-                    </div>
-                    <div class="input-group">
-                        <label>开票成本（%）</label>
-                        <input type="number" id="invoiceCost" placeholder="开票成本比例" step="0.1" value="6">
-                    </div>
-                    <div class="input-group">
-                        <label>售价（含税）</label>
-                        <input type="number" id="sellingPrice" placeholder="请输入商品售价" step="0.01" value="109">
-                    </div>
-                    <div class="input-group">
-                        <label>你的利润</label>
-                        <input type="text" id="profit" readonly placeholder="自动计算">
-                    </div>
-                    <div class="input-group">
-                        <label>保本ROI</label>
-                        <input type="text" id="breakevenROI" readonly placeholder="自动计算">
-                    </div>
-                    <div class="input-group">
-                        <label>保本广告占比</label>
-                        <input type="text" id="breakevenAdRate" readonly placeholder="自动计算">
-                    </div>
-                </div>
-            </div>
-
-            <!-- 费用设置 -->
-            <div class="section">
-                <h2>费用设置</h2>
-                <div class="input-grid">
-                    <div class="input-group">
-                        <label>付费占比（%）</label>
-                        <input type="number" id="marketingCost" placeholder="请输入预期广告占比占比" step="0.1" value="20">
-                    </div>
-                    <div class="input-group">
-                        <label>退货率（%）</label>
-                        <input type="number" id="riskRate" placeholder="请输入退货率" step="0.1" value="20">
-                    </div>
-                    <div class="input-group">
-                        <label>进项税率（%）</label>
-                        <input type="number" id="inputTaxRate" placeholder="进项税率" step="0.1" value="13">
-                    </div>
-                    <div class="input-group">
-                        <label>销项税率（%）</label>
-                        <input type="number" id="outputTaxRate" placeholder="销项税率" step="0.1" value="13">
-                    </div>
-                    <div class="input-group">
-                        <label>平台佣金（%）</label>
-                        <input type="number" id="platformFee" placeholder="请输入平台佣金" step="0.1" value="5.5">
-                    </div>
-                    <div class="input-group">
-                        <label>每单快递费</label>
-                        <input type="number" id="logisticsCost" placeholder="请输入物流费用" step="0.01" value="2.8">
-                    </div>
-                    <div class="input-group">
-                        <label>运费险</label>
-                        <input type="number" id="shippingInsurance" placeholder="请输入运费险费用" step="0.01" value="1.5">
-                    </div>
-                    <div class="input-group">
-                        <label>其它成本</label>
-                        <input type="number" id="otherCost" placeholder="请输入其他费用" step="0.01" value="2.5">
-                    </div>
-                </div>
-            </div>
-
-            <!-- 利润推演功能 -->
-            <div class="section">
-                <h2>利润推演分析</h2>
-                <p style="color: #6c757d; margin-bottom: 20px; line-height: 1.6;">
-                    分析不同退货率和付费占比组合下的利润率情况，帮助您找到最优的运营策略组合。
-                </p>
-                
-                <div class="profit-simulation-controls">
-                    <div class="control-groups-container">
-                        <div class="control-group">
-                            <label>退货率范围（%）</label>
-                            <div class="range-inputs">
-                                <input type="number" id="minReturnRate" placeholder="最小值" step="1" value="5" min="0" max="50">
-                                <span>至</span>
-                                <input type="number" id="maxReturnRate" placeholder="最大值" step="1" value="35" min="0" max="50">
-                            </div>
+        <!-- 手机端保持原有布局 -->
+        <div class="mobile-layout">
+            <div class="content">
+                <!-- 核心财务指标 -->
+                <div class="section">
+                    <h2>核心财务指标</h2>
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label>进货价</label>
+                            <input type="number" id="costPriceMobile" placeholder="请输入商品进价" step="0.01" value="58">
                         </div>
-                        <div class="control-group">
-                            <label>付费占比范围（%）</label>
-                            <div class="range-inputs">
-                                <input type="number" id="minMarketingCost" placeholder="最小值" step="1" value="10" min="0" max="100">
-                                <span>至</span>
-                                <input type="number" id="maxMarketingCost" placeholder="最大值" step="1" value="40" min="0" max="100">
-                            </div>
+                        <div class="input-group">
+                            <label>开票成本（%）</label>
+                            <input type="number" id="invoiceCostMobile" placeholder="开票成本比例" step="0.1" value="6">
+                        </div>
+                        <div class="input-group">
+                            <label>售价（含税）</label>
+                            <input type="number" id="sellingPriceMobile" placeholder="请输入商品售价" step="0.01" value="109">
+                        </div>
+                        <div class="input-group">
+                            <label>你的利润</label>
+                            <input type="text" id="profitMobile" readonly placeholder="自动计算">
+                        </div>
+                        <div class="input-group">
+                            <label>保本ROI</label>
+                            <input type="text" id="breakevenROIMobile" readonly placeholder="自动计算">
+                        </div>
+                        <div class="input-group">
+                            <label>保本广告占比</label>
+                            <input type="text" id="breakevenAdRateMobile" readonly placeholder="自动计算">
                         </div>
                     </div>
                 </div>
 
-                <div class="profit-simulation-results" id="profitSimulationResults">
-                    <h3 style="margin-bottom: 20px; color: #495057;">利润推演结果</h3>
-                    <div class="simulation-table-container">
-                        <table class="simulation-table" id="simulationTable">
-                            <tbody>
-                                <!-- 动态生成内容 -->
-                            </tbody>
-                        </table>
+                <!-- 费用设置 -->
+                <div class="section">
+                    <h2>费用设置</h2>
+                    <div class="input-grid">
+                        <div class="input-group">
+                            <label>付费占比（%）</label>
+                            <input type="number" id="marketingCostMobile" placeholder="请输入预期广告占比占比" step="0.1" value="20">
+                        </div>
+                        <div class="input-group">
+                            <label>退货率（%）</label>
+                            <input type="number" id="riskRateMobile" placeholder="请输入退货率" step="0.1" value="20">
+                        </div>
+                        <div class="input-group">
+                            <label>进项税率（%）</label>
+                            <input type="number" id="inputTaxRateMobile" placeholder="进项税率" step="0.1" value="13">
+                        </div>
+                        <div class="input-group">
+                            <label>销项税率（%）</label>
+                            <input type="number" id="outputTaxRateMobile" placeholder="销项税率" step="0.1" value="13">
+                        </div>
+                        <div class="input-group">
+                            <label>平台佣金（%）</label>
+                            <input type="number" id="platformFeeMobile" placeholder="请输入平台佣金" step="0.1" value="5.5">
+                        </div>
+                        <div class="input-group">
+                            <label>每单快递费</label>
+                            <input type="number" id="logisticsCostMobile" placeholder="请输入物流费用" step="0.01" value="2.8">
+                        </div>
+                        <div class="input-group">
+                            <label>运费险</label>
+                            <input type="number" id="shippingInsuranceMobile" placeholder="请输入运费险费用" step="0.01" value="1.5">
+                        </div>
+                        <div class="input-group">
+                            <label>其它成本</label>
+                            <input type="number" id="otherCostMobile" placeholder="请输入其他费用" step="0.01" value="2.5">
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <button class="calculate-btn" onclick="calculateProfit()">计算利润</button>
+                <!-- 利润推演功能 -->
+                <div class="section">
+                    <h2>利润推演分析</h2>
+                    <p style="color: #6c757d; margin-bottom: 20px; line-height: 1.6;">
+                        分析不同退货率和付费占比组合下的利润率情况，帮助您找到最优的运营策略组合。
+                    </p>
+                    
+                    <div class="profit-simulation-controls">
+                        <div class="control-groups-container">
+                            <div class="control-group">
+                                <label>退货率范围（%）</label>
+                                <div class="range-inputs">
+                                    <input type="number" id="minReturnRateMobile" placeholder="最小值" step="1" value="5" min="0" max="50">
+                                    <span>至</span>
+                                    <input type="number" id="maxReturnRateMobile" placeholder="最大值" step="1" value="35" min="0" max="50">
+                                </div>
+                            </div>
+                            <div class="control-group">
+                                <label>付费占比范围（%）</label>
+                                <div class="range-inputs">
+                                    <input type="number" id="minMarketingCostMobile" placeholder="最小值" step="1" value="10" min="0" max="100">
+                                    <span>至</span>
+                                    <input type="number" id="maxMarketingCostMobile" placeholder="最大值" step="1" value="40" min="0" max="100">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-            <!-- 计算结果 -->
-            <div class="results" id="results" style="display: none;">
-                <h2>计算结果</h2>
-                
-                <div class="result-item">
-                    <span class="result-label">实际利润：</span>
-                    <span class="result-value" id="actualProfit">¥0.00</span>
+                    <div class="profit-simulation-results" id="profitSimulationResultsMobile">
+                        <h3 style="margin-bottom: 20px; color: #495057;">利润推演结果</h3>
+                        <div class="simulation-table-container">
+                            <table class="simulation-table" id="simulationTableMobile">
+                                <tbody>
+                                    <!-- 动态生成内容 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
-                
-                <div class="result-item">
-                    <span class="result-label">利润率：</span>
-                    <span class="result-value" id="profitRate">0%</span>
-                </div>
+
+
 
                 <!-- 价格指标一览 -->
-                <h3 style="margin-top: 30px; color: #495057; font-size: 1.4rem;">价格指标一览</h3>
-                <div class="metrics-grid">
-                    <div class="metric-card">
-                        <div class="metric-value" id="markupRatio">0倍</div>
-                        <div class="metric-label">加价倍率</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value" id="grossMargin">0%</div>
-                        <div class="metric-label">毛利润</div>
+                <div class="results" id="resultsMobile" style="display: none;">
+                    <h2 style="margin-bottom: 20px;">价格指标一览</h2>
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-value" id="markupRatioMobile">0倍</div>
+                            <div class="metric-label">加价倍率</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="grossMarginMobile">0%</div>
+                            <div class="metric-label">毛利润</div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
     <script>
         function serviceVATFromTaxInclusive(amount, rate = 0.06) {
@@ -963,8 +1048,7 @@
                     profitInput.classList.add('profit-zero');
                 }
 
-                document.getElementById('actualProfit').textContent = `¥${profit.toFixed(2)}`;
-                document.getElementById('profitRate').textContent = `${profitRate}%`;
+
                 document.getElementById('markupRatio').textContent = `${markupRatio}倍`;
                 document.getElementById('grossMargin').textContent = `${grossMargin}%`;
                 document.getElementById('breakevenROI').value = breakevenROI;
@@ -1019,41 +1103,9 @@
             }
         }
 
-        function showGuide() {
-            document.getElementById('guideContent').classList.add('show');
-        }
 
-        function hideGuide() {
-            document.getElementById('guideContent').classList.remove('show');
-        }
 
-        function toggleGuide() {
-            const guideContent = document.getElementById('guideContent');
-            const guideHint = document.getElementById('guideHint');
-            if (guideContent.classList.contains('show')) {
-                guideContent.classList.remove('show');
-                guideHint.textContent = '点击查看详情';
-            } else {
-                guideContent.classList.add('show');
-                guideHint.textContent = '点击收起';
-            }
-        }
 
-        function initGuideInteraction() {
-            const usageGuide = document.getElementById('usageGuide');
-            const guideHint = document.getElementById('guideHint');
-            
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
-            
-            if (isMobile) {
-                guideHint.textContent = '点击查看详情';
-                usageGuide.addEventListener('click', toggleGuide);
-            } else {
-                guideHint.textContent = '鼠标悬停查看详情';
-                usageGuide.addEventListener('mouseenter', showGuide);
-                usageGuide.addEventListener('mouseleave', hideGuide);
-            }
-        }
 
         function generateProfitSimulation() {
             try {
@@ -1247,19 +1299,227 @@
             }
         }
 
+        // 手机端计算利润函数
+        function calculateProfitMobile() {
+            try {
+                const costPrice = parseFloat(document.getElementById('costPriceMobile').value) || 0;
+                const invoiceCost = parseFloat(document.getElementById('invoiceCostMobile').value) || 0;
+                const sellingPrice = parseFloat(document.getElementById('sellingPriceMobile').value) || 0;
+                const marketingCost = parseFloat(document.getElementById('marketingCostMobile').value) || 0;
+                const riskRate = parseFloat(document.getElementById('riskRateMobile').value) || 0;
+                const inputTaxRate = parseFloat(document.getElementById('inputTaxRateMobile').value) || 0;
+                const outputTaxRate = parseFloat(document.getElementById('outputTaxRateMobile').value) || 0;
+                const platformFee = parseFloat(document.getElementById('platformFeeMobile').value) || 0;
+                const logisticsCost = parseFloat(document.getElementById('logisticsCostMobile').value) || 0;
+                const shippingInsurance = parseFloat(document.getElementById('shippingInsuranceMobile').value) || 0;
+                const otherCost = parseFloat(document.getElementById('otherCostMobile').value) || 0;
+
+                if (costPrice <= 0 || sellingPrice <= 0) {
+                    alert('请输入有效的进货价和售价！');
+                    return;
+                }
+
+                const actualInvoiceCost = costPrice * (invoiceCost / 100);
+                const totalPurchaseCost = costPrice + actualInvoiceCost;
+                
+                const purchaseVAT = costPrice * (inputTaxRate / 100);
+
+                const baseCost = costPrice + actualInvoiceCost;
+                
+                const markupRatio = (sellingPrice / baseCost).toFixed(2);
+                
+                const grossMargin = (((sellingPrice - baseCost) / sellingPrice) * 100).toFixed(2);
+
+                const effectiveSalesRate = 1 - (riskRate / 100);
+
+                const platformFeeAmount = sellingPrice * (platformFee / 100);
+                const v = 0.06;
+                const adCost = sellingPrice * (marketingCost / 100);
+                const adCostEffective = adCost / effectiveSalesRate;
+                
+                const adVAT = serviceVATFromTaxInclusive(adCostEffective, v);
+
+                const logisticsCostEffective = logisticsCost / effectiveSalesRate;
+                const shippingInsuranceEffective = shippingInsurance / effectiveSalesRate;
+                const otherCostEffective = otherCost / effectiveSalesRate;
+
+                const netPrice = sellingPrice / (1 + outputTaxRate / 100);
+                const outputVAT = netPrice * (outputTaxRate / 100);
+
+                const totalVATDeduction = purchaseVAT + adVAT + serviceVATFromTaxInclusive(platformFeeAmount, v);
+                const actualVAT = outputVAT - totalVATDeduction;
+
+                const totalCost = totalPurchaseCost + platformFeeAmount + adCostEffective + 
+                                logisticsCostEffective + shippingInsuranceEffective + otherCostEffective + actualVAT;
+
+                const profit = sellingPrice - totalCost;
+                const profitRate = (profit / sellingPrice * 100).toFixed(2);
+
+                const effectiveCost = costPrice + actualInvoiceCost;
+                const fixedCosts = (logisticsCost + shippingInsurance + otherCost) / effectiveSalesRate;
+                const t = outputTaxRate / 100;
+                const taxFactorOnFinal = t / (1 + t);
+
+                const B = effectiveCost - purchaseVAT + fixedCosts;
+                
+                const platformRateDecimal = platformFee / 100;
+                const D = 1 - platformRateDecimal - taxFactorOnFinal + (v / (1 + v)) * platformRateDecimal;
+
+                const term = D - (B / sellingPrice);
+                const breakevenAdRate = (effectiveSalesRate / (1 - v)) * term;
+
+                let breakevenROI;
+                if (breakevenAdRate <= 0) {
+                    breakevenROI = '∞';
+                } else if (!isFinite(breakevenAdRate) || breakevenAdRate >= 1) {
+                    breakevenROI = '-';
+                } else {
+                    breakevenROI = (effectiveSalesRate / breakevenAdRate).toFixed(2);
+                }
+
+                document.getElementById('profitMobile').value = `¥${profit.toFixed(2)}`;
+                
+                const profitInput = document.getElementById('profitMobile');
+                profitInput.classList.remove('profit-positive', 'profit-negative', 'profit-zero');
+                if (profit > 0) {
+                    profitInput.classList.add('profit-positive');
+                } else if (profit < 0) {
+                    profitInput.classList.add('profit-negative');
+                } else {
+                    profitInput.classList.add('profit-zero');
+                }
+
+
+                document.getElementById('markupRatioMobile').textContent = `${markupRatio}倍`;
+                document.getElementById('grossMarginMobile').textContent = `${grossMargin}%`;
+
+                // 设置保本ROI和保本付费占比到手机端对应的元素
+                document.getElementById('breakevenROIMobile').value = breakevenROI;
+                
+                let breakevenAdRateDisplay;
+                if (breakevenAdRate <= 0) {
+                    breakevenAdRateDisplay = '0%';
+                } else if (!isFinite(breakevenAdRate) || breakevenAdRate >= 1) {
+                    breakevenAdRateDisplay = '-';
+                } else {
+                    breakevenAdRateDisplay = (breakevenAdRate * 100).toFixed(2) + '%';
+                }
+                document.getElementById('breakevenAdRateMobile').value = breakevenAdRateDisplay;
+
+                document.getElementById('resultsMobile').style.display = 'block';
+
+            } catch (error) {
+                console.error('计算错误:', error);
+                alert('计算过程中发生错误，请检查输入数据！');
+            }
+        }
+
+        // 数据同步函数 - 确保两个布局的数据保持一致
+        function syncDataBetweenLayouts() {
+            const desktopInputs = [
+                'costPrice', 'invoiceCost', 'sellingPrice', 'marketingCost', 'riskRate',
+                'inputTaxRate', 'outputTaxRate', 'platformFee', 'logisticsCost', 
+                'shippingInsurance', 'otherCost', 'minReturnRate', 'maxReturnRate',
+                'minMarketingCost', 'maxMarketingCost'
+            ];
+            
+            const mobileInputs = [
+                'costPriceMobile', 'invoiceCostMobile', 'sellingPriceMobile', 'marketingCostMobile', 'riskRateMobile',
+                'inputTaxRateMobile', 'outputTaxRateMobile', 'platformFeeMobile', 'logisticsCostMobile', 
+                'shippingInsuranceMobile', 'otherCostMobile', 'minReturnRateMobile', 'maxReturnRateMobile',
+                'minMarketingCostMobile', 'maxMarketingCostMobile'
+            ];
+
+            // 从桌面端同步到手机端
+            desktopInputs.forEach((desktopId, index) => {
+                const desktopElement = document.getElementById(desktopId);
+                const mobileElement = document.getElementById(mobileInputs[index]);
+                if (desktopElement && mobileElement) {
+                    mobileElement.value = desktopElement.value;
+                }
+            });
+        }
+
+        // 从手机端同步到桌面端
+        function syncFromMobileToDesktop() {
+            const desktopInputs = [
+                'costPrice', 'invoiceCost', 'sellingPrice', 'marketingCost', 'riskRate',
+                'inputTaxRate', 'outputTaxRate', 'platformFee', 'logisticsCost', 
+                'shippingInsurance', 'otherCost', 'minReturnRate', 'maxReturnRate',
+                'minMarketingCost', 'maxMarketingCost'
+            ];
+            
+            const mobileInputs = [
+                'costPriceMobile', 'invoiceCostMobile', 'sellingPriceMobile', 'marketingCostMobile', 'riskRateMobile',
+                'inputTaxRateMobile', 'outputTaxRateMobile', 'platformFeeMobile', 'logisticsCostMobile', 
+                'shippingInsuranceMobile', 'otherCostMobile', 'minReturnRateMobile', 'maxReturnRateMobile',
+                'minMarketingCostMobile', 'maxMarketingCostMobile'
+            ];
+
+            mobileInputs.forEach((mobileId, index) => {
+                const mobileElement = document.getElementById(mobileId);
+                const desktopElement = document.getElementById(desktopInputs[index]);
+                if (mobileElement && desktopElement) {
+                    desktopElement.value = mobileElement.value;
+                }
+            });
+        }
+
+        // 响应式布局检测和切换
+        function checkLayoutAndSync() {
+            const isDesktop = window.innerWidth >= 1024;
+            
+            if (isDesktop) {
+                // 桌面端布局，从桌面端同步到手机端
+                syncDataBetweenLayouts();
+            } else {
+                // 手机端布局，从手机端同步到桌面端
+                syncFromMobileToDesktop();
+            }
+        }
+
+        // 窗口大小改变时重新检测布局
+        window.addEventListener('resize', function() {
+            clearTimeout(this.resizeTimeout);
+            this.resizeTimeout = setTimeout(checkLayoutAndSync, 100);
+        });
+
         document.addEventListener('DOMContentLoaded', function() {
             loadFromLocalStorage();
             
-            const inputs = document.querySelectorAll('input[type="number"]');
-            inputs.forEach(input => {
+            // 桌面端输入框事件监听
+            const desktopInputs = document.querySelectorAll('.desktop-layout input[type="number"]');
+            desktopInputs.forEach(input => {
                 input.addEventListener('input', function() {
                     saveToLocalStorage();
+                    syncDataBetweenLayouts(); // 同步到手机端
                     
                     clearTimeout(this.timeout);
-                    this.timeout = setTimeout(calculateProfit, 500);
+                    this.timeout = setTimeout(function() {
+                        calculateProfit();
+                        // 同时触发利润推演表格重算
+                        generateProfitSimulation();
+                    }, 500);
                 });
             });
             
+            // 手机端输入框事件监听
+            const mobileInputs = document.querySelectorAll('.mobile-layout input[type="number"]');
+            mobileInputs.forEach(input => {
+                input.addEventListener('input', function() {
+                    saveToLocalStorage();
+                    syncFromMobileToDesktop(); // 同步到桌面端
+                    
+                    clearTimeout(this.timeout);
+                    this.timeout = setTimeout(function() {
+                        calculateProfitMobile();
+                        // 同时触发手机端利润推演表格重算
+                        generateProfitSimulationMobile();
+                    }, 500);
+                });
+            });
+            
+            // 桌面端利润推演输入框事件监听
             const simulationInputs = [
                 'minReturnRate', 'maxReturnRate', 'minMarketingCost', 
                 'maxMarketingCost'
@@ -1270,6 +1530,7 @@
                 if (element) {
                     element.addEventListener('input', function() {
                         saveSimulationSettings();
+                        syncDataBetweenLayouts(); // 同步到手机端
                         
                         clearTimeout(this.simulationTimeout);
                         this.simulationTimeout = setTimeout(generateProfitSimulation, 500);
@@ -1277,12 +1538,161 @@
                 }
             });
             
-            setTimeout(calculateProfit, 100);
-            initGuideInteraction();
-            loadSimulationSettings();
+            // 手机端利润推演输入框事件监听
+            const mobileSimulationInputs = [
+                'minReturnRateMobile', 'maxReturnRateMobile', 'minMarketingCostMobile', 
+                'maxMarketingCostMobile'
+            ];
             
-            setTimeout(generateProfitSimulation, 200);
+            mobileSimulationInputs.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.addEventListener('input', function() {
+                        saveSimulationSettings();
+                        syncFromMobileToDesktop(); // 同步到桌面端
+                        
+                        clearTimeout(this.simulationTimeout);
+                        this.simulationTimeout = setTimeout(function() {
+                            generateProfitSimulationMobile();
+                        }, 500);
+                    });
+                }
+            });
+            
+            // 初始化时同步数据
+            checkLayoutAndSync();
+            
+            // 延迟执行计算，确保DOM完全加载
+            setTimeout(function() {
+                if (window.innerWidth >= 1024) {
+                    calculateProfit();
+                    generateProfitSimulation();
+                } else {
+                    calculateProfitMobile();
+                    generateProfitSimulationMobile();
+                }
+            }, 200);
+            
+
+            loadSimulationSettings();
         });
+
+        // 手机端利润推演生成函数
+        function generateProfitSimulationMobile() {
+            try {
+                const minReturnRate = parseFloat(document.getElementById('minReturnRateMobile').value) || 5;
+                const maxReturnRate = parseFloat(document.getElementById('maxReturnRateMobile').value) || 30;
+                const minMarketingCost = parseFloat(document.getElementById('minMarketingCostMobile').value) || 10;
+                const maxMarketingCost = parseFloat(document.getElementById('maxMarketingCostMobile').value) || 40;
+                const returnRateStep = 3;
+                const marketingStep = 5;
+
+                if (minReturnRate >= maxReturnRate || minMarketingCost >= maxMarketingCost) {
+                    return;
+                }
+
+                const baseParams = getBaseParametersMobile();
+                if (!baseParams) return;
+
+                const returnRates = [];
+                const marketingCosts = [];
+                
+                for (let rate = minReturnRate; rate <= maxReturnRate; rate += returnRateStep) {
+                    returnRates.push(rate);
+                }
+                
+                for (let cost = minMarketingCost; cost <= maxMarketingCost; cost += marketingStep) {
+                    marketingCosts.push(cost);
+                }
+
+                generateSimulationTableMobile(returnRates, marketingCosts, baseParams);
+
+            } catch (error) {
+                console.error('手机端利润推演生成错误:', error);
+            }
+        }
+
+        // 手机端获取基础参数
+        function getBaseParametersMobile() {
+            const costPrice = parseFloat(document.getElementById('costPriceMobile').value) || 0;
+            const invoiceCost = parseFloat(document.getElementById('invoiceCostMobile').value) || 0;
+            const sellingPrice = parseFloat(document.getElementById('sellingPriceMobile').value) || 0;
+            const inputTaxRate = parseFloat(document.getElementById('inputTaxRateMobile').value) || 0;
+            const outputTaxRate = parseFloat(document.getElementById('outputTaxRateMobile').value) || 0;
+            const platformFee = parseFloat(document.getElementById('platformFeeMobile').value) || 0;
+            const logisticsCost = parseFloat(document.getElementById('logisticsCostMobile').value) || 0;
+            const shippingInsurance = parseFloat(document.getElementById('shippingInsuranceMobile').value) || 0;
+            const otherCost = parseFloat(document.getElementById('otherCostMobile').value) || 0;
+
+            if (costPrice <= 0 || sellingPrice <= 0) {
+                return null;
+            }
+
+            return {
+                costPrice,
+                invoiceCost,
+                sellingPrice,
+                inputTaxRate,
+                outputTaxRate,
+                platformFee,
+                logisticsCost,
+                shippingInsurance,
+                otherCost
+            };
+        }
+
+        // 手机端生成推演表格
+        function generateSimulationTableMobile(returnRates, marketingCosts, baseParams) {
+            const table = document.getElementById('simulationTableMobile');
+            const tbody = table.querySelector('tbody');
+            
+            tbody.innerHTML = '';
+            
+            const headerRow = document.createElement('tr');
+            
+            const headerCell = document.createElement('td');
+            headerCell.textContent = '退货率\\付费占比';
+            headerCell.className = 'header-cell';
+            headerRow.appendChild(headerCell);
+            
+            marketingCosts.forEach(cost => {
+                const th = document.createElement('td');
+                th.textContent = `${cost}%`;
+                th.className = 'header-cell';
+                headerRow.appendChild(th);
+            });
+            tbody.appendChild(headerRow);
+            
+            returnRates.forEach(returnRate => {
+                const row = document.createElement('tr');
+                
+                const rateCell = document.createElement('td');
+                rateCell.textContent = `${returnRate}%`;
+                row.appendChild(rateCell);
+                
+                marketingCosts.forEach(marketingCost => {
+                    const profitRate = calculateProfitRateForSimulation(
+                        returnRate, marketingCost, baseParams
+                    );
+                    
+                    const cell = document.createElement('td');
+                    cell.textContent = `${profitRate.toFixed(2)}%`;
+                    cell.className = 'profit-cell';
+                    
+                    if (profitRate > 0) {
+                        cell.classList.add('positive');
+                    } else if (profitRate < 0) {
+                        cell.classList.add('negative');
+                    } else {
+                        cell.classList.add('zero');
+                    }
+                    
+                    row.appendChild(cell);
+                });
+                
+                tbody.appendChild(row);
+            });
+        }
     </script>
 
     <!-- 版权声明 -->
