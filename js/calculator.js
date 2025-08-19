@@ -5334,6 +5334,43 @@ async function importCatalogFromFile(file) {
 		throw new Error('不支持的文件格式，请选择 .csv、.xlsx 或 .xls 文件');
 	}
 	
+	// 健壮的CSV解析函数：正确处理包含逗号、引号等特殊字符的字段
+	const parseCSVLine = (line) => {
+		const result = [];
+		let current = '';
+		let inQuotes = false;
+		let i = 0;
+		
+		while (i < line.length) {
+			const char = line[i];
+			
+			if (char === '"') {
+				if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
+					// 双引号转义
+					current += '"';
+					i += 2;
+				} else {
+					// 切换引号状态
+					inQuotes = !inQuotes;
+					i++;
+				}
+			} else if (char === ',' && !inQuotes) {
+				// 逗号分隔符（不在引号内）
+				result.push(current.trim());
+				current = '';
+				i++;
+			} else {
+				// 普通字符
+				current += char;
+				i++;
+			}
+		}
+		
+		// 添加最后一个字段
+		result.push(current.trim());
+		return result;
+	};
+	
 	let lines = [];
 	let header = [];
 	
@@ -5373,8 +5410,12 @@ async function importCatalogFromFile(file) {
 			throw new Error('CSV文件为空');
 		}
 		
-		header = csvLines[0].split(',');
+		// 使用健壮的CSV解析函数解析表头
+		header = parseCSVLine(csvLines[0]);
 		lines = csvLines.slice(1);
+		
+		console.log(`[Catalog] CSV文件解析成功：列数=${header.length}，行数=${lines.length}`);
+		console.log(`[Catalog] CSV表头：`, header);
 	}
 	
 	if (lines.length === 0) {
@@ -5415,7 +5456,10 @@ async function importCatalogFromFile(file) {
 		try {
 			const currentLine = lines[i];
 			if (!currentLine || String(currentLine).trim() === '') { continue; }
-			const cells = currentLine.split(','); const get = (k)=>{ const j=idx(k); return j>=0 ? cells[j] : ''; };
+			
+			// 使用健壮的CSV解析函数解析数据行
+			const cells = isExcel ? currentLine.split(',') : parseCSVLine(currentLine);
+			const get = (k)=>{ const j=idx(k); return j>=0 ? cells[j] : ''; };
 			if (isNew) {
 				const row = { name:get('name'), sku:get('sku'), platform:get('platform') };
 				const salePrice = Number(get('salePrice'));
@@ -5491,7 +5535,8 @@ async function importCatalogFromFile(file) {
 			const fileLine = i + 2; // 文件中的真实行号（包含表头）
 			let name = '', sku = '';
 			try {
-				const cells = (lines[i] || '').split(',');
+				// 使用健壮的CSV解析函数解析错误行
+				const cells = isExcel ? (lines[i] || '').split(',') : parseCSVLine(lines[i] || '');
 				const jName = idx('name');
 				const jSku = idx('sku');
 				name = jName>=0 ? (cells[jName]||'') : '';
