@@ -395,6 +395,165 @@
             font-size: 1rem;
         }
 
+        /* 利润推演功能样式 */
+        .profit-simulation-controls {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 2px solid #dee2e6;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 1.1rem;
+            color: #495057;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .range-inputs {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .range-inputs input {
+            width: 120px;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            background: white;
+            transition: all 0.3s ease;
+        }
+
+        .range-inputs input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .range-inputs span {
+            color: #6c757d;
+            font-weight: 500;
+            font-size: 1rem;
+        }
+
+        /* 电脑端：两个设置项放在同一行 */
+        .control-groups-container {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+        }
+
+        .control-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .profit-simulation-results {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            border: 2px solid #e9ecef;
+            margin-top: 20px;
+        }
+
+        .simulation-table-container {
+            overflow-x: auto;
+            margin-bottom: 25px;
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+        }
+
+        .simulation-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 600px;
+        }
+
+        .simulation-table th,
+        .simulation-table td {
+            padding: 12px 8px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .simulation-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .simulation-table th:first-child {
+            background: linear-gradient(135deg, #495057 0%, #6c757d 100%);
+            min-width: 100px;
+        }
+
+        .simulation-table td:first-child {
+            background: #f8f9fa;
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .simulation-table td:first-child.header-cell {
+            background: linear-gradient(135deg, #495057 0%, #6c757d 100%) !important;
+            color: white !important;
+        }
+
+        .simulation-table td {
+            background: white;
+            transition: background-color 0.2s ease;
+        }
+
+        .simulation-table td:hover {
+            background: #e3f2fd;
+        }
+
+        .header-cell {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            color: white !important;
+            font-weight: bold !important;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .profit-cell {
+            font-weight: bold;
+        }
+
+        .profit-cell.positive {
+            color: #28a745;
+            background: #e8f5e8;
+        }
+
+        .profit-cell.negative {
+            color: #dc3545;
+            background: #f8e8e8;
+        }
+
+        .profit-cell.zero {
+            color: #856404;
+            background: #fff8e1;
+        }
+
         @media (max-width: 768px) {
             .container {
                 margin: 10px;
@@ -448,6 +607,44 @@
 
             .guide-item {
                 padding: 15px;
+            }
+
+            .range-inputs {
+                flex-direction: row;
+                align-items: center;
+                gap: 10px;
+            }
+
+            .range-inputs input {
+                width: 80px;
+            }
+
+            .simulation-table-container {
+                font-size: 0.8rem;
+            }
+
+            .simulation-table th,
+            .simulation-table td {
+                padding: 8px 4px;
+                font-size: 0.8rem;
+            }
+
+            .profit-simulation-controls {
+                padding: 20px;
+            }
+
+            .profit-simulation-results {
+                padding: 20px;
+            }
+
+            /* 手机端：两个设置项分上下两行显示 */
+            .control-groups-container {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .control-group {
+                margin-bottom: 0;
             }
         }
     </style>
@@ -596,6 +793,46 @@
                     <div class="input-group">
                         <label>其它成本</label>
                         <input type="number" id="otherCost" placeholder="请输入其他费用" step="0.01" value="2.5">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 利润推演功能 -->
+            <div class="section">
+                <h2>利润推演分析</h2>
+                <p style="color: #6c757d; margin-bottom: 20px; line-height: 1.6;">
+                    分析不同退货率和付费占比组合下的利润率情况，帮助您找到最优的运营策略组合。
+                </p>
+                
+                <div class="profit-simulation-controls">
+                    <div class="control-groups-container">
+                        <div class="control-group">
+                            <label>退货率范围（%）</label>
+                            <div class="range-inputs">
+                                <input type="number" id="minReturnRate" placeholder="最小值" step="1" value="5" min="0" max="50">
+                                <span>至</span>
+                                <input type="number" id="maxReturnRate" placeholder="最大值" step="1" value="35" min="0" max="50">
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label>付费占比范围（%）</label>
+                            <div class="range-inputs">
+                                <input type="number" id="minMarketingCost" placeholder="最小值" step="1" value="10" min="0" max="100">
+                                <span>至</span>
+                                <input type="number" id="maxMarketingCost" placeholder="最大值" step="1" value="40" min="0" max="100">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profit-simulation-results" id="profitSimulationResults">
+                    <h3 style="margin-bottom: 20px; color: #495057;">利润推演结果</h3>
+                    <div class="simulation-table-container">
+                        <table class="simulation-table" id="simulationTable">
+                            <tbody>
+                                <!-- 动态生成内容 -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -818,6 +1055,227 @@
             }
         }
 
+        // 利润推演功能核心函数
+        function generateProfitSimulation() {
+            try {
+                // 获取用户设置的参数范围
+                const minReturnRate = parseFloat(document.getElementById('minReturnRate').value) || 5;
+                const maxReturnRate = parseFloat(document.getElementById('maxReturnRate').value) || 30;
+                const minMarketingCost = parseFloat(document.getElementById('minMarketingCost').value) || 10;
+                const maxMarketingCost = parseFloat(document.getElementById('maxMarketingCost').value) || 40;
+                const returnRateStep = 3; // 固定退货率步长为3
+                const marketingStep = 5; // 固定付费占比步长为5
+
+                // 验证参数有效性
+                if (minReturnRate >= maxReturnRate || minMarketingCost >= maxMarketingCost) {
+                    return; // 参数无效时不生成表格
+                }
+
+                // 获取基础参数（从输入框获取）
+                const baseParams = getBaseParameters();
+                if (!baseParams) return;
+
+                // 生成退货率和付费占比的数组
+                const returnRates = [];
+                const marketingCosts = [];
+                
+                for (let rate = minReturnRate; rate <= maxReturnRate; rate += returnRateStep) {
+                    returnRates.push(rate);
+                }
+                
+                for (let cost = minMarketingCost; cost <= maxMarketingCost; cost += marketingStep) {
+                    marketingCosts.push(cost);
+                }
+
+                // 生成推演表格
+                generateSimulationTable(returnRates, marketingCosts, baseParams);
+
+            } catch (error) {
+                console.error('利润推演生成错误:', error);
+            }
+        }
+
+        // 获取基础参数
+        function getBaseParameters() {
+            const costPrice = parseFloat(document.getElementById('costPrice').value) || 0;
+            const invoiceCost = parseFloat(document.getElementById('invoiceCost').value) || 0;
+            const sellingPrice = parseFloat(document.getElementById('sellingPrice').value) || 0;
+            const inputTaxRate = parseFloat(document.getElementById('inputTaxRate').value) || 0;
+            const outputTaxRate = parseFloat(document.getElementById('outputTaxRate').value) || 0;
+            const platformFee = parseFloat(document.getElementById('platformFee').value) || 0;
+            const logisticsCost = parseFloat(document.getElementById('logisticsCost').value) || 0;
+            const shippingInsurance = parseFloat(document.getElementById('shippingInsurance').value) || 0;
+            const otherCost = parseFloat(document.getElementById('otherCost').value) || 0;
+
+            if (costPrice <= 0 || sellingPrice <= 0) {
+                alert('请先输入有效的进货价和售价！');
+                return null;
+            }
+
+            return {
+                costPrice,
+                invoiceCost,
+                sellingPrice,
+                inputTaxRate,
+                outputTaxRate,
+                platformFee,
+                logisticsCost,
+                shippingInsurance,
+                otherCost
+            };
+        }
+
+        // 生成推演表格
+        function generateSimulationTable(returnRates, marketingCosts, baseParams) {
+            const table = document.getElementById('simulationTable');
+            const tbody = table.querySelector('tbody');
+            
+            // 清空现有内容
+            tbody.innerHTML = '';
+            
+            // 生成第一行：包含"退货率\付费占比"文字和付费占比列标题
+            const headerRow = document.createElement('tr');
+            
+            // 第一列：退货率\付费占比文字
+            const headerCell = document.createElement('td');
+            headerCell.textContent = '退货率\\付费占比';
+            headerCell.className = 'header-cell';
+            headerRow.appendChild(headerCell);
+            
+            // 其他列：付费占比标题
+            marketingCosts.forEach(cost => {
+                const th = document.createElement('td');
+                th.textContent = `${cost}%`;
+                th.className = 'header-cell';
+                headerRow.appendChild(th);
+            });
+            tbody.appendChild(headerRow);
+            
+            // 生成数据行（退货率 vs 付费占比）
+            returnRates.forEach(returnRate => {
+                const row = document.createElement('tr');
+                
+                // 第一列：退货率
+                const rateCell = document.createElement('td');
+                rateCell.textContent = `${returnRate}%`;
+                row.appendChild(rateCell);
+                
+                // 数据列：不同付费占比下的利润率
+                marketingCosts.forEach(marketingCost => {
+                    const profitRate = calculateProfitRateForSimulation(
+                        returnRate, marketingCost, baseParams
+                    );
+                    
+                    const cell = document.createElement('td');
+                    cell.textContent = `${profitRate.toFixed(1)}%`;
+                    cell.className = 'profit-cell';
+                    
+                    // 根据利润率设置颜色样式
+                    if (profitRate > 0) {
+                        cell.classList.add('positive');
+                    } else if (profitRate < 0) {
+                        cell.classList.add('negative');
+                    } else {
+                        cell.classList.add('zero');
+                    }
+                    
+                    row.appendChild(cell);
+                });
+                
+                tbody.appendChild(row);
+            });
+        }
+
+        // 计算特定参数组合下的利润率
+        function calculateProfitRateForSimulation(returnRate, marketingCost, baseParams) {
+            try {
+                const {
+                    costPrice, invoiceCost, sellingPrice, inputTaxRate, outputTaxRate,
+                    platformFee, logisticsCost, shippingInsurance, otherCost
+                } = baseParams;
+
+                // 计算实际开票成本
+                const actualInvoiceCost = costPrice * (invoiceCost / 100);
+                const totalPurchaseCost = costPrice + actualInvoiceCost;
+                
+                // 计算进项税
+                const purchaseVAT = costPrice * (inputTaxRate / 100);
+
+                // 计算有效销售率
+                const effectiveSalesRate = 1 - (returnRate / 100);
+
+                // 计算各项费用
+                const platformFeeAmount = sellingPrice * (platformFee / 100);
+                const v = 0.06; // 服务费增值税率
+                const adCost = sellingPrice * (marketingCost / 100);
+                const adCostEffective = adCost / effectiveSalesRate;
+                
+                // 计算广告费增值税
+                const adVAT = serviceVATFromTaxInclusive(adCostEffective, v);
+
+                // 计算其他成本（考虑退货率影响）
+                const logisticsCostEffective = logisticsCost / effectiveSalesRate;
+                const shippingInsuranceEffective = shippingInsurance / effectiveSalesRate;
+                const otherCostEffective = otherCost / effectiveSalesRate;
+
+                // 计算销项税
+                const netPrice = sellingPrice / (1 + outputTaxRate / 100);
+                const outputVAT = netPrice * (outputTaxRate / 100);
+
+                // 计算总进项税抵扣
+                const totalVATDeduction = purchaseVAT + adVAT + serviceVATFromTaxInclusive(platformFeeAmount, v);
+                const actualVAT = outputVAT - totalVATDeduction;
+
+                // 计算总成本
+                const totalCost = totalPurchaseCost + platformFeeAmount + adCostEffective + 
+                                logisticsCostEffective + shippingInsuranceEffective + otherCostEffective + actualVAT;
+
+                // 计算利润和利润率
+                const profit = sellingPrice - totalCost;
+                const profitRate = (profit / sellingPrice) * 100;
+
+                return profitRate;
+
+            } catch (error) {
+                console.error('利润率计算错误:', error);
+                return 0;
+            }
+        }
+
+        // 保存推演参数到本地存储
+        function saveSimulationSettings() {
+            const simulationData = {
+                minReturnRate: document.getElementById('minReturnRate').value,
+                maxReturnRate: document.getElementById('maxReturnRate').value,
+                minMarketingCost: document.getElementById('minMarketingCost').value,
+                maxMarketingCost: document.getElementById('maxMarketingCost').value
+            };
+            
+            try {
+                localStorage.setItem('profitSimulationSettings', JSON.stringify(simulationData));
+            } catch (e) {
+                console.warn('无法保存推演设置到本地存储:', e);
+            }
+        }
+
+        // 从本地存储加载推演参数
+        function loadSimulationSettings() {
+            try {
+                const saved = localStorage.getItem('profitSimulationSettings');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    Object.keys(data).forEach(id => {
+                        const element = document.getElementById(id);
+                        if (element) {
+                            element.value = data[id];
+                        }
+                    });
+                }
+            } catch (e) {
+                console.warn('无法从本地存储加载推演设置:', e);
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             loadFromLocalStorage();
             
@@ -831,8 +1289,31 @@
                 });
             });
             
+            // 为推演参数输入框添加事件监听器
+            const simulationInputs = [
+                'minReturnRate', 'maxReturnRate', 'minMarketingCost', 
+                'maxMarketingCost'
+            ];
+            
+            simulationInputs.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.addEventListener('input', function() {
+                        saveSimulationSettings();
+                        
+                        // 实时触发推演计算，使用防抖处理
+                        clearTimeout(this.simulationTimeout);
+                        this.simulationTimeout = setTimeout(generateProfitSimulation, 500);
+                    });
+                }
+            });
+            
             setTimeout(calculateProfit, 100);
             initGuideInteraction();
+            loadSimulationSettings(); // 加载推演参数
+            
+            // 延迟生成初始推演表格，确保基础参数已加载
+            setTimeout(generateProfitSimulation, 200);
         });
     </script>
 
