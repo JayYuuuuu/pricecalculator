@@ -2026,21 +2026,7 @@ button:hover {
     border-right: none;
 }
 
-/* 全屏模式下的输入框、按钮等样式继承 */
-#catalogFullscreenBody .catalog-input,
-#catalogFullscreenBody .batch-modal-btn,
-#catalogFullscreenBody .catalog-price-tier,
-#catalogFullscreenBody .catalog-cost-tier,
-#catalogFullscreenBody .catalog-tier-add,
-#catalogFullscreenBody .catalog-tier-remove,
-#catalogFullscreenBody .catalog-price-tier-add,
-#catalogFullscreenBody .catalog-price-tier-remove,
-#catalogFullscreenBody .catalog-check,
-#catalogFullscreenBody .catalog-error,
-#catalogFullscreenBody .lp-col-right,
-#catalogFullscreenBody .lp-col-center {
-    /* 继承商品清单表格的样式 */
-}
+/* 全屏模式下的输入框、按钮等样式继承商品清单表格的样式 */
 
 /* 税费占比样式 */
 .tax-positive {

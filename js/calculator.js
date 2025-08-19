@@ -3992,7 +3992,7 @@ function renderCatalogTable() {
 		
 		// 实时预警标识样式：红色背景、白色文字、加粗显示、闪烁动画
 		const dangerStyle = isDanger ? 'background:#dc2626; color:#fff; padding:2px 6px; border-radius:4px; font-weight:700; animation:pulse-warning 2s infinite;' : '';
-		const dangerIcon = isDanger ? '🚨 ' : '';
+		const dangerIcon = isDanger ? '⚠️ ' : '';
 		
 		if (!over1) {
 			return `<div style="display:inline-block; ${dangerStyle}">${dangerIcon}${text}</div>`;
@@ -4043,7 +4043,7 @@ function renderCatalogTable() {
 					
 					// 实时预警标识样式
 					const dangerStyle = isDanger ? 'background:#dc2626; color:#fff; padding:2px 6px; border-radius:4px; font-weight:700; animation:pulse-warning 2s infinite;' : '';
-					const dangerIcon = isDanger ? '🚨 ' : '';
+					const dangerIcon = isDanger ? '⚠️ ' : '';
 					
 					return `<div style="display:inline-block; ${dangerStyle}">${dangerIcon}${fmtRange(adRate,true,false,true)}</div>`;
 				}).join('');
@@ -4687,7 +4687,7 @@ function renderCatalogRow(index) {
 			
 			// 实时预警标识样式：红色背景、白色文字、加粗显示、闪烁动画
 			const dangerStyle = isDanger ? 'background:#dc2626; color:#fff; padding:2px 6px; border-radius:4px; font-weight:700; animation:pulse-warning 2s infinite;' : '';
-			const dangerIcon = isDanger ? '🚨 ' : '';
+			const dangerIcon = isDanger ? '⚠️ ' : '';
 			
 			return `<div style="margin:2px 0; position:relative; display:block;">${dangerIcon}${text}${over?'<span title="需≥100%付费占比才保本" style="position:absolute; right:-8px; top:-4px; width:6px; height:6px; background:#ef4444; border-radius:50%;"></span>':''}</div>`; 
 		}).join('');
@@ -4706,7 +4706,7 @@ function renderCatalogRow(index) {
 			
 			// 实时预警标识样式
 			const dangerStyle = isDanger ? 'background:#dc2626; color:#fff; padding:2px 6px; border-radius:4px; font-weight:700; animation:pulse-warning 2s infinite;' : '';
-			const dangerIcon = isDanger ? '🚨 ' : '';
+			const dangerIcon = isDanger ? '⚠️ ' : '';
 			
 			return `<div style="margin:2px 0; display:inline-block; ${dangerStyle}">${dangerIcon}${fmt(adRate,true,false,true)}</div>`;
 		}).join('');
@@ -4720,7 +4720,7 @@ function renderCatalogRow(index) {
 			
 			// 实时预警标识样式：红色背景、白色文字、加粗显示、闪烁动画
 			const dangerStyle = isDanger ? 'background:#dc2626; color:#fff; padding:2px 6px; border-radius:4px; font-weight:700; animation:pulse-warning 2s infinite;' : '';
-			const dangerIcon = isDanger ? '🚨 ' : '';
+			const dangerIcon = isDanger ? '⚠️ ' : '';
 			
 			return `<div style="margin:2px 0; position:relative; display:block;">${dangerIcon}${text}${over?'<span title="需≥100%付费占比才保本" style="position:absolute; right:-8px; top:-4px; width:6px; height:6px; background:#ef4444; border-radius:50%;"></span>':''}</div>`; 
 		}).join('');
@@ -4742,7 +4742,7 @@ function renderCatalogRow(index) {
 			
 			// 实时预警标识样式：红色背景、白色文字、加粗显示、闪烁动画
 			const dangerStyle = isDanger ? 'background:#dc2626; color:#fff; padding:2px 6px; border-radius:4px; font-weight:700; animation:pulse-warning 2s infinite;' : '';
-			const dangerIcon = isDanger ? '🚨 ' : '';
+			const dangerIcon = isDanger ? '⚠️ ' : '';
 			
 			if (over1) {
 				tds[AD_COL].innerHTML = `<div style="position:relative; display:inline-block;">${dangerIcon}${text}<span title="需≥100%付费占比才保本" style="position:absolute; right:-8px; top:-4px; width:6px; height:6px; background:#ef4444; border-radius:50%;"></span></div>`;
