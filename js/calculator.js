@@ -320,6 +320,30 @@ function switchTab(tabName) {
         if (tabName === 'listprice') {
             calculateListPrice();
         }
+        // 若切到到手价推演页，初始化参数并尝试实时计算
+        if (tabName === 'takehome') {
+            console.log('切换到到手价推演tab');
+            try { 
+                // 延迟初始化，确保DOM完全加载
+                setTimeout(() => {
+                    console.log('开始初始化到手价推演tab');
+                    if (typeof initTakeHomeTab === 'function') {
+                        console.log('initTakeHomeTab函数存在，开始执行');
+                        initTakeHomeTab(); 
+                    } else {
+                        console.warn('initTakeHomeTab函数未定义，请检查JavaScript加载');
+                        console.log('可用函数:', Object.keys(window).filter(key => typeof window[key] === 'function' && key.includes('TakeHome')));
+                        // 尝试重新加载函数
+                        if (typeof window.initTakeHomeTab === 'undefined') {
+                            console.log('尝试重新定义函数...');
+                            // 这里可以尝试重新定义函数或者等待更长时间
+                        }
+                    }
+                }, 1000); // 增加延迟时间到1秒
+            } catch (error) {
+                console.error('到手价推演tab初始化失败:', error);
+            }
+        }
         // 若切到商品清单页，初始化并渲染（不影响其他页逻辑）
         if (tabName === 'catalog') {
             try { initCatalogTab(); } catch (_) {}
@@ -5467,6 +5491,44 @@ let catalogFilterState = {
 	filteredRows: []
 };
 
+// 清除筛选输入框的值
+function clearCatalogFilterInputs() {
+	const searchInput = document.getElementById('catalogSearchInput');
+	const platformFilter = document.getElementById('catalogPlatformFilter');
+	const returnRateMin = document.getElementById('catalogReturnRateMin');
+	const returnRateMax = document.getElementById('catalogReturnRateMax');
+	const dangerFilter = document.getElementById('catalogDangerFilter');
+	const sortBy = document.getElementById('catalogSortBy');
+	const sortOrder = document.getElementById('catalogSortOrder');
+	
+	if (searchInput) searchInput.value = '';
+	if (platformFilter) platformFilter.value = '';
+	if (returnRateMin) returnRateMin.value = '';
+	if (returnRateMax) returnRateMax.value = '';
+	if (dangerFilter) dangerFilter.checked = false;
+	if (sortBy) sortBy.value = '';
+	if (sortOrder) sortOrder.value = 'asc';
+}
+
+// 清除全屏模式筛选输入框的值
+function clearFullscreenFilterInputs() {
+	const fullscreenSearchInput = document.getElementById('catalogFullscreenSearchInput');
+	const fullscreenPlatformFilter = document.getElementById('catalogFullscreenPlatformFilter');
+	const fullscreenReturnRateMin = document.getElementById('catalogFullscreenReturnRateMin');
+	const fullscreenReturnRateMax = document.getElementById('catalogFullscreenReturnRateMax');
+	const fullscreenDangerFilter = document.getElementById('catalogFullscreenDangerFilter');
+	const fullscreenSortBy = document.getElementById('catalogFullscreenSortBy');
+	const fullscreenSortOrder = document.getElementById('catalogFullscreenSortOrder');
+	
+	if (fullscreenSearchInput) fullscreenSearchInput.value = '';
+	if (fullscreenPlatformFilter) fullscreenPlatformFilter.value = '';
+	if (fullscreenReturnRateMin) fullscreenReturnRateMin.value = '';
+	if (fullscreenReturnRateMax) fullscreenReturnRateMax.value = '';
+	if (fullscreenDangerFilter) fullscreenDangerFilter.checked = false;
+	if (fullscreenSortBy) fullscreenSortBy.value = '';
+	if (fullscreenSortOrder) fullscreenSortOrder.value = 'asc';
+}
+
 // 应用搜索和筛选
 function applyCatalogFilters() {
 	const searchText = document.getElementById('catalogSearchInput').value.toLowerCase();
@@ -5995,9 +6057,30 @@ async function importCatalogFromFile(file) {
 		console.groupEnd();
 		console.warn('[Catalog] 导入错误行（结构化）:', failed);
 	}
-	catalogState.lastImportBackup = JSON.parse(JSON.stringify(catalogState.rows || [])); const undoBtn = document.getElementById('btnCatalogUndoImport'); if (undoBtn) undoBtn.style.display='';
-	catalogState.rows = okRows.concat(catalogState.rows||[]); recomputeAllCatalogRows();
+	catalogState.lastImportBackup = JSON.parse(JSON.stringify(catalogState.rows || [])); 
+	const undoBtn = document.getElementById('btnCatalogUndoImport'); 
+	if (undoBtn) undoBtn.style.display='';
+	
+	catalogState.rows = okRows.concat(catalogState.rows||[]); 
+	
+	// 清除筛选状态，确保新导入的数据能够显示
+	catalogFilterState = {
+		searchText: '',
+		platform: '',
+		returnRateMin: '',
+		returnRateMax: '',
+		dangerFilter: false,
+		sortBy: '',
+		sortOrder: 'asc',
+		filteredRows: []
+	};
+	
+	recomputeAllCatalogRows();
 	updatePlatformFilterOptions();
+	
+	// 清除筛选输入框的值
+	clearCatalogFilterInputs();
+	clearFullscreenFilterInputs();
 }
 
 function initCatalogTab() {
@@ -6014,7 +6097,31 @@ function initCatalogTab() {
 	const btnUndo = document.getElementById('btnCatalogUndoImport');
 	const btnPlat = document.getElementById('btnPlatformSettings');
 	const btnFullscreen = document.getElementById('btnCatalogFullscreen');
-	if (btnAdd) btnAdd.addEventListener('click', () => { catalogState.rows.unshift({ name:'', sku:'', platform:'', salePrice:'', returnRate:'', costMin:'', costMax:'' }); renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); updatePlatformFilterOptions(); });
+	if (btnAdd) btnAdd.addEventListener('click', () => { 
+		// 添加新行到数据中
+		catalogState.rows.unshift({ name:'', sku:'', platform:'', salePrice:'', returnRate:'', costMin:'', costMax:'' }); 
+		
+		// 清除筛选状态，确保新行能够显示
+		catalogFilterState = {
+			searchText: '',
+			platform: '',
+			returnRateMin: '',
+			returnRateMax: '',
+			dangerFilter: false,
+			sortBy: '',
+			sortOrder: 'asc',
+			filteredRows: []
+		};
+		
+		// 重新渲染表格
+		renderCatalogTable(); 
+		updateCatalogStatus(); 
+		saveCatalogToStorage(); 
+		updatePlatformFilterOptions(); 
+		
+		// 清除筛选输入框的值
+		clearCatalogFilterInputs();
+	});
 	if (btnImport && fileInput) { btnImport.addEventListener('click', () => fileInput.click()); fileInput.addEventListener('change', async () => { const f = fileInput.files && fileInput.files[0]; if (!f) return; try { await importCatalogFromFile(f); } finally { fileInput.value=''; } }); }
 	if (btnExport) btnExport.addEventListener('click', exportCatalogToCSV);
 	if (btnDelete) btnDelete.addEventListener('click', () => { const container = document.getElementById('catalogTableContainer'); const checks = Array.from(container.querySelectorAll('.catalog-check')); const remain = []; checks.forEach(cb => { const tr = cb.closest('tr'); const idx = Number(tr.getAttribute('data-index')); if (!cb.checked) remain.push(catalogState.rows[idx]); }); catalogState.rows = remain; renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); updatePlatformFilterOptions(); });
@@ -6093,10 +6200,26 @@ function initCatalogTab() {
 				
 				samples.forEach(s => { const c = computeRow(s); s.__result = c.__result; });
 				catalogState.rows = samples.concat(catalogState.rows||[]);
+				
+				// 清除筛选状态，确保新插入的示例数据能够显示
+				catalogFilterState = {
+					searchText: '',
+					platform: '',
+					returnRateMin: '',
+					returnRateMax: '',
+					dangerFilter: false,
+					sortBy: '',
+					sortOrder: 'asc',
+					filteredRows: []
+				};
+				
 				renderCatalogTable(); 
 				updateCatalogStatus(); 
 				saveCatalogToStorage(); 
 				updatePlatformFilterOptions();
+				
+				// 清除筛选输入框的值
+				clearCatalogFilterInputs();
 				
 				showToast && showToast(`示例数据插入成功，共${samples.length}条记录`);
 				document.body.removeChild(overlay);
@@ -6124,7 +6247,35 @@ function initCatalogTab() {
 			}
 		});
 	});
-	if (btnUndo) btnUndo.addEventListener('click', () => { if (!catalogState.lastImportBackup) return; catalogState.rows = catalogState.lastImportBackup; catalogState.lastImportBackup = null; btnUndo.style.display='none'; renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); updatePlatformFilterOptions(); });
+	if (btnUndo) btnUndo.addEventListener('click', () => { 
+		if (!catalogState.lastImportBackup) return; 
+		
+		// 恢复导入前的数据
+		catalogState.rows = catalogState.lastImportBackup; 
+		catalogState.lastImportBackup = null; 
+		btnUndo.style.display='none'; 
+		
+		// 清除筛选状态，确保恢复的数据能够显示
+		catalogFilterState = {
+			searchText: '',
+			platform: '',
+			returnRateMin: '',
+			returnRateMax: '',
+			dangerFilter: false,
+			sortBy: '',
+			sortOrder: 'asc',
+			filteredRows: []
+		};
+		
+		renderCatalogTable(); 
+		updateCatalogStatus(); 
+		saveCatalogToStorage(); 
+		updatePlatformFilterOptions(); 
+		
+		// 清除筛选输入框的值
+		clearCatalogFilterInputs();
+		clearFullscreenFilterInputs();
+	});
 	if (btnPlat) btnPlat.addEventListener('click', () => openPlatformSettingsModal());
 
 			// 全屏：将表格容器临时移动到全屏弹窗中显示，关闭时移回原位
@@ -6165,7 +6316,33 @@ function initCatalogTab() {
 		if (closeBtn) closeBtn.addEventListener('click', exitFullscreen);
 		if (overlay) overlay.addEventListener('click', (e) => { if (e.target === overlay) exitFullscreen(); });
 					if (recomputeBtn) recomputeBtn.addEventListener('click', recomputeAllCatalogRows);
-			if (addRowBtn) addRowBtn.addEventListener('click', () => { catalogState.rows.unshift({ name:'', sku:'', platform:'', salePrice:'', returnRate:'', costMin:'', costMax:'' }); renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); updatePlatformFilterOptions(); updateFullscreenPlatformFilterOptions(); });
+			if (addRowBtn) addRowBtn.addEventListener('click', () => { 
+				// 添加新行到数据中
+				catalogState.rows.unshift({ name:'', sku:'', platform:'', salePrice:'', returnRate:'', costMin:'', costMax:'' }); 
+				
+				// 清除筛选状态，确保新行能够显示
+				catalogFilterState = {
+					searchText: '',
+					platform: '',
+					returnRateMin: '',
+					returnRateMax: '',
+					dangerFilter: false,
+					sortBy: '',
+					sortOrder: 'asc',
+					filteredRows: []
+				};
+				
+				// 重新渲染表格
+				renderCatalogTable(); 
+				updateCatalogStatus(); 
+				saveCatalogToStorage(); 
+				updatePlatformFilterOptions(); 
+				updateFullscreenPlatformFilterOptions(); 
+				
+				// 清除筛选输入框的值
+				clearCatalogFilterInputs();
+				clearFullscreenFilterInputs();
+			});
 			if (importBtn && fullscreenFileInput) { importBtn.addEventListener('click', () => fullscreenFileInput.click()); fullscreenFileInput.addEventListener('change', async () => { const f = fullscreenFileInput.files && fullscreenFileInput.files[0]; if (!f) return; try { await importCatalogFromFile(f); } finally { fullscreenFileInput.value=''; } }); }
 			if (delBtn) delBtn.addEventListener('click', () => { const cont = document.getElementById('catalogTableContainer'); const checks = Array.from(cont.querySelectorAll('.catalog-check')); const remain = []; checks.forEach(cb => { const tr = cb.closest('tr'); const idx = Number(tr.getAttribute('data-index')); if (!cb.checked) remain.push(catalogState.rows[idx]); }); catalogState.rows = remain; renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); updatePlatformFilterOptions(); updateFullscreenPlatformFilterOptions(); });
 		// ESC 关闭
@@ -6707,3 +6884,382 @@ function removeTaxTooltip() {
         tooltip.remove();
     }
 }
+
+// ==================== 到手价推演功能 ====================
+
+/**
+ * 初始化到手价推演tab
+ * 加载保存的参数并设置默认值
+ */
+function initTakeHomeTab() {
+    // 从localStorage加载保存的参数
+    const savedInputs = JSON.parse(localStorage.getItem('takehomeInputs') || '{}');
+    
+    // 设置默认值
+    const defaults = {
+        takehomeCostPrice: 38,
+        takehomeInputTaxRate: 6,
+        takehomeOutputTaxRate: 13,
+        takehomePlatformRate: 5.5,
+        takehomeSalesTaxRate: 13,
+        takehomeShippingCost: 2.8,
+        takehomeShippingInsurance: 1.5,
+        takehomeOtherCost: 2.5,
+        takehomeReturnRate: 20,
+        takehomeAdRateMin: 0,
+        takehomeAdRateMax: 40
+    };
+    
+    // 应用保存的值或默认值
+    Object.keys(defaults).forEach(key => {
+        const element = document.getElementById(key);
+        if (element) {
+            element.value = savedInputs[key] || defaults[key];
+        }
+    });
+    
+    // 尝试自动计算一次
+    try {
+        calculateTakeHomePriceExploration();
+    } catch (_) {}
+}
+
+/**
+ * 计算到手价推演
+ * 基于输入参数，计算不同退货率和付费占比下的到手价
+ */
+function calculateTakeHomePriceExploration() {
+    try {
+        // 获取输入参数
+        const inputs = {
+            costPrice: parseFloat(document.getElementById('takehomeCostPrice').value) || 0,
+            inputTaxRate: (parseFloat(document.getElementById('takehomeInputTaxRate').value) || 0) / 100,
+            outputTaxRate: (parseFloat(document.getElementById('takehomeOutputTaxRate').value) || 0) / 100,
+            platformRate: (parseFloat(document.getElementById('takehomePlatformRate').value) || 0) / 100,
+            salesTaxRate: (parseFloat(document.getElementById('takehomeSalesTaxRate').value) || 0) / 100,
+            shippingCost: parseFloat(document.getElementById('takehomeShippingCost').value) || 0,
+            shippingInsurance: parseFloat(document.getElementById('takehomeShippingInsurance').value) || 0,
+            otherCost: parseFloat(document.getElementById('takehomeOtherCost').value) || 0,
+            returnRate: (parseFloat(document.getElementById('takehomeReturnRate').value) || 0) / 100,
+            adRateMin: (parseFloat(document.getElementById('takehomeAdRateMin').value) || 0) / 100,
+            adRateMax: (parseFloat(document.getElementById('takehomeAdRateMax').value) || 0) / 100
+        };
+        
+        // 验证输入参数
+        if (inputs.costPrice <= 0) {
+            alert('请输入有效的进货价');
+            return;
+        }
+        
+        if (inputs.returnRate < 0 || inputs.returnRate > 1) {
+            alert('退货率必须在0%到100%之间');
+            return;
+        }
+        
+        if (inputs.adRateMin > inputs.adRateMax) {
+            alert('付费占比最小值不能大于最大值');
+            return;
+        }
+        
+        // 生成付费占比的推演点（退货率固定）
+        const adRates = generateRangePoints(inputs.adRateMin, inputs.adRateMax, 9);
+        
+        // 目标利润率：0%、3%、5%、7%、9%、10%、12%、15%
+        const targetProfitRates = [0, 0.03, 0.05, 0.07, 0.09, 0.10, 0.12, 0.15];
+        
+        // 生成推演结果（退货率固定）
+        const results = generateTakeHomePriceResults(inputs, adRates, targetProfitRates);
+        
+        // 显示结果
+        displayTakeHomePriceResults(results, inputs, adRates, targetProfitRates);
+        
+        // 保存参数到localStorage
+        saveTakeHomeInputs();
+        
+    } catch (error) {
+        console.error('到手价推演计算错误:', error);
+        alert('计算过程中发生错误，请检查输入参数');
+    }
+}
+
+/**
+ * 生成范围内的推演点
+ * @param {number} min 最小值
+ * @param {number} max 最大值
+ * @param {number} count 点数
+ * @returns {Array} 推演点数组
+ */
+function generateRangePoints(min, max, count) {
+    if (count <= 1) return [min];
+    if (Math.abs(max - min) < 0.001) return [min];
+    
+    const points = [];
+    for (let i = 0; i < count; i++) {
+        const point = min + (max - min) * i / (count - 1);
+        points.push(Math.round(point * 1000) / 1000); // 保留3位小数
+    }
+    return points;
+}
+
+/**
+ * 生成到手价推演结果
+ * @param {Object} inputs 输入参数
+ * @param {Array} adRates 付费占比数组
+ * @param {Array} targetProfitRates 目标利润率数组
+ * @returns {Object} 推演结果
+ */
+function generateTakeHomePriceResults(inputs, adRates, targetProfitRates) {
+    const results = {};
+    
+    // 只有一个退货率
+    const returnRate = inputs.returnRate;
+    results[returnRate] = {};
+    
+    adRates.forEach(adRate => {
+        results[returnRate][adRate] = {};
+        targetProfitRates.forEach(targetProfitRate => {
+            const takeHomePrice = calculateTakeHomePriceForExploration(
+                inputs.costPrice,
+                adRate,
+                targetProfitRate,
+                {
+                    ...inputs,
+                    returnRate: returnRate
+                }
+            );
+            results[returnRate][adRate][targetProfitRate] = takeHomePrice;
+        });
+    });
+    
+    return results;
+}
+
+/**
+ * 计算到手价（推演专用）
+ * @param {number} costPrice 进货价
+ * @param {number} adRate 付费占比
+ * @param {number} targetProfitRate 目标利润率
+ * @param {Object} params 其他参数
+ * @returns {number} 到手价
+ */
+function calculateTakeHomePriceForExploration(costPrice, adRate, targetProfitRate, params) {
+    try {
+        // 基于目标利润率和已知参数，反推到手价
+        // 使用迭代法求解：从成本价开始，逐步调整直到达到目标利润率
+        let lowPrice = costPrice;
+        let highPrice = costPrice * 10; // 上限设为成本的10倍
+        let midPrice;
+        let bestPrice = costPrice;
+        let bestDiff = Infinity;
+        
+        // 二分查找最优价格
+        for (let i = 0; i < 20; i++) {
+            midPrice = (lowPrice + highPrice) / 2;
+            
+            // 使用统一的利润计算函数，确保与利润率计算tab结果完全一致
+            const inputs = { 
+                costPrice: costPrice, 
+                actualPrice: midPrice, 
+                inputTaxRate: params.inputTaxRate, 
+                outputTaxRate: params.outputTaxRate, 
+                salesTaxRate: params.salesTaxRate, 
+                platformRate: params.platformRate, 
+                shippingCost: params.shippingCost, 
+                shippingInsurance: params.shippingInsurance, 
+                otherCost: params.otherCost, 
+                adRate: adRate, 
+                returnRate: params.returnRate
+            };
+            
+            const result = calculateProfitUnified(inputs);
+            const actualProfitRate = result.profitRate;
+            
+            const diff = Math.abs(actualProfitRate - targetProfitRate);
+            if (diff < bestDiff) {
+                bestDiff = diff;
+                bestPrice = midPrice;
+            }
+            
+            if (Math.abs(actualProfitRate - targetProfitRate) < 0.001) {
+                break; // 精度足够，退出循环
+            }
+            
+            if (actualProfitRate < targetProfitRate) {
+                lowPrice = midPrice;
+            } else {
+                highPrice = midPrice;
+            }
+        }
+        
+        return bestPrice;
+    } catch (_) {
+        return NaN;
+    }
+}
+
+/**
+ * 显示到手价推演结果
+ * @param {Object} results 推演结果
+ * @param {Object} inputs 输入参数
+ * @param {Array} adRates 付费占比数组
+ * @param {Array} targetProfitRates 目标利润率数组
+ */
+function displayTakeHomePriceResults(results, inputs, adRates, targetProfitRates) {
+    const container = document.getElementById('takehomeResultContainer');
+    const content = document.getElementById('takehomeResultContent');
+    
+    if (!container || !content) return;
+    
+    // 显示结果容器
+    container.style.display = 'block';
+    
+    // 生成结果HTML
+    let html = `
+        <div style="background:#f0f4ff; border:1px solid #3b82f6; border-radius:8px; padding:16px; margin-bottom:20px; color:#1e40af;">
+            <div style="font-weight:600; margin-bottom:8px;">📊 推演参数摘要</div>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px; font-size:13px; line-height:1.4;">
+                <div><strong>进货价：</strong>¥${inputs.costPrice.toFixed(2)}</div>
+                <div><strong>开票成本：</strong>${(inputs.inputTaxRate * 100).toFixed(1)}%</div>
+                <div><strong>进项税率：</strong>${(inputs.outputTaxRate * 100).toFixed(1)}%</div>
+                <div><strong>平台佣金：</strong>${(inputs.platformRate * 100).toFixed(1)}%</div>
+                <div><strong>销项税率：</strong>${(inputs.salesTaxRate * 100).toFixed(1)}%</div>
+                <div><strong>物流费：</strong>¥${inputs.shippingCost.toFixed(2)}</div>
+                <div><strong>运费险：</strong>¥${inputs.shippingInsurance.toFixed(2)}</div>
+                <div><strong>其他成本：</strong>¥${inputs.otherCost.toFixed(2)}</div>
+            </div>
+        </div>
+        
+        <div style="background:#f0f9ff; border:1px solid #0ea5e9; border-radius:8px; padding:16px; margin-bottom:20px; color:#0c4a6e;">
+            <div style="font-weight:600; margin-bottom:8px;">🎯 推演范围设置</div>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px; font-size:13px; line-height:1.4;">
+                <div><strong>退货率：</strong>${(inputs.returnRate * 100).toFixed(1)}%</div>
+                <div><strong>付费占比范围：</strong>${(inputs.adRateMin * 100).toFixed(1)}% ~ ${(inputs.adRateMax * 100).toFixed(1)}%</div>
+                <div><strong>目标利润率：</strong>${targetProfitRates.map(r => (r * 100).toFixed(1) + '%').join('、')}</div>
+            </div>
+        </div>
+    `;
+    
+    // 只有一个退货率，直接生成结果表格
+    const returnRate = inputs.returnRate;
+    html += `
+        <div style="margin-bottom:30px; border:1px solid #e5e7eb; border-radius:12px; padding:20px; background:#fff;">
+            <div style="margin-bottom:16px; text-align:center;">
+                <h4 style="margin:0; color:#1e40af; font-size:16px;">
+                    📈 退货率：${(returnRate * 100).toFixed(1)}%
+                </h4>
+            </div>
+            ${generateTakeHomePriceTableHtmlForExploration(results[returnRate], adRates, targetProfitRates, returnRate)}
+        </div>
+    `;
+    
+    content.innerHTML = html;
+}
+
+/**
+ * 生成到手价推演表格HTML（推演页面专用）
+ * @param {Object} returnRateResults 该退货率下的所有结果
+ * @param {Array} adRates 付费占比数组
+ * @param {Array} targetProfitRates 目标利润率数组
+ * @param {number} returnRate 当前退货率
+ * @returns {string} 表格HTML
+ */
+function generateTakeHomePriceTableHtmlForExploration(returnRateResults, adRates, targetProfitRates, returnRate) {
+    // 表头：第一行显示目标利润率
+    const header = `
+        <tr>
+            <th style="border-bottom:1px solid #eee;padding:8px 10px;color:#333;font-weight:600;text-align:center;background:#f8fafc;" colspan="${targetProfitRates.length + 1}">
+                <span style="color:#10b981;font-weight:700;">退货率：${(returnRate * 100).toFixed(1)}%</span>
+            </th>
+        </tr>
+        <tr>
+            <th style="border-bottom:1px solid #eee;padding:8px 10px;color:#666;font-weight:500;text-align:center;background:#f8fafc;">付费占比 \\ 目标利润率</th>
+            ${targetProfitRates.map(rate => 
+                `<th style="border-bottom:1px solid #eee;padding:8px 10px;color:#666;font-weight:500;text-align:center;background:#f8fafc;">${(rate * 100).toFixed(1)}%</th>`
+            ).join('')}
+        </tr>`;
+    
+    // 表格行：每行显示一个付费占比，每列显示对应目标利润率的到手价
+    const rows = adRates.map(adRate => {
+        // 20%付费占比行高亮显示
+        const isHighlighted = Math.abs(adRate - 0.20) < 0.001;
+        const rowStyle = isHighlighted ? 'background:linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border:2px solid #f59e0b;' : '';
+        
+        const rowHeader = `<td style="padding:8px 10px;text-align:center;border-right:1px solid #f2f2f2;background:#f8fafc;font-weight:500;color:#3b82f6;">${(adRate * 100).toFixed(0)}%</td>`;
+        
+        const cells = targetProfitRates.map(targetRate => {
+            const takeHomePrice = returnRateResults[adRate][targetRate];
+            const color = takeHomePrice > 0 ? '#16a34a' : '#dc2626';
+            
+            const tooltip = `目标利润率：${(targetRate * 100).toFixed(1)}%\n付费占比：${(adRate * 100).toFixed(0)}%\n退货率：${(returnRate * 100).toFixed(1)}%\n到手价：¥${takeHomePrice.toFixed(2)}`;
+            
+            return `<td style="padding:8px 10px;text-align:center;border-right:1px solid #f2f2f2;color:${color};font-weight:600;" 
+                data-tooltip="${tooltip.replace(/"/g, '&quot;')}">${isFinite(takeHomePrice) ? ('¥' + takeHomePrice.toFixed(2)) : '-'}</td>`;
+        }).join('');
+        
+        return `<tr style="${rowStyle}">${rowHeader}${cells}</tr>`;
+    }).join('');
+    
+    return `<table style="border-collapse:separate;border-spacing:0;width:100%;font-size:13px;margin-bottom:20px;">${header}${rows}</table>`;
+}
+
+/**
+ * 保存到手价推演输入参数到localStorage
+ */
+function saveTakeHomeInputs() {
+    const inputs = {
+        takehomeCostPrice: document.getElementById('takehomeCostPrice').value,
+        takehomeInputTaxRate: document.getElementById('takehomeInputTaxRate').value,
+        takehomeOutputTaxRate: document.getElementById('takehomeOutputTaxRate').value,
+        takehomePlatformRate: document.getElementById('takehomePlatformRate').value,
+        takehomeSalesTaxRate: document.getElementById('takehomeSalesTaxRate').value,
+        takehomeShippingCost: document.getElementById('takehomeShippingCost').value,
+        takehomeShippingInsurance: document.getElementById('takehomeShippingInsurance').value,
+        takehomeOtherCost: document.getElementById('takehomeOtherCost').value,
+        takehomeReturnRate: document.getElementById('takehomeReturnRate').value,
+        takehomeAdRateMin: document.getElementById('takehomeAdRateMin').value,
+        takehomeAdRateMax: document.getElementById('takehomeAdRateMax').value
+    };
+    
+    localStorage.setItem('takehomeInputs', JSON.stringify(inputs));
+}
+
+// 为到手价推演页面的输入框添加实时计算功能
+document.addEventListener('DOMContentLoaded', function() {
+    // 延迟执行，确保DOM完全加载
+    setTimeout(() => {
+        const takehomeInputs = [
+            'takehomeCostPrice', 'takehomeInputTaxRate', 'takehomeOutputTaxRate',
+            'takehomePlatformRate', 'takehomeSalesTaxRate', 'takehomeShippingCost',
+            'takehomeShippingInsurance', 'takehomeOtherCost', 'takehomeReturnRate',
+            'takehomeAdRateMin', 'takehomeAdRateMax'
+        ];
+        
+        takehomeInputs.forEach(inputId => {
+            const element = document.getElementById(inputId);
+            if (element) {
+                element.addEventListener('input', () => {
+                    // 延迟计算，避免频繁计算
+                    clearTimeout(window.takehomeCalculationTimer);
+                    window.takehomeCalculationTimer = setTimeout(() => {
+                        try {
+                            calculateTakeHomePriceExploration();
+                        } catch (_) {}
+                    }, 500);
+                });
+            }
+        });
+        
+        // 确保默认tab正确显示
+        try {
+            // 隐藏所有tab内容
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            // 显示默认的利润计算tab
+            const profitTab = document.getElementById('profitTab');
+            if (profitTab) {
+                profitTab.classList.add('active');
+            }
+        } catch (_) {}
+    }, 1000);
+});

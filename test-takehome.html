@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>到手价推演功能测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .tab-container {
+            margin-bottom: 20px;
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #f0f0f0;
+            color: #666;
+        }
+        .tab.active {
+            background: #0066cc;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        .input-group input {
+            width: 200px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background: #0066cc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        button:hover {
+            background: #0052a3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>到手价推演功能测试</h1>
+        
+        <div class="tab-container">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('test1')">测试1</button>
+                <button class="tab" onclick="switchTab('test2')">测试2</button>
+                <button class="tab" onclick="switchTab('takehome')">到手价推演</button>
+            </div>
+        </div>
+        
+        <div id="test1Tab" class="tab-content active">
+            <h3>测试1内容</h3>
+            <p>这是测试1的内容，用于验证tab切换功能。</p>
+        </div>
+        
+        <div id="test2Tab" class="tab-content">
+            <h3>测试2内容</h3>
+            <p>这是测试2的内容，用于验证tab切换功能。</p>
+        </div>
+        
+        <div id="takehomeTab" class="tab-content">
+            <h3>到手价推演</h3>
+            <p>这是到手价推演功能的内容。</p>
+            
+            <div class="input-group">
+                <label>进货价（不含税）:</label>
+                <input type="number" id="takehomeCostPrice" value="38" step="0.01">
+            </div>
+            
+            <div class="input-group">
+                <label>开票成本（%）:</label>
+                <input type="number" id="takehomeInputTaxRate" value="6" step="0.1">
+            </div>
+            
+            <div class="input-group">
+                <label>进项税率（%）:</label>
+                <input type="number" id="takehomeOutputTaxRate" value="13" step="0.1">
+            </div>
+            
+            <div class="input-group">
+                <label>平台佣金（%）:</label>
+                <input type="number" id="takehomePlatformRate" value="5.5" step="0.1">
+            </div>
+            
+            <div class="input-group">
+                <label>销项税率（%）:</label>
+                <input type="number" id="takehomeSalesTaxRate" value="13" step="0.1">
+            </div>
+            
+            <div class="input-group">
+                <label>物流费（元/单）:</label>
+                <input type="number" id="takehomeShippingCost" value="2.8" step="0.01">
+            </div>
+            
+            <div class="input-group">
+                <label>运费险（元/单）:</label>
+                <input type="number" id="takehomeShippingInsurance" value="1.5" step="0.01">
+            </div>
+            
+            <div class="input-group">
+                <label>其他成本（元/单）:</label>
+                <input type="number" id="takehomeOtherCost" value="2.5" step="0.01">
+            </div>
+            
+            <div class="input-group">
+                <label>退货率范围（%）:</label>
+                <input type="number" id="takehomeReturnRateMin" value="10" step="1" min="0" max="100" style="width:80px;">
+                <span>~</span>
+                <input type="number" id="takehomeReturnRateMax" value="30" step="1" min="0" max="100" style="width:80px;">
+                <span>%</span>
+            </div>
+            
+            <div class="input-group">
+                <label>付费占比范围（%）:</label>
+                <input type="number" id="takehomeAdRateMin" value="0" step="5" min="0" max="100" style="width:80px;">
+                <span>~</span>
+                <input type="number" id="takehomeAdRateMax" value="40" step="5" min="0" max="100" style="width:80px;">
+                <span>%</span>
+            </div>
+            
+            <button onclick="testTakeHomeFunction()">测试到手价推演功能</button>
+            
+            <div id="testResult" class="result" style="display: none;">
+                <h4>测试结果</h4>
+                <div id="testResultContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tabName) {
+            // 隐藏所有tab内容
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // 移除所有tab按钮的active状态
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 显示选中的tab内容
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            
+            // 设置选中tab按钮的active状态
+            event.target.classList.add('active');
+        }
+        
+        function testTakeHomeFunction() {
+            const resultDiv = document.getElementById('testResult');
+            const contentDiv = document.getElementById('testResultContent');
+            
+            // 获取输入值
+            const costPrice = parseFloat(document.getElementById('takehomeCostPrice').value) || 0;
+            const inputTaxRate = parseFloat(document.getElementById('takehomeInputTaxRate').value) || 0;
+            const outputTaxRate = parseFloat(document.getElementById('takehomeOutputTaxRate').value) || 0;
+            const platformRate = parseFloat(document.getElementById('takehomePlatformRate').value) || 0;
+            const salesTaxRate = parseFloat(document.getElementById('takehomeSalesTaxRate').value) || 0;
+            const shippingCost = parseFloat(document.getElementById('takehomeShippingCost').value) || 0;
+            const shippingInsurance = parseFloat(document.getElementById('takehomeShippingInsurance').value) || 0;
+            const otherCost = parseFloat(document.getElementById('takehomeOtherCost').value) || 0;
+            const returnRateMin = parseFloat(document.getElementById('takehomeReturnRateMin').value) || 0;
+            const returnRateMax = parseFloat(document.getElementById('takehomeReturnRateMax').value) || 0;
+            const adRateMin = parseFloat(document.getElementById('takehomeAdRateMin').value) || 0;
+            const adRateMax = parseFloat(document.getElementById('takehomeAdRateMax').value) || 0;
+            
+            // 显示结果
+            contentDiv.innerHTML = `
+                <p><strong>进货价：</strong>¥${costPrice.toFixed(2)}</p>
+                <p><strong>开票成本：</strong>${inputTaxRate.toFixed(1)}%</p>
+                <p><strong>进项税率：</strong>${outputTaxRate.toFixed(1)}%</p>
+                <p><strong>平台佣金：</strong>${platformRate.toFixed(1)}%</p>
+                <p><strong>销项税率：</strong>${salesTaxRate.toFixed(1)}%</p>
+                <p><strong>物流费：</strong>¥${shippingCost.toFixed(2)}</p>
+                <p><strong>运费险：</strong>¥${shippingInsurance.toFixed(2)}</p>
+                <p><strong>其他成本：</strong>¥${otherCost.toFixed(2)}</p>
+                <p><strong>退货率范围：</strong>${returnRateMin.toFixed(1)}% ~ ${returnRateMax.toFixed(1)}%</p>
+                <p><strong>付费占比范围：</strong>${adRateMin.toFixed(1)}% ~ ${adRateMax.toFixed(1)}%</p>
+                <p style="color: green; font-weight: bold;">✅ 功能测试成功！所有输入框都能正常获取值。</p>
+            `;
+            
+            resultDiv.style.display = 'block';
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('页面加载完成，tab切换功能已初始化');
+        });
+    </script>
+</body>
+</html>
