@@ -5476,12 +5476,20 @@ function applyCatalogFilters() {
 	
 	// 应用筛选
 	rows = rows.filter(row => {
-		// 搜索筛选：名称或货号包含搜索文本
-		if (searchText && !(
-			(row.name || '').toLowerCase().includes(searchText) ||
-			(row.sku || '').toLowerCase().includes(searchText)
-		)) {
-			return false;
+		// 搜索筛选：名称或货号智能匹配搜索文本
+		if (searchText) {
+			const searchKeywords = searchText.toLowerCase().trim().split(/\s+/).filter(keyword => keyword.length > 0);
+			const name = (row.name || '').toLowerCase();
+			const sku = (row.sku || '').toLowerCase();
+			
+			// 检查是否所有关键词都能在名称或货号中找到（支持任意顺序）
+			const nameMatch = searchKeywords.every(keyword => name.includes(keyword));
+			const skuMatch = searchKeywords.every(keyword => sku.includes(keyword));
+			
+			// 如果名称和货号都不匹配，则过滤掉该行
+			if (!nameMatch && !skuMatch) {
+				return false;
+			}
 		}
 		
 		// 平台筛选
@@ -6429,12 +6437,20 @@ function applyFullscreenFilters() {
 	
 	// 应用筛选
 	rows = rows.filter(row => {
-		// 搜索筛选：名称或货号包含搜索文本
-		if (searchText && !(
-			(row.name || '').toLowerCase().includes(searchText) ||
-			(row.sku || '').toLowerCase().includes(searchText)
-		)) {
-			return false;
+		// 搜索筛选：名称或货号智能匹配搜索文本
+		if (searchText) {
+			const searchKeywords = searchText.toLowerCase().trim().split(/\s+/).filter(keyword => keyword.length > 0);
+			const name = (row.name || '').toLowerCase();
+			const sku = (row.sku || '').toLowerCase();
+			
+			// 检查是否所有关键词都能在名称或货号中找到（支持任意顺序）
+			const nameMatch = searchKeywords.every(keyword => name.includes(keyword));
+			const skuMatch = searchKeywords.every(keyword => sku.includes(keyword));
+			
+			// 如果名称和货号都不匹配，则过滤掉该行
+			if (!nameMatch && !skuMatch) {
+				return false;
+			}
 		}
 		
 		// 平台筛选
