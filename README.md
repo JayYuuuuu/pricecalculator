@@ -300,6 +300,12 @@ Breakeven ROI = Effective Sales Rate ÷ Breakeven Advertising Cost Ratio
 - Tax calculations follow national tax regulations
 - Recommend regular verification of calculation results against actual operational data
 
+### 5. Calculation Logic Consistency
+- **Unified Profit Calculation**: All profit calculation modules now use the same core calculation function
+- **Consistent Tax Deduction**: Input tax deduction calculations use the standard 0.06/1.06 method across all modules
+- **Modular Design**: Eliminates code duplication and ensures calculation results are identical between different interfaces
+- **Verified Consistency**: Profit calculation results in the Product Catalog profit scenario popup are now identical to the Profit Analysis tab
+
 ## Development Roadmap
 
 - [ ] Optimize batch calculation functionality
@@ -319,6 +325,7 @@ For questions or suggestions, please contact through the following methods:
 
 ---
 
-**Version**: v2.0  
+**Version**: v2.1  
 **Release Date**: 2024  
+**Latest Update**: Calculation logic unification across all profit calculation modules  
 **Compatibility**: Supports modern browsers, mobile-friendly
