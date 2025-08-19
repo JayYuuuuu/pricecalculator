@@ -602,6 +602,17 @@
                         </div>
                     </div>
                     
+                    <!-- 保本广告占比筛选 -->
+                    <div style="display:flex; flex-direction:column; gap:4px; min-width:160px;">
+                        <label style="font-size:12px; color:#374151; font-weight:500;">保本广告占比筛选</label>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <label style="display:flex; align-items:center; gap:4px; font-size:12px; color:#dc2626; cursor:pointer;">
+                                <input id="catalogDangerFilter" type="checkbox" style="margin:0;" />
+                                <span>⚠️ 低于21%风险商品</span>
+                            </label>
+                        </div>
+                    </div>
+                    
                     <!-- 排序选项 -->
                     <div style="display:flex; flex-direction:column; gap:4px; min-width:140px;">
                         <label style="font-size:12px; color:#374151; font-weight:500;">排序方式</label>
@@ -673,6 +684,17 @@
                                     <input id="catalogFullscreenReturnRateMin" type="number" placeholder="最小%" step="0.1" min="0" max="100" style="padding:8px 8px; border:1px solid #d1d5db; border-radius:6px; font-size:14px; width:60px; text-align:center;" />
                                     <span style="color:#6b7280; font-size:12px;">~</span>
                                     <input id="catalogFullscreenReturnRateMax" type="number" placeholder="最大%" step="0.1" min="0" max="100" style="padding:8px 8px; border:1px solid #d1d5db; border-radius:6px; font-size:14px; width:60px; text-align:center;" />
+                                </div>
+                            </div>
+                            
+                            <!-- 保本广告占比筛选 -->
+                            <div style="display:flex; flex-direction:column; gap:4px; min-width:160px;">
+                                <label style="font-size:12px; color:#374151; font-weight:500;">保本广告占比筛选</label>
+                                <div style="display:flex; gap:8px; align-items:center;">
+                                    <label style="display:flex; align-items:center; gap:4px; font-size:12px; color:#dc2626; cursor:pointer;">
+                                        <input id="catalogFullscreenDangerFilter" type="checkbox" style="margin:0;" />
+                                        <span>⚠️ 低于21%风险商品</span>
+                                    </label>
                                 </div>
                             </div>
                             

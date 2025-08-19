@@ -2053,13 +2053,18 @@ button:hover {
     font-weight: 500;
 }
 
-/* 税费占比样式 */
-.tax-positive {
-    color: #e65100 !important;
-    font-weight: 500;
+/* 实时预警标识闪烁动画 */
+@keyframes pulse-warning {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1.05);
+    }
 }
 
-.tax-negative {
-    color: #2ea44f !important;
-    font-weight: 500;
+.pulse-warning {
+    animation: pulse-warning 2s infinite;
 }

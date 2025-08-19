@@ -3990,14 +3990,14 @@ function renderCatalogTable() {
 			isDanger = isFinite(v) && v > 0 && v < 0.21;
 		}
 		
-		// 危险标识样式：红色背景、白色文字、加粗显示
-		const dangerStyle = isDanger ? 'background:#dc2626; color:#fff; padding:2px 6px; border-radius:4px; font-weight:700;' : '';
-		const dangerIcon = isDanger ? '⚠️ ' : '';
+		// 实时预警标识样式：红色背景、白色文字、加粗显示、闪烁动画
+		const dangerStyle = isDanger ? 'background:#dc2626; color:#fff; padding:2px 6px; border-radius:4px; font-weight:700; animation:pulse-warning 2s infinite;' : '';
+		const dangerIcon = isDanger ? '🚨 ' : '';
 		
 		if (!over1) {
 			return `<div style="display:inline-block; ${dangerStyle}">${dangerIcon}${text}</div>`;
 		}
-		return `<div style="position:relative; display:inline-block;">${text}<span title="需≥100%付费占比才保本" style="position:absolute; right:-8px; top:-4px; width:6px; height:6px; background:#ef4444; border-radius:50%;"></span></div>`;
+		return `<div style="position:relative; display:inline-block;">${dangerIcon}${text}<span title="需≥100%付费占比才保本" style="position:absolute; right:-8px; top:-4px; width:6px; height:6px; background:#ef4444; border-radius:50%;"></span></div>`;
 	};
 	const tbody = '<tbody>' + rows.map((row, idx) => {
 		const res = row.__result || {};
@@ -4021,16 +4021,32 @@ function renderCatalogTable() {
 				const renderAd = (a)=>{
 					const text = (!isFinite(a)||isNaN(a))? '-' : (a<=0? '0%' : (a*100).toFixed(2)+'%');
 					const over = isFinite(a)&&a>=1;
-					const isDanger = isFinite(a) && a > 0 && a < 0.21; // 低于21%的危险标识
+					const isDanger = isFinite(a) && a > 0 && a < 0.21; // 低于21%的实时预警标识
 					
-					// 危险标识样式：红色背景、白色文字、加粗显示
-					const dangerStyle = isDanger ? 'background:#dc2626; color:#fff; padding:2px 6px; border-radius:4px; font-weight:700;' : '';
+					// 实时预警标识样式：红色背景、白色文字、加粗显示、闪烁动画
+					const dangerStyle = isDanger ? 'background:#dc2626; color:#fff; padding:2px 6px; border-radius:4px; font-weight:700; animation:pulse-warning 2s infinite;' : '';
 					const dangerIcon = isDanger ? '⚠️ ' : '';
 					
 					return `<div style=\\\"position:relative; display:inline-block; ${dangerStyle}\\\">${dangerIcon}${text}${over?'<span title=\\\"需≥100%付费占比才保本\\\" style=\\\"position:absolute; right:-8px; top:-4px; width:6px; height:6px; background:#ef4444; border-radius:50%;\\\"></span>':''}</div>`;
 				};
 				if (Array.isArray(res.list)) return res.list.map(x=>renderAd(x.breakevenAdRate)).join('');
-				if (Array.isArray(res.priceRangeResults)) return res.priceRangeResults.map(x=>`<div>${fmtRange(x.breakevenAdRate,true,false,true)}</div>`).join('');
+				if (Array.isArray(res.priceRangeResults)) return res.priceRangeResults.map(x=>{
+					const adRate = x.breakevenAdRate;
+					let isDanger = false;
+					
+					// 检查价格区间结果中是否有低于21%的保本广告占比
+					if (typeof adRate === 'object' && adRate.min !== undefined) {
+						isDanger = isFinite(adRate.min) && adRate.min > 0 && adRate.min < 0.21;
+					} else {
+						isDanger = isFinite(adRate) && adRate > 0 && adRate < 0.21;
+					}
+					
+					// 实时预警标识样式
+					const dangerStyle = isDanger ? 'background:#dc2626; color:#fff; padding:2px 6px; border-radius:4px; font-weight:700; animation:pulse-warning 2s infinite;' : '';
+					const dangerIcon = isDanger ? '🚨 ' : '';
+					
+					return `<div style="display:inline-block; ${dangerStyle}">${dangerIcon}${fmtRange(adRate,true,false,true)}</div>`;
+				}).join('');
 				if (Array.isArray(res.combinations)) return res.combinations.map(x=>renderAd(x.breakevenAdRate)).join('');
 				return buildAdCell(res.breakevenAdRate);
 			})()}</td>`+
@@ -4663,19 +4679,76 @@ function renderCatalogRow(index) {
 	const ROI_COL = 8, AD_COL = 9; // 新索引：移除"付费占比/利润/利润率"列后
 	if (Array.isArray(res.list)) {
 		if (tds[ROI_COL]) tds[ROI_COL].innerHTML = res.list.map(x=>`<div style="margin:2px 0;">${isFinite(x.breakevenROI)? Number(x.breakevenROI).toFixed(2) : '∞'}</div>`).join('');
-		if (tds[AD_COL]) tds[AD_COL].innerHTML = res.list.map(x=>{ const a=x.breakevenAdRate; const text = (!isFinite(a)||isNaN(a))? '-' : (a<=0? '0%' : (a*100).toFixed(2)+'%'); const over = isFinite(a)&&a>=1; return `<div style="margin:2px 0; position:relative; display:block;">${text}${over?'<span title="需≥100%付费占比才保本" style="position:absolute; right:-8px; top:-4px; width:6px; height:6px; background:#ef4444; border-radius:50%;"></span>':''}</div>`; }).join('');
+		if (tds[AD_COL]) tds[AD_COL].innerHTML = res.list.map(x=>{ 
+			const a=x.breakevenAdRate; 
+			const text = (!isFinite(a)||isNaN(a))? '-' : (a<=0? '0%' : (a*100).toFixed(2)+'%'); 
+			const over = isFinite(a)&&a>=1; 
+			const isDanger = isFinite(a) && a > 0 && a < 0.21; // 低于21%的实时预警标识
+			
+			// 实时预警标识样式：红色背景、白色文字、加粗显示、闪烁动画
+			const dangerStyle = isDanger ? 'background:#dc2626; color:#fff; padding:2px 6px; border-radius:4px; font-weight:700; animation:pulse-warning 2s infinite;' : '';
+			const dangerIcon = isDanger ? '🚨 ' : '';
+			
+			return `<div style="margin:2px 0; position:relative; display:block;">${dangerIcon}${text}${over?'<span title="需≥100%付费占比才保本" style="position:absolute; right:-8px; top:-4px; width:6px; height:6px; background:#ef4444; border-radius:50%;"></span>':''}</div>`; 
+		}).join('');
 	} else if (Array.isArray(res.priceRangeResults)) {
 		if (tds[ROI_COL]) tds[ROI_COL].innerHTML = res.priceRangeResults.map(x=>`<div style="margin:2px 0;">${fmt(x.breakevenROI,false,false)}</div>`).join('');
-		if (tds[AD_COL]) tds[AD_COL].innerHTML = res.priceRangeResults.map(x=>`<div style="margin:2px 0;">${fmt(x.breakevenAdRate,true,false,true)}</div>`).join('');
+		if (tds[AD_COL]) tds[AD_COL].innerHTML = res.priceRangeResults.map(x=>{
+			const adRate = x.breakevenAdRate;
+			let isDanger = false;
+			
+			// 检查价格区间结果中是否有低于21%的保本广告占比
+			if (typeof adRate === 'object' && adRate.min !== undefined) {
+				isDanger = isFinite(adRate.min) && adRate.min > 0 && adRate.min < 0.21;
+			} else {
+				isDanger = isFinite(adRate) && adRate > 0 && adRate < 0.21;
+			}
+			
+			// 实时预警标识样式
+			const dangerStyle = isDanger ? 'background:#dc2626; color:#fff; padding:2px 6px; border-radius:4px; font-weight:700; animation:pulse-warning 2s infinite;' : '';
+			const dangerIcon = isDanger ? '🚨 ' : '';
+			
+			return `<div style="margin:2px 0; display:inline-block; ${dangerStyle}">${dangerIcon}${fmt(adRate,true,false,true)}</div>`;
+		}).join('');
 	} else if (Array.isArray(res.combinations)) {
 		if (tds[ROI_COL]) tds[ROI_COL].innerHTML = res.combinations.map(x=>`<div style="margin:2px 0;">${isFinite(x.breakevenROI)? Number(x.breakevenROI).toFixed(2) : '∞'}</div>`).join('');
-		if (tds[AD_COL]) tds[AD_COL].innerHTML = res.combinations.map(x=>{ const a=x.breakevenAdRate; const text = (!isFinite(a)||isNaN(a))? '-' : (a<=0? '0%' : (a*100).toFixed(2)+'%'); const over = isFinite(a)&&a>=1; return `<div style="margin:2px 0; position:relative; display:block;">${text}${over?'<span title="需≥100%付费占比才保本" style="position:absolute; right:-8px; top:-4px; width:6px; height:6px; background:#ef4444; border-radius:50%;"></span>':''}</div>`; }).join('');
+		if (tds[AD_COL]) tds[AD_COL].innerHTML = res.combinations.map(x=>{ 
+			const a=x.breakevenAdRate; 
+			const text = (!isFinite(a)||isNaN(a))? '-' : (a<=0? '0%' : (a*100).toFixed(2)+'%'); 
+			const over = isFinite(a)&&a>=1; 
+			const isDanger = isFinite(a) && a > 0 && a < 0.21; // 低于21%的实时预警标识
+			
+			// 实时预警标识样式：红色背景、白色文字、加粗显示、闪烁动画
+			const dangerStyle = isDanger ? 'background:#dc2626; color:#fff; padding:2px 6px; border-radius:4px; font-weight:700; animation:pulse-warning 2s infinite;' : '';
+			const dangerIcon = isDanger ? '🚨 ' : '';
+			
+			return `<div style="margin:2px 0; position:relative; display:block;">${dangerIcon}${text}${over?'<span title="需≥100%付费占比才保本" style="position:absolute; right:-8px; top:-4px; width:6px; height:6px; background:#ef4444; border-radius:50%;"></span>':''}</div>`; 
+		}).join('');
 	} else {
 		if (tds[ROI_COL]) tds[ROI_COL].innerHTML = String(fmt(res.breakevenROI,false,false)).replace('Infinity','∞');
 		if (tds[AD_COL]) {
-			const v = res.breakevenAdRate; const text = fmt(v,true,false,true);
-			let over1 = false; if (v && typeof v==='object' && 'min' in v) { over1 = isFinite(v.min) && v.min >= 1; } else { over1 = isFinite(v) && v >= 1; }
-			tds[AD_COL].innerHTML = over1 ? `<div style="position:relative; display:inline-block;">${text}<span title="需≥100%付费占比才保本" style="position:absolute; right:-8px; top:-4px; width:6px; height:6px; background:#ef4444; border-radius:50%;"></span></div>` : text;
+			const v = res.breakevenAdRate; 
+			const text = fmt(v,true,false,true);
+			let over1 = false; 
+			let isDanger = false;
+			
+			if (v && typeof v==='object' && 'min' in v) { 
+				over1 = isFinite(v.min) && v.min >= 1; 
+				isDanger = isFinite(v.min) && v.min > 0 && v.min < 0.21;
+			} else { 
+				over1 = isFinite(v) && v >= 1; 
+				isDanger = isFinite(v) && v > 0 && v < 0.21;
+			}
+			
+			// 实时预警标识样式：红色背景、白色文字、加粗显示、闪烁动画
+			const dangerStyle = isDanger ? 'background:#dc2626; color:#fff; padding:2px 6px; border-radius:4px; font-weight:700; animation:pulse-warning 2s infinite;' : '';
+			const dangerIcon = isDanger ? '🚨 ' : '';
+			
+			if (over1) {
+				tds[AD_COL].innerHTML = `<div style="position:relative; display:inline-block;">${dangerIcon}${text}<span title="需≥100%付费占比才保本" style="position:absolute; right:-8px; top:-4px; width:6px; height:6px; background:#ef4444; border-radius:50%;"></span></div>`;
+			} else {
+				tds[AD_COL].innerHTML = `<div style="display:inline-block; ${dangerStyle}">${dangerIcon}${text}</div>`;
+			}
 		}
 	}
 	// 在不打断输入焦点的前提下显示错误提示：不重建单元格内容，仅更新占位容器
@@ -4956,6 +5029,7 @@ let catalogFilterState = {
 	platform: '',
 	returnRateMin: '',
 	returnRateMax: '',
+	dangerFilter: false, // 新增：保本广告占比低于21%风险商品筛选
 	sortBy: '',
 	sortOrder: 'asc',
 	filteredRows: []
@@ -4967,6 +5041,7 @@ function applyCatalogFilters() {
 	const platform = document.getElementById('catalogPlatformFilter').value;
 	const returnRateMin = parseFloat(document.getElementById('catalogReturnRateMin').value) || 0;
 	const returnRateMax = parseFloat(document.getElementById('catalogReturnRateMax').value) || 100;
+	const dangerFilter = document.getElementById('catalogDangerFilter').checked;
 	const sortBy = document.getElementById('catalogSortBy').value;
 	const sortOrder = document.getElementById('catalogSortOrder').value;
 	
@@ -4976,6 +5051,7 @@ function applyCatalogFilters() {
 		platform,
 		returnRateMin,
 		returnRateMax,
+		dangerFilter,
 		sortBy,
 		sortOrder
 	};
@@ -5004,6 +5080,42 @@ function applyCatalogFilters() {
 			if (returnRate < returnRateMin || returnRate > returnRateMax) {
 				return false;
 			}
+		}
+		
+		// 保本广告占比风险筛选
+		if (dangerFilter) {
+			const result = row.__result;
+			if (!result) return false;
+			
+			let hasDanger = false;
+			if (Array.isArray(result.list)) {
+				// 多档情况：检查是否有任何一档的保本广告占比低于21%
+				hasDanger = result.list.some(item => {
+					const adRate = item.breakevenAdRate;
+					return isFinite(adRate) && adRate > 0 && adRate < 0.21;
+				});
+			} else if (Array.isArray(result.priceRangeResults)) {
+				// 价格区间情况：检查是否有任何区间的保本广告占比低于21%
+				hasDanger = result.priceRangeResults.some(item => {
+					const adRate = item.breakevenAdRate;
+					if (typeof adRate === 'object' && adRate.min !== undefined) {
+						return isFinite(adRate.min) && adRate.min > 0 && adRate.min < 0.21;
+					}
+					return isFinite(adRate) && adRate > 0 && adRate < 0.21;
+				});
+			} else if (Array.isArray(result.combinations)) {
+				// 组合情况：检查是否有任何组合的保本广告占比低于21%
+				hasDanger = result.combinations.some(item => {
+					const adRate = item.breakevenAdRate;
+					return isFinite(adRate) && adRate > 0 && adRate < 0.21;
+				});
+			} else {
+				// 单一情况：检查保本广告占比是否低于21%
+				const adRate = result.breakevenAdRate;
+				hasDanger = isFinite(adRate) && adRate > 0 && adRate < 0.21;
+			}
+			
+			if (!hasDanger) return false;
 		}
 		
 		return true;
@@ -5059,6 +5171,7 @@ function clearCatalogFilters() {
 	document.getElementById('catalogPlatformFilter').value = '';
 	document.getElementById('catalogReturnRateMin').value = '';
 	document.getElementById('catalogReturnRateMax').value = '';
+	document.getElementById('catalogDangerFilter').checked = false;
 	document.getElementById('catalogSortBy').value = '';
 	document.getElementById('catalogSortOrder').value = 'asc';
 	
@@ -5067,6 +5180,7 @@ function clearCatalogFilters() {
 		platform: '',
 		returnRateMin: '',
 		returnRateMax: '',
+		dangerFilter: false,
 		sortBy: '',
 		sortOrder: 'asc',
 		filteredRows: []
@@ -5104,7 +5218,7 @@ function updateCatalogStatus() {
 	filteredRows.forEach(r => { if (r && r.__result && (r.__result.errors||[]).length) err++; });
 	
 	// 显示筛选状态
-	if (catalogFilterState.searchText || catalogFilterState.platform || catalogFilterState.returnRateMin || catalogFilterState.returnRateMax || catalogFilterState.sortBy) {
+	if (catalogFilterState.searchText || catalogFilterState.platform || catalogFilterState.returnRateMin || catalogFilterState.returnRateMax || catalogFilterState.dangerFilter || catalogFilterState.sortBy) {
 		el.innerHTML = `共 ${allRows.length} 条，筛选后 ${filteredRows.length} 条，${err} 条异常 <span style="color:#6b7280; font-size:0.9em;">（已应用筛选）</span>`;
 	} else {
 		el.textContent = `共 ${allRows.length} 条，${err} 条异常`;
@@ -5611,6 +5725,12 @@ function initCatalogTab() {
 		});
 	}
 	
+	// 保本广告占比风险筛选变化时自动应用
+	const dangerFilter = document.getElementById('catalogDangerFilter');
+	if (dangerFilter) {
+		dangerFilter.addEventListener('change', applyCatalogFilters);
+	}
+	
 	// 排序变化时自动应用
 	if (sortBy) {
 		sortBy.addEventListener('change', applyCatalogFilters);
@@ -5668,6 +5788,12 @@ function initCatalogTab() {
 			clearTimeout(fullscreenReturnRateMax.filterTimeout);
 			fullscreenReturnRateMax.filterTimeout = setTimeout(() => applyFullscreenFilters(), 500);
 		});
+	}
+	
+	// 全屏保本广告占比风险筛选变化时自动应用
+	const fullscreenDangerFilter = document.getElementById('catalogFullscreenDangerFilter');
+	if (fullscreenDangerFilter) {
+		fullscreenDangerFilter.addEventListener('change', () => applyFullscreenFilters());
 	}
 	
 	// 全屏排序变化时自动应用
@@ -5776,6 +5902,7 @@ function syncFullscreenFilters() {
 	const fullscreenPlatformFilter = document.getElementById('catalogFullscreenPlatformFilter');
 	const fullscreenReturnRateMin = document.getElementById('catalogFullscreenReturnRateMin');
 	const fullscreenReturnRateMax = document.getElementById('catalogFullscreenReturnRateMax');
+	const fullscreenDangerFilter = document.getElementById('catalogFullscreenDangerFilter');
 	const fullscreenSortBy = document.getElementById('catalogFullscreenSortBy');
 	const fullscreenSortOrder = document.getElementById('catalogFullscreenSortOrder');
 	
@@ -5783,6 +5910,7 @@ function syncFullscreenFilters() {
 	if (fullscreenPlatformFilter) fullscreenPlatformFilter.value = catalogFilterState.platform;
 	if (fullscreenReturnRateMin) fullscreenReturnRateMin.value = catalogFilterState.returnRateMin;
 	if (fullscreenReturnRateMax) fullscreenReturnRateMax.value = catalogFilterState.returnRateMax;
+	if (fullscreenDangerFilter) fullscreenDangerFilter.checked = catalogFilterState.dangerFilter;
 	if (fullscreenSortBy) fullscreenSortBy.value = catalogFilterState.sortBy;
 	if (fullscreenSortOrder) fullscreenSortOrder.value = catalogFilterState.sortOrder;
 	
@@ -5820,6 +5948,7 @@ function applyFullscreenFilters() {
 	const platform = document.getElementById('catalogFullscreenPlatformFilter').value;
 	const returnRateMin = parseFloat(document.getElementById('catalogFullscreenReturnRateMin').value) || 0;
 	const returnRateMax = parseFloat(document.getElementById('catalogFullscreenReturnRateMax').value) || 100;
+	const dangerFilter = document.getElementById('catalogFullscreenDangerFilter').checked;
 	const sortBy = document.getElementById('catalogFullscreenSortBy').value;
 	const sortOrder = document.getElementById('catalogFullscreenSortOrder').value;
 	
@@ -5829,6 +5958,7 @@ function applyFullscreenFilters() {
 		platform,
 		returnRateMin,
 		returnRateMax,
+		dangerFilter,
 		sortBy,
 		sortOrder,
 		filteredRows: []
@@ -5858,6 +5988,42 @@ function applyFullscreenFilters() {
 			if (returnRate < returnRateMin || returnRate > returnRateMax) {
 				return false;
 			}
+		}
+		
+		// 保本广告占比风险筛选
+		if (dangerFilter) {
+			const result = row.__result;
+			if (!result) return false;
+			
+			let hasDanger = false;
+			if (Array.isArray(result.list)) {
+				// 多档情况：检查是否有任何一档的保本广告占比低于21%
+				hasDanger = result.list.some(item => {
+					const adRate = item.breakevenAdRate;
+					return isFinite(adRate) && adRate > 0 && adRate < 0.21;
+				});
+			} else if (Array.isArray(result.priceRangeResults)) {
+				// 价格区间情况：检查是否有任何区间的保本广告占比低于21%
+				hasDanger = result.priceRangeResults.some(item => {
+					const adRate = item.breakevenAdRate;
+					if (typeof adRate === 'object' && adRate.min !== undefined) {
+						return isFinite(adRate.min) && adRate.min > 0 && adRate.min < 0.21;
+					}
+					return isFinite(adRate) && adRate > 0 && adRate < 0.21;
+				});
+			} else if (Array.isArray(result.combinations)) {
+				// 组合情况：检查是否有任何组合的保本广告占比低于21%
+				hasDanger = result.combinations.some(item => {
+					const adRate = item.breakevenAdRate;
+					return isFinite(adRate) && adRate > 0 && adRate < 0.21;
+				});
+			} else {
+				// 单一情况：检查保本广告占比是否低于21%
+				const adRate = result.breakevenAdRate;
+				hasDanger = isFinite(adRate) && adRate > 0 && adRate < 0.21;
+			}
+			
+			if (!hasDanger) return false;
 		}
 		
 		return true;
@@ -5914,6 +6080,7 @@ function clearFullscreenFilters() {
 	document.getElementById('catalogFullscreenPlatformFilter').value = '';
 	document.getElementById('catalogFullscreenReturnRateMin').value = '';
 	document.getElementById('catalogFullscreenReturnRateMax').value = '';
+	document.getElementById('catalogFullscreenDangerFilter').checked = false;
 	document.getElementById('catalogFullscreenSortBy').value = '';
 	document.getElementById('catalogFullscreenSortOrder').value = 'asc';
 	
