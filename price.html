@@ -1167,7 +1167,7 @@
                     );
                     
                     const cell = document.createElement('td');
-                    cell.textContent = `${profitRate.toFixed(1)}%`;
+                    cell.textContent = `${profitRate.toFixed(2)}%`;
                     cell.className = 'profit-cell';
                     
                     // 根据利润率设置颜色样式
@@ -1194,11 +1194,11 @@
                     platformFee, logisticsCost, shippingInsurance, otherCost
                 } = baseParams;
 
-                // 计算实际开票成本
+                // 计算实际开票成本（invoiceCost是百分比，需要除以100）
                 const actualInvoiceCost = costPrice * (invoiceCost / 100);
                 const totalPurchaseCost = costPrice + actualInvoiceCost;
                 
-                // 计算进项税
+                // 计算进项税（inputTaxRate是百分比，需要除以100）
                 const purchaseVAT = costPrice * (inputTaxRate / 100);
 
                 // 计算有效销售率
