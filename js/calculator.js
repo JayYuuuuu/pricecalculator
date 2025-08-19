@@ -3910,24 +3910,24 @@ function renderCatalogTable() {
 				`<option value=""${!val?' selected':''}>请选择平台</option>`+opts+
 			`</select>`;
 		}
-		// 退货率字段特殊处理：显示为百分比格式，但存储为小数值
-		if (key === 'returnRate') {
-			const displayValue = (() => {
-				if (val === undefined || val === null || val === '') return '';
-				const num = Number(val);
-				if (isFinite(num)) {
-					// 如果是小数值（0-1之间），转换为百分比显示
-					if (num >= 0 && num <= 1) {
-						return (num * 100).toFixed(2) + '%';
-					}
-					// 如果已经是百分比数值（>1），直接显示
-					return num.toFixed(2) + '%';
+			// 退货率字段特殊处理：显示为百分比格式，但存储为小数值
+	if (key === 'returnRate') {
+		const displayValue = (() => {
+			if (val === undefined || val === null || val === '') return '';
+			const num = Number(val);
+			if (isFinite(num)) {
+				// 如果是小数值（0-1之间），转换为百分比显示
+				if (num >= 0 && num <= 1) {
+					return (num * 100).toFixed(2) + '%';
 				}
-				// 如果已经是字符串格式（如"12%"），直接显示
-				return String(val);
-			})();
-			return `<input data-key="${key}" class="${cls}" type="text" value="${displayValue}" placeholder="${placeholder||''}" style="width:${width};" title="支持百分比格式，如：12% 或 0.12">`;
-		}
+				// 如果已经是百分比数值（>1），直接显示
+				return num.toFixed(2) + '%';
+			}
+			// 如果已经是字符串格式（如"12%"），直接显示
+			return String(val);
+		})();
+		return `<input data-key="${key}" class="${cls}" type="text" value="${displayValue}" placeholder="输入数字自动添加%" style="width:${width};" title="直接输入数字即可，系统自动添加%号，如：12">`;
+	}
 		return `<input data-key="${key}" class="${cls}" type="${type}" value="${val === undefined ? '' : String(val)}" placeholder="${placeholder||''}"${step}${disabled} style="width:${width};">`; 
 	};
 	const fmtRange = (v, asPercent, asMoney, clampZero) => {
@@ -4011,7 +4011,7 @@ function renderCatalogTable() {
 			`<td class=\"lp-col-right\">${buildCellInput(row,'salePrice','number','P')}</td>`+
 			`<td class=\"lp-col-right\">${buildPriceTiers(row)}</td>`+
 			`<td class=\"lp-col-right\">${buildCostTiers(row)}</td>`+
-			`<td class=\"lp-col-right return-rate-column\">${buildCellInput(row,'returnRate','text','12%')}</td>`+
+			`<td class=\"lp-col-right return-rate-column\">${buildCellInput(row,'returnRate','text','输入数字自动添加%')}</td>`+
 			`<td class=\"lp-col-right\" style=\"white-space:nowrap;\">${(function(){
 				if (Array.isArray(res.list)) return res.list.map(x=>`<div>${isFinite(x.breakevenROI)? Number(x.breakevenROI).toFixed(2) : '∞'}</div>`).join('');
 				if (Array.isArray(res.priceRangeResults)) return res.priceRangeResults.map(x=>`<div>${fmtRange(x.breakevenROI,false,false)}</div>`).join('');
@@ -4251,8 +4251,25 @@ function renderCatalogTable() {
 			const row = getRowByDisplayIndex(index);
 			if (!row) return;
 			
-			// 退货率字段特殊处理：支持百分比格式输入
+			// 退货率字段特殊处理：支持百分比格式输入，智能处理%号
 			if (key === 'returnRate') {
+				// 智能处理退货率输入：移除所有%号，重新格式化
+				let cleanValue = value.replace(/%/g, ''); // 移除所有%号
+				
+				// 检查是否为有效数字
+				if (/^\d+(\.\d+)?$/.test(cleanValue)) {
+					// 如果是纯数字，自动添加%号并更新显示
+					el.value = cleanValue + '%';
+					value = cleanValue + '%';
+				} else if (cleanValue === '') {
+					// 如果为空，清空显示
+					el.value = '';
+					value = '';
+				} else {
+					// 如果不是有效数字，保持原值但尝试清理
+					value = cleanValue + '%';
+				}
+				
 				// 使用 parsePercent 函数解析输入值，确保存储为小数值
 				const parsedValue = parsePercent(value);
 				if (isFinite(parsedValue)) {
