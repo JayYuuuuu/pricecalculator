@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>按钮风格测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .style-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .style-section h2 {
+            color: #555;
+            margin-bottom: 15px;
+        }
+        .button-demo {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            margin: 15px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+        }
+        .demo-input {
+            width: 80px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .old-style, .new-style {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            margin: 2px 0;
+        }
+        .old-add-btn {
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            background: #dbeafe;
+            color: #3b82f6;
+            font-weight: 700;
+            white-space: nowrap;
+            border: none;
+            cursor: pointer;
+        }
+        .old-remove-btn {
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            background: #fee2e2;
+            color: #ef4444;
+            font-weight: 700;
+            white-space: nowrap;
+            border: none;
+            cursor: pointer;
+        }
+        .new-add-btn {
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: #bfdbfe;
+            color: #2563eb;
+            font-weight: 700;
+            white-space: nowrap;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            cursor: pointer;
+        }
+        .new-remove-btn {
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: #fecaca;
+            color: #dc2626;
+            font-weight: 700;
+            white-space: nowrap;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            cursor: pointer;
+        }
+        .description {
+            background: #e8f4fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .description h3 {
+            margin-top: 0;
+            color: #1976d2;
+        }
+        .description ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .description li {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>商品清单按钮风格更新</h1>
+        
+        <div class="description">
+            <h3>更新说明</h3>
+            <p>已将测试网页中的按钮风格应用到商品清单表格中，主要更新包括：</p>
+            <ul>
+                <li><strong>添加按钮</strong>：浅蓝色背景 (#bfdbfe)，深蓝色图标 (#2563eb)</li>
+                <li><strong>删除按钮</strong>：浅红色背景 (#fecaca)，深红色图标 (#dc2626)</li>
+                <li><strong>边框样式</strong>：无边框设计，更加简洁现代</li>
+                <li><strong>圆角效果</strong>：从6px增加到8px，更加圆润</li>
+                <li><strong>阴影效果</strong>：添加轻微阴影，增强立体感</li>
+            </ul>
+        </div>
+
+        <div class="style-section">
+            <h2>风格对比</h2>
+            
+            <div class="button-demo">
+                <div class="button-group">
+                    <h4>旧风格</h4>
+                    <div class="old-style">
+                        <input type="number" class="demo-input" value="22.5" readonly>
+                        <button class="old-remove-btn">×</button>
+                    </div>
+                    <div class="old-style">
+                        <input type="number" class="demo-input" value="13" readonly>
+                        <button class="old-remove-btn">×</button>
+                    </div>
+                    <button class="old-add-btn">+</button>
+                </div>
+                
+                <div class="button-group">
+                    <h4>新风格</h4>
+                    <div class="new-style">
+                        <input type="number" class="demo-input" value="22.5" readonly>
+                        <button class="new-remove-btn">×</button>
+                    </div>
+                    <div class="new-style">
+                        <input type="number" class="demo-input" value="13" readonly>
+                        <button class="new-remove-btn">×</button>
+                    </div>
+                    <button class="new-add-btn">+</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="style-section">
+            <h2>应用场景</h2>
+            <p>新的按钮风格已应用到以下区域：</p>
+            <ul>
+                <li><strong>进货价（多档）</strong>：添加和删除进货价档位的按钮</li>
+                <li><strong>含税售价（多档）</strong>：添加和删除售价档位的按钮</li>
+            </ul>
+        </div>
+
+        <div class="style-section">
+            <h2>技术细节</h2>
+            <p><strong>CSS样式更新：</strong></p>
+            <pre style="background: #f4f4f4; padding: 15px; border-radius: 4px; overflow-x: auto;">
+/* 添加按钮新样式 */
+.new-add-btn {
+    background: #bfdbfe;          /* 浅蓝色背景 */
+    color: #2563eb;               /* 深蓝色图标 */
+    border-radius: 8px;           /* 8px圆角 */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1); /* 轻微阴影 */
+}
+
+/* 删除按钮新样式 */
+.new-remove-btn {
+    background: #fecaca;          /* 浅红色背景 */
+    color: #dc2626;               /* 深红色图标 */
+    border-radius: 8px;           /* 8px圆角 */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1); /* 轻微阴影 */
+}</pre>
+        </div>
+
+        <div class="style-section">
+            <h2>使用方法</h2>
+            <p>在商品清单表格中：</p>
+            <ol>
+                <li>点击浅蓝色"+"按钮添加新的价格档位</li>
+                <li>在输入框中输入价格数值</li>
+                <li>点击浅红色"×"按钮删除不需要的档位</li>
+                <li>系统会自动计算并显示利润率</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        // 添加交互效果
+        document.querySelectorAll('.new-add-btn, .new-remove-btn').forEach(btn => {
+            btn.addEventListener('mouseenter', function() {
+                this.style.transform = 'scale(1.1)';
+                this.style.transition = 'transform 0.2s ease';
+            });
+            
+            btn.addEventListener('mouseleave', function() {
+                this.style.transform = 'scale(1)';
+            });
+        });
+
+        // 模拟按钮点击效果
+        document.querySelectorAll('.new-add-btn, .new-remove-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                this.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    this.style.transform = 'scale(1)';
+                }, 100);
+            });
+        });
+    </script>
+</body>
+</html>

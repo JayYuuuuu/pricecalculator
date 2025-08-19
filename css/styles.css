@@ -1587,9 +1587,9 @@ button:hover {
 /* --------------------------- */
 
 /* 大屏幕：限制最大宽度，避免内容过宽 */
-@media (min-width: 1500px) {
+@media (min-width: 1588px) {
     body {
-        max-width: 1500px; /* 大屏幕下限制最大宽度为1500px */
+        max-width: 1588px; /* 大屏幕下限制最大宽度为1588px */
     }
 }
 

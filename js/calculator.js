@@ -3878,6 +3878,7 @@ function renderCatalogTable() {
 		'<th style="width:120px;">商品名称</th><th style="width:100px;">货号</th><th style="width:80px;">平台</th><th class="lp-col-right" style="width:80px;">含税售价P</th><th class="lp-col-right" style="width:180px;">含税售价（多档）</th>'+
 		'<th class="lp-col-right" style="width:140px;">进货价（多档）</th><th class="lp-col-right" style="width:70px;">退货率</th>'+
 		'<th class="lp-col-right" style="width:100px; white-space:nowrap;">保本ROI</th><th class="lp-col-right" style="width:120px; white-space:nowrap;">保本广告占比</th>'+
+		'<th class="lp-col-right" style="width:100px; white-space:nowrap;">利润率(20%付费)</th>'+
 		'<th class="lp-col-center" style="width:140px;">操作</th>'+
 		'</tr></thead>';
 	const buildCellInput = (row, key, type, placeholder) => { 
@@ -3949,15 +3950,15 @@ function renderCatalogTable() {
 		const mismatch = hasPriceTiers && (!hasCostTiers || row.salePriceTiers.length !== row.costTiers.length);
 		const items = tiers.map((v,i)=>`<div style="display:flex; gap:6px; align-items:center; margin:2px 0;">
 			<input type="number" class="catalog-cost-tier" data-tier-index="${i}" value="${(v!==''&&v!==null&&v!==undefined&&isFinite(Number(v)))?Number(v):''}" step="0.01" style="width:80px; ${mismatch?'border-color:#ef4444; background:#fff1f2;':''}">
-			<button type="button" class="catalog-tier-remove" data-action="removeTier" data-tier-index="${i}" title="删除" aria-label="删除" style="margin:0; width:24px; height:24px; line-height:24px; padding:0; display:inline-flex; align-items:center; justify-content:center; border-radius:6px; background:#fee2e2; color:#ef4444; font-weight:700; white-space:nowrap;">×</button>
+			<button type="button" class="catalog-tier-remove" data-action="removeTier" data-tier-index="${i}" title="删除" aria-label="删除" style="margin:0; width:24px; height:24px; line-height:24px; padding:0; display:inline-flex; align-items:center; justify-content:center; border-radius:8px; background:#fecaca; color:#dc2626; font-weight:700; white-space:nowrap; box-shadow:0 1px 3px rgba(0,0,0,0.1);">×</button>
 		</div>`).join('');
 		if (tiers.length === 0) {
 			return `<div style="display:flex; flex-direction:column; align-items:center;">`
-				+ `<button type="button" class="catalog-tier-add" data-action="addTier" title="新增一档" aria-label="新增一档" style="width:24px; height:24px; line-height:24px; padding:0; display:inline-flex; align-items:center; justify-content:center; border-radius:6px; background:#dbeafe; color:#3b82f6; font-weight:700; white-space:nowrap;">+</button>`
+				+ `<button type="button" class="catalog-tier-add" data-action="addTier" title="新增一档" aria-label="新增一档" style="width:24px; height:24px; line-height:24px; padding:0; display:inline-flex; align-items:center; justify-content:center; border-radius:8px; background:#bfdbfe; color:#2563eb; font-weight:700; white-space:nowrap; box-shadow:0 1px 3px rgba(0,0,0,0.1);">+</button>`
 				+ (mismatch?`<div style=\"color:#e11d48; font-size:12px; margin-top:4px;\">需与"含税售价（多档）"等量</div>`:'')
 				+ `</div>`;
 		}
-		return `<div style="display:flex; flex-direction:column; align-items:flex-start; gap:4px;"><div style="display:flex; align-items:center; gap:8px;"><button type="button" class="catalog-tier-add" data-action="addTier" title="新增一档" aria-label="新增一档" style="width:24px; height:24px; line-height:24px; padding:0; display:inline-flex; align-items:center; justify-content:center; border-radius:6px; background:#dbeafe; color:#3b82f6; font-weight:700; white-space:nowrap; margin-right:4px;">+</button><div>${items}</div></div>${mismatch?`<div style=\"color:#e11d48; font-size:12px;\">与"含税售价（多档）"档数不一致</div>`:''}</div>`;
+		return `<div style="display:flex; flex-direction:column; align-items:flex-start; gap:4px;"><div style="display:flex; align-items:center; gap:8px;"><button type="button" class="catalog-tier-add" data-action="addTier" title="新增一档" aria-label="新增一档" style="width:24px; height:24px; line-height:24px; padding:0; display:inline-flex; align-items:center; justify-content:center; border-radius:8px; background:#bfdbfe; color:#2563eb; font-weight:700; white-space:nowrap; box-shadow:0 1px 3px rgba(0,0,0,0.1); margin-right:4px;">+</button><div>${items}</div></div>${mismatch?`<div style=\"color:#e11d48; font-size:12px;\">与"含税售价（多档）"档数不一致</div>`:''}</div>`;
 	}
 	// 生成"含税售价（多档）"编辑区 HTML
 	function buildPriceTiers(row) {
@@ -3967,15 +3968,15 @@ function renderCatalogTable() {
 		const mismatch = hasPriceTiers && (!hasCostTiers || row.salePriceTiers.length !== row.costTiers.length);
 		const items = tiers.map((v,i)=>`<div style="display:flex; gap:6px; align-items:center; margin:2px 0;">
 			<input type="number" class="catalog-price-tier" data-price-tier-index="${i}" value="${(v!==''&&v!==null&&v!==undefined&&isFinite(Number(v)))?Number(v):''}" step="0.01" style="width:80px; ${mismatch?'border-color:#ef4444; background:#fff1f2;':''}">
-			<button type="button" class="catalog-price-tier-remove" data-action="removePriceTier" data-price-tier-index="${i}" title="删除" aria-label="删除" style="margin:0; width:24px; height:24px; line-height:24px; padding:0; display:inline-flex; align-items:center; justify-content:center; border-radius:6px; background:#fee2e2; color:#ef4444; font-weight:700; white-space:nowrap;">×</button>
+			<button type="button" class="catalog-price-tier-remove" data-action="removePriceTier" data-price-tier-index="${i}" title="删除" aria-label="删除" style="margin:0; width:24px; height:24px; line-height:24px; padding:0; display:inline-flex; align-items:center; justify-content:center; border-radius:8px; background:#fecaca; color:#dc2626; font-weight:700; white-space:nowrap; box-shadow:0 1px 3px rgba(0,0,0,0.1);">×</button>
 		</div>`).join('');
 		if (tiers.length === 0) {
 			return `<div style="display:flex; flex-direction:column; align-items:center;">`
-				+ `<button type="button" class="catalog-price-tier-add" data-action="addPriceTier" title="新增一档" aria-label="新增一档" style="width:24px; height:24px; line-height:24px; padding:0; display:inline-flex; align-items:center; justify-content:center; border-radius:6px; background:#dbeafe; color:#3b82f6; font-weight:700; white-space:nowrap;">+</button>`
-				+ (mismatch?`<div style=\"color:#e11d48; font-size:12px; margin-top:4px;\">需与"进货价（多档）"等量</div>`:'')
+				+ `<button type="button" class="catalog-price-tier-add" data-action="addPriceTier" title="新增一档" aria-label="新增一档" style="width:24px; height:24px; line-height:24px; padding:0; display:inline-flex; align-items:center; justify-content:center; border-radius:8px; background:#bfdbfe; color:#2563eb; font-weight:700; white-space:nowrap; box-shadow:0 1px 3px rgba(0,0,0,0.1);">+</button>`
+				+ (mismatch?`<div style=\"color:#e11d48; font-size:12px; margin-top:4px;\">需与"进货价（多档）"档数不一致</div>`:'')
 				+ `</div>`;
 		}
-		return `<div style="display:flex; flex-direction:column; align-items:flex-start; gap:4px;"><div style="display:flex; align-items:center; gap:8px;"><button type="button" class="catalog-price-tier-add" data-action="addPriceTier" title="新增一档" aria-label="新增一档" style="width:24px; height:24px; line-height:24px; padding:0; display:inline-flex; align-items:center; justify-content:center; border-radius:6px; background:#dbeafe; color:#3b82f6; font-weight:700; white-space:nowrap; margin-right:4px;">+</button><div>${items}</div></div>${mismatch?`<div style=\"color:#e11d48; font-size:12px;\">与"进货价（多档）"档数不一致</div>`:''}</div>`;
+		return `<div style="display:flex; flex-direction:column; align-items:flex-start; gap:4px;"><div style="display:flex; align-items:center; gap:8px;"><button type="button" class="catalog-price-tier-add" data-action="addPriceTier" title="新增一档" aria-label="新增一档" style="width:24px; height:24px; line-height:24px; padding:0; display:inline-flex; align-items:center; justify-content:center; border-radius:8px; background:#bfdbfe; color:#2563eb; font-weight:700; white-space:nowrap; box-shadow:0 1px 3px rgba(0,0,0,0.1); margin-right:4px;">+</button><div>${items}</div></div>${mismatch?`<div style=\"color:#e11d48; font-size:12px;\">与"进货价（多档）"档数不一致</div>`:''}</div>`;
 	}
 	const buildAdCell = (v) => {
 		const text = fmtRange(v, true, false, true);
@@ -4049,6 +4050,80 @@ function renderCatalogTable() {
 				}).join('');
 				if (Array.isArray(res.combinations)) return res.combinations.map(x=>renderAd(x.breakevenAdRate)).join('');
 				return buildAdCell(res.breakevenAdRate);
+			})()}</td>`+
+			`<td class=\"lp-col-right\" style=\"white-space:nowrap;\">${(function(){
+				// 使用统一利润计算函数计算利润率（付费占比20%）
+				try {
+					// 获取行数据并转换为统一参数格式
+					const globals = getGlobalDefaultsForCatalog();
+					const std = mergeGlobalsWithRow(row, globals);
+					
+					// 如果有多档售价，使用第一档计算；否则使用单一售价
+					let actualPrice = 0;
+					if (Array.isArray(row.salePriceTiers) && row.salePriceTiers.length > 0) {
+						actualPrice = Number(row.salePriceTiers[0]);
+					} else if (isFinite(std.salePrice) && std.salePrice > 0) {
+						actualPrice = std.salePrice;
+					}
+					
+					// 如果有多档进货价，使用第一档计算；否则使用单一进货价
+					let costPrice = 0;
+					if (Array.isArray(row.costTiers) && row.costTiers.length > 0) {
+						costPrice = Number(row.costTiers[0]);
+					} else if (isFinite(std.costMin) && std.costMin > 0) {
+						costPrice = std.costMin;
+					}
+					
+					// 检查是否有有效的售价和进货价
+					if (actualPrice <= 0 || costPrice <= 0) {
+						return '<span style="color:#9ca3af; font-style:italic;">需填写售价和进货价</span>';
+					}
+					
+					// 构建统一参数，固定付费占比为20%
+					const inputs = {
+						costPrice: costPrice,
+						actualPrice: actualPrice,
+						inputTaxRate: std.inputTaxRate,
+						outputTaxRate: std.outputTaxRate,
+						salesTaxRate: std.salesTaxRate,
+						platformRate: std.platformRate,
+						shippingCost: std.shippingCost,
+						shippingInsurance: std.shippingInsurance,
+						adRate: 0.20, // 固定付费占比20%
+						otherCost: std.otherCost,
+						returnRate: std.returnRate
+					};
+					
+					// 调用统一利润计算函数
+					const result = calculateProfitUnified(inputs);
+					
+					// 格式化利润率显示
+					const profitRate = result.profitRate;
+					if (!isFinite(profitRate)) {
+						return '<span style="color:#9ca3af;">计算错误</span>';
+					}
+					
+					const profitRatePercent = (profitRate * 100).toFixed(2);
+					const isPositive = profitRate > 0;
+					const isWarning = profitRate > 0 && profitRate < 0.05; // 低于5%利润率警告
+					
+					// 设置样式
+					let style = 'font-weight:600;';
+					if (isPositive) {
+						if (isWarning) {
+							style += 'color:#f59e0b;'; // 橙色警告
+						} else {
+							style += 'color:#059669;'; // 绿色正常
+						}
+					} else {
+						style += 'color:#dc2626;'; // 红色亏损
+					}
+					
+					return `<span style="${style}">${profitRatePercent}%</span>`;
+				} catch (error) {
+					console.error('利润率计算错误:', error);
+					return '<span style="color:#9ca3af;">计算错误</span>';
+				}
 			})()}</td>`+
 			`<td class=\"lp-col-center\"><button class=\"batch-modal-btn\" data-action=\"priceCheck\" style=\"margin:0; white-space:nowrap; min-width:80px;\">价格验证</button> <button class=\"batch-modal-btn\" data-action=\"profitScenario\" style=\"margin:0; white-space:nowrap; min-width:80px;\">利润推演</button></td>`+
 		`</tr>`;
@@ -4676,7 +4751,7 @@ function renderCatalogRow(index) {
 		const show = (x) => { if (!isFinite(x)) return '-'; if (asPercent) { if (clampZero && x<=0) return '0%'; return (x*100).toFixed(2)+'%'; } return asMoney?('¥ '+Number(x).toFixed(2)):Number(x).toFixed(2); };
 		if (v && typeof v==='object' && 'min' in v) return `${show(v.min)} ~ ${show(v.max)}`; return show(v);
 	};
-	const ROI_COL = 8, AD_COL = 9; // 新索引：移除"付费占比/利润/利润率"列后
+	const ROI_COL = 8, AD_COL = 9, PROFIT_COL = 10; // 新索引：添加利润率列后
 	if (Array.isArray(res.list)) {
 		if (tds[ROI_COL]) tds[ROI_COL].innerHTML = res.list.map(x=>`<div style="margin:2px 0;">${isFinite(x.breakevenROI)? Number(x.breakevenROI).toFixed(2) : '∞'}</div>`).join('');
 		if (tds[AD_COL]) tds[AD_COL].innerHTML = res.list.map(x=>{ 
@@ -4759,6 +4834,83 @@ function renderCatalogRow(index) {
 		if (errDiv) {
 			errDiv.textContent = hasErr ? res.errors.join('；') : '';
 			errDiv.style.display = hasErr ? '' : 'none';
+		}
+	}
+	
+	// 更新利润率列（付费占比20%）
+	if (tds[PROFIT_COL]) {
+		try {
+			// 获取行数据并转换为统一参数格式
+			const globals = getGlobalDefaultsForCatalog();
+			const std = mergeGlobalsWithRow(row, globals);
+			
+			// 如果有多档售价，使用第一档计算；否则使用单一售价
+			let actualPrice = 0;
+			if (Array.isArray(row.salePriceTiers) && row.salePriceTiers.length > 0) {
+				actualPrice = Number(row.salePriceTiers[0]);
+			} else if (isFinite(std.salePrice) && std.salePrice > 0) {
+				actualPrice = std.salePrice;
+			}
+			
+			// 如果有多档进货价，使用第一档计算；否则使用单一进货价
+			let costPrice = 0;
+			if (Array.isArray(row.costTiers) && row.costTiers.length > 0) {
+				costPrice = Number(row.costTiers[0]);
+			} else if (isFinite(std.costMin) && std.costMin > 0) {
+				costPrice = std.costMin;
+			}
+			
+			// 检查是否有有效的售价和进货价
+			if (actualPrice <= 0 || costPrice <= 0) {
+				tds[PROFIT_COL].innerHTML = '<span style="color:#9ca3af; font-style:italic;">需填写售价和进货价</span>';
+				return;
+			}
+			
+			// 构建统一参数，固定付费占比为20%
+			const inputs = {
+				costPrice: costPrice,
+				actualPrice: actualPrice,
+				inputTaxRate: std.inputTaxRate,
+				outputTaxRate: std.outputTaxRate,
+				salesTaxRate: std.salesTaxRate,
+				platformRate: std.platformRate,
+				shippingCost: std.shippingCost,
+				shippingInsurance: std.shippingInsurance,
+				adRate: 0.20, // 固定付费占比20%
+				otherCost: std.otherCost,
+				returnRate: std.returnRate
+			};
+			
+			// 调用统一利润计算函数
+			const result = calculateProfitUnified(inputs);
+			
+			// 格式化利润率显示
+			const profitRate = result.profitRate;
+			if (!isFinite(profitRate)) {
+				tds[PROFIT_COL].innerHTML = '<span style="color:#9ca3af;">计算错误</span>';
+				return;
+			}
+			
+			const profitRatePercent = (profitRate * 100).toFixed(2);
+			const isPositive = profitRate > 0;
+			const isWarning = profitRate > 0 && profitRate < 0.05; // 低于5%利润率警告
+			
+			// 设置样式
+			let style = 'font-weight:600;';
+			if (isPositive) {
+				if (isWarning) {
+					style += 'color:#f59e0b;'; // 橙色警告
+				} else {
+					style += 'color:#059669;'; // 绿色正常
+				}
+			} else {
+				style += 'color:#dc2626;'; // 红色亏损
+			}
+			
+			tds[PROFIT_COL].innerHTML = `<span style="${style}">${profitRatePercent}%</span>`;
+		} catch (error) {
+			console.error('利润率计算错误:', error);
+			tds[PROFIT_COL].innerHTML = '<span style="color:#9ca3af;">计算错误</span>';
 		}
 	}
 }
