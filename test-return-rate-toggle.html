@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>退货率列隐藏/显示功能测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .test-section h2 {
+            color: #555;
+            margin-bottom: 15px;
+        }
+        .feature-description {
+            background: #e8f4fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .feature-description h3 {
+            margin-top: 0;
+            color: #1976d2;
+        }
+        .feature-description ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .feature-description li {
+            margin: 5px 0;
+        }
+        .toggle-button {
+            background: #f3f4f6;
+            color: #6b7280;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            line-height: 16px;
+        }
+        .toggle-button:hover {
+            background: #e5e7eb;
+        }
+        .return-rate-column {
+            /* 默认显示 */
+        }
+        .return-rate-column input[data-key="returnRate"] {
+            /* 默认显示输入框内容 */
+        }
+        .return-rate-column input[data-key="returnRate"].hidden {
+            color: transparent !important;
+            text-shadow: none !important;
+        }
+        .catalog-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .catalog-table th,
+        .catalog-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .catalog-table th {
+            background: #f8f9fa;
+            font-weight: bold;
+        }
+        .catalog-table tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        .demo-input {
+            width: 80px;
+            padding: 4px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .demo-button {
+            background: #bfdbfe;
+            color: #2563eb;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            margin: 2px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .demo-remove-button {
+            background: #fecaca;
+            color: #dc2626;
+        }
+        .status-indicator {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status-visible {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .status-hidden {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>退货率输入框内容隐藏/显示功能测试</h1>
+        
+        <div class="feature-description">
+            <h3>功能说明</h3>
+            <p>已为商品清单表格的退货率列添加一键隐藏/显示功能：</p>
+            <ul>
+                <li><strong>切换按钮</strong>：在退货率列标题旁添加了一个眼睛图标按钮</li>
+                <li><strong>默认状态</strong>：默认显示退货率列</li>
+                <li><strong>状态记忆</strong>：使用localStorage保存用户的显示偏好</li>
+                <li><strong>图标变化</strong>：👁 表示显示状态，👁‍🗨️ 表示隐藏状态</li>
+                <li><strong>智能隐藏</strong>：点击按钮可隐藏/显示退货率输入框的数字内容，保持列对齐</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h2>功能演示</h2>
+            <p>点击退货率列标题旁的按钮来测试隐藏/显示输入框内容功能：</p>
+            
+            <div id="statusDisplay" class="status-indicator status-visible">
+                状态：输入框内容显示中
+            </div>
+            
+            <table class="catalog-table">
+                <thead>
+                    <tr>
+                        <th style="width:36px; text-align:center;">
+                            <input type="checkbox">
+                        </th>
+                        <th style="width:120px;">商品名称</th>
+                        <th style="width:100px;">货号</th>
+                        <th style="width:80px;">平台</th>
+                        <th style="width:80px;">含税售价P</th>
+                        <th style="width:180px;">含税售价（多档）</th>
+                        <th style="width:140px;">进货价（多档）</th>
+                        <th class="return-rate-column" style="width:70px;">
+                            退货率 
+                            <button id="returnRateToggle" class="toggle-button" title="点击隐藏/显示退货率列">👁</button>
+                        </th>
+                        <th style="width:100px;">保本ROI</th>
+                        <th style="width:120px;">保本广告占比</th>
+                        <th style="width:100px;">利润率(20%付费)</th>
+                        <th style="width:140px;">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="text-align:center;">
+                            <input type="checkbox">
+                        </td>
+                        <td>测试商品A</td>
+                        <td>TEST001</td>
+                        <td>淘宝</td>
+                        <td style="text-align:right;">100.00</td>
+                        <td style="text-align:right;">
+                            <div style="display:flex; flex-direction:column; gap:4px;">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <button class="demo-button">+</button>
+                                    <div>
+                                        <div style="display:flex; gap:6px; align-items:center; margin:2px 0;">
+                                            <input type="number" class="demo-input" value="100" readonly>
+                                            <button class="demo-button demo-remove-button">×</button>
+                                        </div>
+                                        <div style="display:flex; gap:6px; align-items:center; margin:2px 0;">
+                                            <input type="number" class="demo-input" value="95" readonly>
+                                            <button class="demo-button demo-remove-button">×</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td style="text-align:right;">
+                            <div style="display:flex; flex-direction:column; gap:4px;">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <button class="demo-button">+</button>
+                                    <div>
+                                        <div style="display:flex; gap:6px; align-items:center; margin:2px 0;">
+                                            <input type="number" class="demo-input" value="60" readonly>
+                                            <button class="demo-button demo-remove-button">×</button>
+                                        </div>
+                                        <div style="display:flex; gap:6px; align-items:center; margin:2px 0;">
+                                            <input type="number" class="demo-input" value="58" readonly>
+                                            <button class="demo-button demo-remove-button">×</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="return-rate-column" style="text-align:right;">
+                            <input type="text" class="demo-input" value="15%" readonly>
+                        </td>
+                        <td style="text-align:right;">2.50</td>
+                        <td style="text-align:right;">25.00%</td>
+                        <td style="text-align:right; color:#059669; font-weight:600;">12.50%</td>
+                        <td style="text-align:center;">
+                            <button style="background:#007bff; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">价格验证</button>
+                            <button style="background:#28a745; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; margin-left:4px;">利润推演</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="text-align:center;">
+                            <input type="checkbox">
+                        </td>
+                        <td>测试商品B</td>
+                        <td>TEST002</td>
+                        <td>京东</td>
+                        <td style="text-align:right;">150.00</td>
+                        <td style="text-align:right;">
+                            <div style="display:flex; flex-direction:column; gap:4px;">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <button class="demo-button">+</button>
+                                    <div>
+                                        <div style="display:flex; gap:6px; align-items:center; margin:2px 0;">
+                                            <input type="number" class="demo-input" value="150" readonly>
+                                            <button class="demo-button demo-remove-button">×</button>
+                                        </div>
+                                        <div style="display:flex; gap:6px; align-items:center; margin:2px 0;">
+                                            <input type="number" class="demo-input" value="140" readonly>
+                                            <button class="demo-button demo-remove-button">×</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td style="text-align:right;">
+                            <div style="display:flex; flex-direction:column; gap:4px;">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <button class="demo-button">+</button>
+                                    <div>
+                                        <div style="display:flex; gap:6px; align-items:center; margin:2px 0;">
+                                            <input type="number" class="demo-input" value="80" readonly>
+                                            <button class="demo-button demo-remove-button">×</button>
+                                        </div>
+                                        <div style="display:flex; gap:6px; align-items:center; margin:2px 0;">
+                                            <input type="number" class="demo-input" value="75" readonly>
+                                            <button class="demo-button demo-remove-button">×</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="return-rate-column" style="text-align:right;">
+                            <input type="text" class="demo-input" value="20%" readonly>
+                        </td>
+                        <td style="text-align:right;">3.20</td>
+                        <td style="text-align:right;">30.00%</td>
+                        <td style="text-align:right; color:#059669; font-weight:600;">18.75%</td>
+                        <td style="text-align:center;">
+                            <button style="background:#007bff; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">价格验证</button>
+                            <button style="background:#28a745; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; margin-left:4px;">利润推演</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="test-section">
+            <h2>技术实现</h2>
+            <p><strong>主要功能：</strong></p>
+            <ul>
+                <li><strong>CSS类控制</strong>：使用 <code>.return-rate-column</code> 类标识退货率列</li>
+                <li><strong>状态管理</strong>：通过 <code>localStorage</code> 保存显示状态</li>
+                <li><strong>智能隐藏</strong>：点击按钮时动态修改输入框的 <code>color</code> 样式为透明</li>
+                <li><strong>图标变化</strong>：根据状态显示不同的眼睛图标</li>
+                <li><strong>列对齐保持</strong>：只隐藏输入框内容，保持列结构和对齐</li>
+            </ul>
+            
+            <p><strong>使用方法：</strong></p>
+            <ol>
+                <li>在商品清单表格中找到退货率列标题</li>
+                <li>点击标题旁的 👁 按钮隐藏输入框内容</li>
+                <li>再次点击 👁‍🗨️ 按钮显示输入框内容</li>
+                <li>系统会自动记住您的偏好设置</li>
+            </ol>
+            
+            <p><strong>优势：</strong></p>
+            <ul>
+                <li><strong>保持对齐</strong>：不会影响其他列的位置和对齐</li>
+                <li><strong>结构完整</strong>：列标题和输入框框架保持可见</li>
+                <li><strong>用户体验</strong>：只隐藏敏感数据，保持界面完整性</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // 退货率列隐藏/显示功能
+        const returnRateToggle = document.getElementById('returnRateToggle');
+        const statusDisplay = document.getElementById('statusDisplay');
+        
+        if (returnRateToggle) {
+            // 从localStorage获取退货率列的显示状态，默认显示
+            const returnRateVisible = localStorage.getItem('returnRateColumnVisible') !== 'false';
+            
+            // 设置初始状态
+            if (!returnRateVisible) {
+                // 隐藏退货率输入框的内容
+                document.querySelectorAll('.return-rate-column input[data-key="returnRate"]').forEach(input => {
+                    input.style.color = 'transparent';
+                    input.style.textShadow = 'none';
+                });
+                returnRateToggle.textContent = '👁‍🗨️'; // 隐藏状态图标
+                returnRateToggle.title = '点击显示退货率列';
+                updateStatusDisplay(false);
+            }
+            
+            // 添加点击事件
+            returnRateToggle.addEventListener('click', () => {
+                const inputs = document.querySelectorAll('.return-rate-column input[data-key="returnRate"]');
+                const isVisible = inputs[0].style.color !== 'transparent';
+                
+                if (isVisible) {
+                    // 隐藏输入框内容
+                    inputs.forEach(input => {
+                        input.style.color = 'transparent';
+                    });
+                    returnRateToggle.textContent = '👁‍🗨️'; // 隐藏状态图标
+                    returnRateToggle.title = '点击显示退货率列';
+                    localStorage.setItem('returnRateColumnVisible', 'false');
+                    updateStatusDisplay(false);
+                } else {
+                    // 显示输入框内容
+                    inputs.forEach(input => {
+                        input.style.color = '';
+                    });
+                    returnRateToggle.textContent = '👁'; // 显示状态图标
+                    returnRateToggle.title = '点击隐藏退货率列';
+                    localStorage.setItem('returnRateColumnVisible', 'true');
+                    updateStatusDisplay(true);
+                }
+            });
+        }
+        
+        // 更新状态显示
+        function updateStatusDisplay(isVisible) {
+            if (statusDisplay) {
+                if (isVisible) {
+                    statusDisplay.textContent = '状态：输入框内容显示中';
+                    statusDisplay.className = 'status-indicator status-visible';
+                } else {
+                    statusDisplay.textContent = '状态：输入框内容已隐藏';
+                    statusDisplay.className = 'status-indicator status-hidden';
+                }
+            }
+        }
+        
+        // 初始化状态显示
+        updateStatusDisplay(localStorage.getItem('returnRateColumnVisible') !== 'false');
+    </script>
+</body>
+</html>

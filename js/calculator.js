@@ -3876,7 +3876,7 @@ function renderCatalogTable() {
 	const thead = '<thead><tr>'+
 		'<th style="width:36px; text-align:center;"><input id="catalogCheckAll" type="checkbox"></th>'+
 		'<th style="width:120px;">商品名称</th><th style="width:100px;">货号</th><th style="width:80px;">平台</th><th class="lp-col-right" style="width:80px;">含税售价P</th><th class="lp-col-right" style="width:180px;">含税售价（多档）</th>'+
-		'<th class="lp-col-right" style="width:140px;">进货价（多档）</th><th class="lp-col-right" style="width:70px;">退货率</th>'+
+		'<th class="lp-col-right" style="width:140px;">进货价（多档）</th><th class="lp-col-right" style="width:70px;">退货率 <button id="returnRateToggle" type="button" title="点击隐藏/显示退货率列" style="margin-left:4px; width:16px; height:16px; line-height:16px; padding:0; display:inline-flex; align-items:center; justify-content:center; border-radius:4px; background:#f3f4f6; color:#6b7280; font-weight:700; white-space:nowrap; border:none; cursor:pointer; font-size:12px;">👁</button></th>'+
 		'<th class="lp-col-right" style="width:100px; white-space:nowrap;">保本ROI</th><th class="lp-col-right" style="width:120px; white-space:nowrap;">保本广告占比</th>'+
 		'<th class="lp-col-right" style="width:100px; white-space:nowrap;">利润率(20%付费)</th>'+
 		'<th class="lp-col-center" style="width:140px;">操作</th>'+
@@ -4011,7 +4011,7 @@ function renderCatalogTable() {
 			`<td class=\"lp-col-right\">${buildCellInput(row,'salePrice','number','P')}</td>`+
 			`<td class=\"lp-col-right\">${buildPriceTiers(row)}</td>`+
 			`<td class=\"lp-col-right\">${buildCostTiers(row)}</td>`+
-			`<td class=\"lp-col-right\">${buildCellInput(row,'returnRate','text','12%')}</td>`+
+			`<td class=\"lp-col-right return-rate-column\">${buildCellInput(row,'returnRate','text','12%')}</td>`+
 			`<td class=\"lp-col-right\" style=\"white-space:nowrap;\">${(function(){
 				if (Array.isArray(res.list)) return res.list.map(x=>`<div>${isFinite(x.breakevenROI)? Number(x.breakevenROI).toFixed(2) : '∞'}</div>`).join('');
 				if (Array.isArray(res.priceRangeResults)) return res.priceRangeResults.map(x=>`<div>${fmtRange(x.breakevenROI,false,false)}</div>`).join('');
@@ -4058,68 +4058,177 @@ function renderCatalogTable() {
 					const globals = getGlobalDefaultsForCatalog();
 					const std = mergeGlobalsWithRow(row, globals);
 					
-					// 如果有多档售价，使用第一档计算；否则使用单一售价
-					let actualPrice = 0;
-					if (Array.isArray(row.salePriceTiers) && row.salePriceTiers.length > 0) {
-						actualPrice = Number(row.salePriceTiers[0]);
-					} else if (isFinite(std.salePrice) && std.salePrice > 0) {
-						actualPrice = std.salePrice;
-					}
+					// 获取售价和进货价的档位信息
+					const salePrices = Array.isArray(row.salePriceTiers) && row.salePriceTiers.length > 0 
+						? row.salePriceTiers.map(p => Number(p)).filter(p => isFinite(p) && p > 0)
+						: (isFinite(std.salePrice) && std.salePrice > 0 ? [std.salePrice] : []);
 					
-					// 如果有多档进货价，使用第一档计算；否则使用单一进货价
-					let costPrice = 0;
-					if (Array.isArray(row.costTiers) && row.costTiers.length > 0) {
-						costPrice = Number(row.costTiers[0]);
-					} else if (isFinite(std.costMin) && std.costMin > 0) {
-						costPrice = std.costMin;
-					}
+					const costPrices = Array.isArray(row.costTiers) && row.costTiers.length > 0
+						? row.costTiers.map(c => Number(c)).filter(c => isFinite(c) && c >= 0)
+						: (isFinite(std.costMin) && std.costMin > 0 ? [std.costMin] : []);
 					
 					// 检查是否有有效的售价和进货价
-					if (actualPrice <= 0 || costPrice <= 0) {
+					if (salePrices.length === 0 || costPrices.length === 0) {
 						return '<span style="color:#9ca3af; font-style:italic;">需填写售价和进货价</span>';
 					}
 					
-					// 构建统一参数，固定付费占比为20%
-					const inputs = {
-						costPrice: costPrice,
-						actualPrice: actualPrice,
-						inputTaxRate: std.inputTaxRate,
-						outputTaxRate: std.outputTaxRate,
-						salesTaxRate: std.salesTaxRate,
-						platformRate: std.platformRate,
-						shippingCost: std.shippingCost,
-						shippingInsurance: std.shippingInsurance,
-						adRate: 0.20, // 固定付费占比20%
-						otherCost: std.otherCost,
-						returnRate: std.returnRate
-					};
+					// 计算多档利润率
+					const profitRates = [];
 					
-					// 调用统一利润计算函数
-					const result = calculateProfitUnified(inputs);
+					// 如果有多档售价和多档进货价，计算每档的利润率
+					if (salePrices.length > 1 && costPrices.length > 1) {
+						// 多档对多档：取最小长度，计算对应档位的利润率
+						const maxTiers = Math.min(salePrices.length, costPrices.length);
+						for (let i = 0; i < maxTiers; i++) {
+							const inputs = {
+								costPrice: costPrices[i],
+								actualPrice: salePrices[i],
+								inputTaxRate: std.inputTaxRate,
+								outputTaxRate: std.outputTaxRate,
+								salesTaxRate: std.salesTaxRate,
+								platformRate: std.platformRate,
+								shippingCost: std.shippingCost,
+								shippingInsurance: std.shippingInsurance,
+								adRate: 0.20, // 固定付费占比20%
+								otherCost: std.otherCost,
+								returnRate: std.returnRate
+							};
+							
+							const result = calculateProfitUnified(inputs);
+							if (isFinite(result.profitRate)) {
+								profitRates.push({
+									rate: result.profitRate,
+									price: salePrices[i],
+									cost: costPrices[i]
+								});
+							}
+						}
+					} else if (salePrices.length > 1 && costPrices.length === 1) {
+						// 多档售价单档进货价：计算每档售价的利润率
+						for (let i = 0; i < salePrices.length; i++) {
+							const inputs = {
+								costPrice: costPrices[0],
+								actualPrice: salePrices[i],
+								inputTaxRate: std.inputTaxRate,
+								outputTaxRate: std.outputTaxRate,
+								salesTaxRate: std.salesTaxRate,
+								platformRate: std.platformRate,
+								shippingCost: std.shippingCost,
+								shippingInsurance: std.shippingInsurance,
+								adRate: 0.20, // 固定付费占比20%
+								otherCost: std.otherCost,
+								returnRate: std.returnRate
+							};
+							
+							const result = calculateProfitUnified(inputs);
+							if (isFinite(result.profitRate)) {
+								profitRates.push({
+									rate: result.profitRate,
+									price: salePrices[i],
+									cost: costPrices[0]
+								});
+							}
+						}
+					} else if (salePrices.length === 1 && costPrices.length > 1) {
+						// 单档售价多档进货价：计算每档进货价的利润率
+						for (let i = 0; i < costPrices.length; i++) {
+							const inputs = {
+								costPrice: costPrices[i],
+								actualPrice: salePrices[0],
+								inputTaxRate: std.inputTaxRate,
+								outputTaxRate: std.outputTaxRate,
+								salesTaxRate: std.salesTaxRate,
+								platformRate: std.platformRate,
+								shippingCost: std.shippingCost,
+								shippingInsurance: std.shippingInsurance,
+								adRate: 0.20, // 固定付费占比20%
+								otherCost: std.otherCost,
+								returnRate: std.returnRate
+							};
+							
+							const result = calculateProfitUnified(inputs);
+							if (isFinite(result.profitRate)) {
+								profitRates.push({
+									rate: result.profitRate,
+									price: salePrices[0],
+									cost: costPrices[i]
+								});
+							}
+						}
+					} else {
+						// 单档对单档：计算单一利润率
+						const inputs = {
+							costPrice: costPrices[0],
+							actualPrice: salePrices[0],
+							inputTaxRate: std.inputTaxRate,
+							outputTaxRate: std.outputTaxRate,
+							salesTaxRate: std.salesTaxRate,
+							platformRate: std.platformRate,
+							shippingCost: std.shippingCost,
+							shippingInsurance: std.shippingInsurance,
+							adRate: 0.20, // 固定付费占比20%
+							otherCost: std.otherCost,
+							returnRate: std.returnRate
+						};
+						
+						const result = calculateProfitUnified(inputs);
+						if (isFinite(result.profitRate)) {
+							profitRates.push({
+								rate: result.profitRate,
+								price: salePrices[0],
+								cost: costPrices[0]
+							});
+						}
+					}
 					
-					// 格式化利润率显示
-					const profitRate = result.profitRate;
-					if (!isFinite(profitRate)) {
+					// 检查是否有有效的利润率结果
+					if (profitRates.length === 0) {
 						return '<span style="color:#9ca3af;">计算错误</span>';
 					}
 					
-					const profitRatePercent = (profitRate * 100).toFixed(2);
-					const isPositive = profitRate > 0;
-					const isWarning = profitRate > 0 && profitRate < 0.05; // 低于5%利润率警告
-					
-					// 设置样式
-					let style = 'font-weight:600;';
-					if (isPositive) {
-						if (isWarning) {
-							style += 'color:#f59e0b;'; // 橙色警告
+					// 格式化多档利润率显示
+					if (profitRates.length === 1) {
+						// 单档利润率显示
+						const profitRate = profitRates[0].rate;
+						const profitRatePercent = (profitRate * 100).toFixed(2);
+						const isPositive = profitRate > 0;
+						const isWarning = profitRate > 0 && profitRate < 0.05; // 低于5%利润率警告
+						
+						let style = 'font-weight:600;';
+						if (isPositive) {
+							if (isWarning) {
+								style += 'color:#f59e0b;'; // 橙色警告
+							} else {
+								style += 'color:#059669;'; // 绿色正常
+							}
 						} else {
-							style += 'color:#059669;'; // 绿色正常
+							style += 'color:#dc2626;'; // 红色亏损
 						}
+						
+						return `<span style="${style}">${profitRatePercent}%</span>`;
 					} else {
-						style += 'color:#dc2626;'; // 红色亏损
+						// 多档利润率显示
+						const profitRateItems = profitRates.map(item => {
+							const profitRatePercent = (item.rate * 100).toFixed(2);
+							const isPositive = item.rate > 0;
+							const isWarning = item.rate > 0 && item.rate < 0.05; // 低于5%利润率警告
+							
+							let style = 'font-weight:600;';
+							if (isPositive) {
+								if (isWarning) {
+									style += 'color:#f59e0b;'; // 橙色警告
+								} else {
+									style += 'color:#059669;'; // 绿色正常
+								}
+							} else {
+								style += 'color:#dc2626;'; // 红色亏损
+							}
+							
+							return `<div style="${style}">${profitRatePercent}%</div>`;
+						});
+						
+						return profitRateItems.join('');
 					}
-					
-					return `<span style="${style}">${profitRatePercent}%</span>`;
 				} catch (error) {
 					console.error('利润率计算错误:', error);
 					return '<span style="color:#9ca3af;">计算错误</span>';
@@ -4179,6 +4288,50 @@ function renderCatalogTable() {
 			}
 		});
 	});
+	// 退货率列隐藏/显示功能
+	const returnRateToggle = document.getElementById('returnRateToggle');
+	if (returnRateToggle) {
+		// 从localStorage获取退货率列的显示状态，默认显示
+		const returnRateVisible = localStorage.getItem('returnRateColumnVisible') !== 'false';
+		
+		// 设置初始状态
+		if (!returnRateVisible) {
+			// 隐藏退货率输入框的内容
+			document.querySelectorAll('.return-rate-column input[data-key="returnRate"]').forEach(input => {
+				input.style.color = 'transparent';
+				input.style.textShadow = 'none';
+			});
+			returnRateToggle.textContent = '👁‍🗨️'; // 隐藏状态图标
+			returnRateToggle.title = '点击显示退货率列';
+		}
+		
+		// 添加点击事件
+		returnRateToggle.addEventListener('click', () => {
+			const inputs = document.querySelectorAll('.return-rate-column input[data-key="returnRate"]');
+			const isVisible = inputs[0].style.color !== 'transparent';
+			
+			if (isVisible) {
+				// 隐藏输入框内容
+				inputs.forEach(input => {
+					input.style.color = 'transparent';
+					input.style.textShadow = 'none';
+				});
+				returnRateToggle.textContent = '👁‍🗨️'; // 隐藏状态图标
+				returnRateToggle.title = '点击显示退货率列';
+				localStorage.setItem('returnRateColumnVisible', 'false');
+			} else {
+				// 显示输入框内容
+				inputs.forEach(input => {
+					input.style.color = '';
+					input.style.textShadow = '';
+				});
+				returnRateToggle.textContent = '👁'; // 显示状态图标
+				returnRateToggle.title = '点击隐藏退货率列';
+				localStorage.setItem('returnRateColumnVisible', 'true');
+			}
+		});
+	}
+	
 	// 事件：新增/删除/编辑 多档进货价
 	container.querySelectorAll('button[data-action="addTier"]').forEach(btn => {
 		btn.addEventListener('click', (e) => {
@@ -4844,70 +4997,180 @@ function renderCatalogRow(index) {
 			const globals = getGlobalDefaultsForCatalog();
 			const std = mergeGlobalsWithRow(row, globals);
 			
-			// 如果有多档售价，使用第一档计算；否则使用单一售价
-			let actualPrice = 0;
-			if (Array.isArray(row.salePriceTiers) && row.salePriceTiers.length > 0) {
-				actualPrice = Number(row.salePriceTiers[0]);
-			} else if (isFinite(std.salePrice) && std.salePrice > 0) {
-				actualPrice = std.salePrice;
-			}
+			// 获取售价和进货价的档位信息
+			const salePrices = Array.isArray(row.salePriceTiers) && row.salePriceTiers.length > 0 
+				? row.salePriceTiers.map(p => Number(p)).filter(p => isFinite(p) && p > 0)
+				: (isFinite(std.salePrice) && std.salePrice > 0 ? [std.salePrice] : []);
 			
-			// 如果有多档进货价，使用第一档计算；否则使用单一进货价
-			let costPrice = 0;
-			if (Array.isArray(row.costTiers) && row.costTiers.length > 0) {
-				costPrice = Number(row.costTiers[0]);
-			} else if (isFinite(std.costMin) && std.costMin > 0) {
-				costPrice = std.costMin;
-			}
+			const costPrices = Array.isArray(row.costTiers) && row.costTiers.length > 0
+				? row.costTiers.map(c => Number(c)).filter(c => isFinite(c) && c >= 0)
+				: (isFinite(std.costMin) && std.costMin > 0 ? [std.costMin] : []);
 			
 			// 检查是否有有效的售价和进货价
-			if (actualPrice <= 0 || costPrice <= 0) {
+			if (salePrices.length === 0 || costPrices.length === 0) {
 				tds[PROFIT_COL].innerHTML = '<span style="color:#9ca3af; font-style:italic;">需填写售价和进货价</span>';
 				return;
 			}
 			
-			// 构建统一参数，固定付费占比为20%
-			const inputs = {
-				costPrice: costPrice,
-				actualPrice: actualPrice,
-				inputTaxRate: std.inputTaxRate,
-				outputTaxRate: std.outputTaxRate,
-				salesTaxRate: std.salesTaxRate,
-				platformRate: std.platformRate,
-				shippingCost: std.shippingCost,
-				shippingInsurance: std.shippingInsurance,
-				adRate: 0.20, // 固定付费占比20%
-				otherCost: std.otherCost,
-				returnRate: std.returnRate
-			};
+			// 计算多档利润率
+			const profitRates = [];
 			
-			// 调用统一利润计算函数
-			const result = calculateProfitUnified(inputs);
+			// 如果有多档售价和多档进货价，计算每档的利润率
+			if (salePrices.length > 1 && costPrices.length > 1) {
+				// 多档对多档：取最小长度，计算对应档位的利润率
+				const maxTiers = Math.min(salePrices.length, costPrices.length);
+				for (let i = 0; i < maxTiers; i++) {
+					const inputs = {
+						costPrice: costPrices[i],
+						actualPrice: salePrices[i],
+						inputTaxRate: std.inputTaxRate,
+						outputTaxRate: std.outputTaxRate,
+						salesTaxRate: std.salesTaxRate,
+						platformRate: std.platformRate,
+						shippingCost: std.shippingCost,
+						shippingInsurance: std.shippingInsurance,
+						adRate: 0.20, // 固定付费占比20%
+						otherCost: std.otherCost,
+						returnRate: std.returnRate
+					};
+					
+					const result = calculateProfitUnified(inputs);
+					if (isFinite(result.profitRate)) {
+						profitRates.push({
+							rate: result.profitRate,
+							price: salePrices[i],
+							cost: costPrices[i]
+						});
+					}
+				}
+			} else if (salePrices.length > 1 && costPrices.length === 1) {
+				// 多档售价单档进货价：计算每档售价的利润率
+				for (let i = 0; i < salePrices.length; i++) {
+					const inputs = {
+						costPrice: costPrices[0],
+						actualPrice: salePrices[i],
+						inputTaxRate: std.inputTaxRate,
+						outputTaxRate: std.outputTaxRate,
+						salesTaxRate: std.salesTaxRate,
+						platformRate: std.platformRate,
+						shippingCost: std.shippingCost,
+						shippingInsurance: std.shippingInsurance,
+						adRate: 0.20, // 固定付费占比20%
+						otherCost: std.otherCost,
+						returnRate: std.returnRate
+					};
+					
+					const result = calculateProfitUnified(inputs);
+					if (isFinite(result.profitRate)) {
+						profitRates.push({
+							rate: result.profitRate,
+							price: salePrices[i],
+							cost: costPrices[0]
+						});
+					}
+				}
+			} else if (salePrices.length === 1 && costPrices.length > 1) {
+				// 单档售价多档进货价：计算每档进货价的利润率
+				for (let i = 0; i < costPrices.length; i++) {
+					const inputs = {
+						costPrice: costPrices[i],
+						actualPrice: salePrices[0],
+						inputTaxRate: std.inputTaxRate,
+						outputTaxRate: std.outputTaxRate,
+						salesTaxRate: std.salesTaxRate,
+						platformRate: std.platformRate,
+						shippingCost: std.shippingCost,
+						shippingInsurance: std.shippingInsurance,
+						adRate: 0.20, // 固定付费占比20%
+						otherCost: std.otherCost,
+						returnRate: std.returnRate
+					};
+					
+					const result = calculateProfitUnified(inputs);
+					if (isFinite(result.profitRate)) {
+						profitRates.push({
+							rate: result.profitRate,
+							price: salePrices[0],
+							cost: costPrices[i]
+						});
+					}
+				}
+			} else {
+				// 单档对单档：计算单一利润率
+				const inputs = {
+					costPrice: costPrices[0],
+					actualPrice: salePrices[0],
+					inputTaxRate: std.inputTaxRate,
+					outputTaxRate: std.outputTaxRate,
+					salesTaxRate: std.salesTaxRate,
+					platformRate: std.platformRate,
+					shippingCost: std.shippingCost,
+					shippingInsurance: std.shippingInsurance,
+					adRate: 0.20, // 固定付费占比20%
+					otherCost: std.otherCost,
+					returnRate: std.returnRate
+				};
+				
+				const result = calculateProfitUnified(inputs);
+				if (isFinite(result.profitRate)) {
+					profitRates.push({
+						rate: result.profitRate,
+						price: salePrices[0],
+						cost: costPrices[0]
+					});
+				}
+			}
 			
-			// 格式化利润率显示
-			const profitRate = result.profitRate;
-			if (!isFinite(profitRate)) {
+			// 检查是否有有效的利润率结果
+			if (profitRates.length === 0) {
 				tds[PROFIT_COL].innerHTML = '<span style="color:#9ca3af;">计算错误</span>';
 				return;
 			}
 			
-			const profitRatePercent = (profitRate * 100).toFixed(2);
-			const isPositive = profitRate > 0;
-			const isWarning = profitRate > 0 && profitRate < 0.05; // 低于5%利润率警告
-			
-			// 设置样式
-			let style = 'font-weight:600;';
-			if (isPositive) {
-				if (isWarning) {
-					style += 'color:#f59e0b;'; // 橙色警告
+			// 格式化多档利润率显示
+			if (profitRates.length === 1) {
+				// 单档利润率显示
+				const profitRate = profitRates[0].rate;
+				const profitRatePercent = (profitRate * 100).toFixed(2);
+				const isPositive = profitRate > 0;
+				const isWarning = profitRate > 0 && profitRate < 0.05; // 低于5%利润率警告
+				
+				// 设置样式
+				let style = 'font-weight:600;';
+				if (isPositive) {
+					if (isWarning) {
+						style += 'color:#f59e0b;'; // 橙色警告
+					} else {
+						style += 'color:#059669;'; // 绿色正常
+					}
 				} else {
-					style += 'color:#059669;'; // 绿色正常
+					style += 'color:#dc2626;'; // 红色亏损
 				}
+				
+				tds[PROFIT_COL].innerHTML = `<span style="${style}">${profitRatePercent}%</span>`;
 			} else {
-				style += 'color:#dc2626;'; // 红色亏损
+				// 多档利润率显示
+				const profitRateItems = profitRates.map(item => {
+					const profitRatePercent = (item.rate * 100).toFixed(2);
+					const isPositive = item.rate > 0;
+					const isWarning = item.rate > 0 && item.rate < 0.05; // 低于5%利润率警告
+					
+					let style = 'font-weight:600;';
+					if (isPositive) {
+						if (isWarning) {
+							style += 'color:#f59e0b;'; // 橙色警告
+						} else {
+							style += 'color:#059669;'; // 绿色正常
+						}
+					} else {
+						style += 'color:#dc2626;'; // 红色亏损
+					}
+					
+					return `<div style="${style}">${profitRatePercent}%</div>`;
+				});
+				
+				tds[PROFIT_COL].innerHTML = profitRateItems.join('');
 			}
-			
-			tds[PROFIT_COL].innerHTML = `<span style="${style}">${profitRatePercent}%</span>`;
 		} catch (error) {
 			console.error('利润率计算错误:', error);
 			tds[PROFIT_COL].innerHTML = '<span style="color:#9ca3af;">计算错误</span>';
