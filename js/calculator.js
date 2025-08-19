@@ -343,7 +343,7 @@ function calculateProfit() {
                 platformVAT: platformFee * 0.06 / 1.06,
                 actualPrice: inputs.actualPrice,
                 salesTaxRate: salesTaxRate * 100,
-                inputTaxRate: outputTaxRate * 100
+                inputTaxRate: inputs.outputTaxRate * 100  // 商品进项税率，从inputs中获取，转换为百分比
             });
         }
 
@@ -2034,12 +2034,30 @@ function initBatchProfitScenario() {
         });
 
         // 渲染表格（使用内联样式，避免侵入全局CSS）
-        // 价格相关即时指标：加价倍率、毛利率（基于含税口径计算）
-        // 计算进货实际成本（含税）
-        const baseCost = base.costPrice + (base.costPrice * base.inputTaxRate / 100); // 进货价 + 开票费用
+        // 价格相关即时指标：加价倍率、毛利率（使用统一利润计算函数，与主页面完全一致）
+        // 使用统一的利润计算函数计算价格指标，确保与主页面结果完全一致
+        // 注意：getProfitBaseInputs() 返回的税率已经是小数格式，不需要再除以100
+        const unifiedResult = calculateProfitUnified({
+            costPrice: base.costPrice,
+            actualPrice: base.actualPrice,
+            inputTaxRate: base.inputTaxRate, // 已经是小数格式
+            outputTaxRate: base.outputTaxRate, // 已经是小数格式
+            salesTaxRate: base.salesTaxRate, // 已经是小数格式
+            platformRate: base.platformRate, // 已经是小数格式
+            shippingCost: base.shippingCost,
+            shippingInsurance: base.shippingInsurance,
+            adRate: 0, // 推演弹窗中广告费为0，不影响基础价格指标
+            otherCost: base.otherCost,
+            returnRate: 0 // 推演弹窗中退货率为0，不影响基础价格指标
+        });
         
-        const markup = (baseCost > 0 && base.actualPrice > 0) ? (base.actualPrice / baseCost) : NaN;
-        const grossMargin = (baseCost > 0 && base.actualPrice > 0) ? ((base.actualPrice - baseCost) / base.actualPrice) : NaN;
+        // 从统一计算结果中提取价格指标（与主页面完全一致）
+        const effectiveCost = unifiedResult.effectiveCost; // 进货实际成本
+        const netPrice = unifiedResult.netPrice; // 不含税售价
+        
+        // 计算加价倍率和毛利率（基于含税口径，与主页面完全一致）
+        const markup = (effectiveCost > 0 && base.actualPrice > 0) ? (base.actualPrice / effectiveCost) : NaN;
+        const grossMargin = (effectiveCost > 0 && base.actualPrice > 0) ? ((base.actualPrice - effectiveCost) / base.actualPrice) : NaN;
         const markupText = isFinite(markup) ? markup.toFixed(2) : '-';
         const grossText = isFinite(grossMargin) ? (grossMargin * 100).toFixed(2) : '-';
 
@@ -2053,8 +2071,8 @@ function initBatchProfitScenario() {
                     <span>实际售价：</span>
                     <input id=\"batchActualPrice\" type=\"number\" step=\"0.01\" min=\"0.01\" value=\"${base.actualPrice.toFixed(2)}\" />
                 </label>
-                <label class=\"batch-badge emphasis metric\" title=\"加价倍率 = 实际售价 ÷ 进货价\">加价倍率：<b id=\"badgeMarkupValue\">${markupText}</b></label>
-                <label class=\"batch-badge emphasis metric\" title=\"毛利率 = (实际售价 − 进货实际成本) ÷ 实际售价\">毛利率：<b id=\"badgeGrossMarginValue\">${grossText === '-' ? '-' : grossText + '%'}\n</b></label>
+                <label class=\"batch-badge emphasis metric\" title=\"加价倍率 = 含税售价 ÷ 进货实际成本（与主页面口径一致）\">加价倍率：<b id=\"badgeMarkupValue\">${markupText}</b></label>
+                <label class=\"batch-badge emphasis metric\" title=\"毛利率 = (含税售价 − 进货实际成本) ÷ 含税售价（与主页面口径一致）\">毛利率：<b id=\"badgeGrossMarginValue\">${grossText === '-' ? '-' : grossText + '%'}\n</b></label>
             </div>
             <div class="batch-badges">
                 <span class="batch-badge">平台佣金：${(base.platformRate*100).toFixed(1)}%</span>
@@ -2064,6 +2082,9 @@ function initBatchProfitScenario() {
                 <span class="batch-badge">物流费：¥${base.shippingCost.toFixed(2)}</span>
                 <span class="batch-badge">运费险：¥${base.shippingInsurance.toFixed(2)}</span>
                 <span class="batch-badge">其他成本：¥${base.otherCost.toFixed(2)}</span>
+            </div>
+            <div style="color:#10b981; font-size:0.85rem; margin-top:8px; padding:8px; background:#f0fdf4; border-radius:6px; border-left:3px solid #10b981;">
+                ✓ 价格指标已与主页面统一：使用相同的计算逻辑和口径，确保结果完全一致
             </div>`;
 
         const tableHeader = `
@@ -2385,6 +2406,7 @@ function initBatchProfitScenario() {
             const actualInput = panel.querySelector('#batchActualPrice');
             
             // 即时更新"加价倍率/毛利率"徽章（仅更新文本，不重绘DOM，保证不失焦）
+            // 使用与主页面完全一致的计算逻辑，确保结果一致性
             const updateHeaderMetrics = () => {
                 try {
                     const cost = parseFloat(costInput?.value || '');
@@ -2397,10 +2419,35 @@ function initBatchProfitScenario() {
                         elGross.textContent = '-';
                         return;
                     }
-                    const m = price / cost;
-                    const g = (price - cost) / price * 100;
-                    elMarkup.textContent = m.toFixed(2);
-                    elGross.textContent = g.toFixed(2) + '%';
+                    
+                    // 使用与主页面完全一致的计算逻辑
+                    // 获取当前基础参数（税率等）
+                    const base = getProfitBaseInputs();
+                    // 临时更新进货价和售价
+                    base.costPrice = cost;
+                    base.actualPrice = price;
+                    
+                    // 使用统一的利润计算函数计算价格指标
+                    const unifiedResult = calculateProfitUnified({
+                        costPrice: base.costPrice,
+                        actualPrice: base.actualPrice,
+                        inputTaxRate: base.inputTaxRate,
+                        outputTaxRate: base.outputTaxRate,
+                        salesTaxRate: base.salesTaxRate,
+                        platformRate: base.platformRate,
+                        shippingCost: base.shippingCost,
+                        shippingInsurance: base.shippingInsurance,
+                        adRate: 0, // 不影响基础价格指标
+                        otherCost: base.otherCost,
+                        returnRate: 0 // 不影响基础价格指标
+                    });
+                    
+                    // 使用与主页面完全一致的计算结果
+                    const effectiveCost = unifiedResult.effectiveCost;
+                    const m = (price / effectiveCost).toFixed(2);
+                    const g = (((price - effectiveCost) / price) * 100).toFixed(2);
+                    elMarkup.textContent = m;
+                    elGross.textContent = g + '%';
                 } catch(_) {}
             };
 
@@ -2535,7 +2582,10 @@ function initPriceExploration() {
     const computeProfitForPrice = (fixed, price, adRate, returnRate) => {
         // 复制固定参数，替换变化项
         const base = Object.assign({}, fixed, { actualPrice: price });
-        return computeProfitScenario(base, adRate, returnRate);
+        // 现在 computeProfitScenario 已重构为使用统一函数，直接调用即可
+        // 为了支持详细的 tooltip 显示，返回完整的计算结果
+        const result = computeProfitScenario(base, adRate, returnRate);
+        return result;
     };
 
     // 计算"躺卖价"（保本最低售价）：仅考虑固定成本与税费，不投广告；
@@ -2613,24 +2663,8 @@ function initPriceExploration() {
                 const color = r.profitRate > 0 ? '#2ea44f' : (r.profitRate < 0 ? '#d32f2f' : '#555');
                 const bg = r.profitRate > 0 ? 'rgba(46,164,79,0.08)' : (r.profitRate < 0 ? 'rgba(211,47,47,0.08)' : 'transparent');
 
-                // 计算明细：用于 tooltip 展示
-                const effectiveRate = 1 - rr;
-                const invoiceCost = fixed.costPrice * fixed.inputTaxRate;
-                const purchaseCost = fixed.costPrice + invoiceCost;
-                const platformFee = priceCandidates[state.activeIndex] * fixed.platformRate;
-                const adCost = priceCandidates[state.activeIndex] * ar;
-                const adCostEffective = adCost / effectiveRate;
-                const adVAT = adCostEffective * 0.06 / 1.06; // 广告费进项税：从含税金额中剥离税额
-                const shippingCostEffective = fixed.shippingCost / effectiveRate;
-                const insuranceCostEffective = fixed.shippingInsurance / effectiveRate;
-                const otherCostEffective = fixed.otherCost / effectiveRate;
-                const netPrice = priceCandidates[state.activeIndex] / (1 + fixed.salesTaxRate);
-                const outputVAT = netPrice * fixed.salesTaxRate;
-                const purchaseVAT = fixed.costPrice * fixed.outputTaxRate;
-                const totalVATDeduction = purchaseVAT + adVAT + (platformFee * 0.06 / 1.06); // 平台佣金进项税：从含税金额中剥离税额
-                const actualVAT = outputVAT - totalVATDeduction;
-                const totalCost = purchaseCost + platformFee + adCostEffective + shippingCostEffective + insuranceCostEffective + otherCostEffective + actualVAT;
-                const tooltipData = `售价：¥${priceCandidates[state.activeIndex].toFixed(2)}\n退货率：${(rr*100).toFixed(0)}%\n付费占比：${(ar*100).toFixed(0)}%\n\n成本明细：\n• 进货成本：¥${purchaseCost.toFixed(2)}\n• 平台佣金：¥${platformFee.toFixed(2)}\n• 广告费（分摊）：¥${adCostEffective.toFixed(2)}\n• 物流费（分摊）：¥${shippingCostEffective.toFixed(2)}\n• 运费险（分摊）：¥${insuranceCostEffective.toFixed(2)}\n• 其他成本（分摊）：¥${otherCostEffective.toFixed(2)}\n• 销项税：¥${outputVAT.toFixed(2)}\n• 进项抵扣：¥${totalVATDeduction.toFixed(2)}\n• 实际税负：¥${actualVAT.toFixed(2)}\n\n总成本：¥${totalCost.toFixed(2)}\n利润：¥${r.profit.toFixed(2)}\n利润率：${rate}%`;
+                // 计算明细：用于 tooltip 展示（使用统一函数的结果）
+                const tooltipData = `售价：¥${priceCandidates[state.activeIndex].toFixed(2)}\n退货率：${(rr*100).toFixed(0)}%\n付费占比：${(ar*100).toFixed(0)}%\n\n成本明细：\n• 进货成本：¥${r.effectiveCost ? r.effectiveCost.toFixed(2) : '-'}\n• 平台佣金：¥${r.platformFee ? r.platformFee.toFixed(2) : '-'}\n• 广告费（分摊）：¥${r.adCostEffective ? r.adCostEffective.toFixed(2) : '-'}\n• 物流费（分摊）：¥${r.shippingCostEffective ? r.shippingCostEffective.toFixed(2) : '-'}\n• 运费险（分摊）：¥${r.insuranceCostEffective ? r.insuranceCostEffective.toFixed(2) : '-'}\n• 其他成本（分摊）：¥${r.otherCostEffective ? r.otherCostEffective.toFixed(2) : '-'}\n• 销项税：¥${r.outputVAT ? r.outputVAT.toFixed(2) : '-'}\n• 进项抵扣：¥${r.totalVATDeduction ? r.totalVATDeduction.toFixed(2) : '-'}\n• 实际税负：¥${r.actualVAT ? r.actualVAT.toFixed(2) : '-'}\n\n总成本：¥${r.totalCost ? r.totalCost.toFixed(2) : '-'}\n利润：¥${r.profit.toFixed(2)}\n利润率：${rate}%`;
 
                 return `<td class=\"price-exp-cell\" data-tooltip=\"${tooltipData}\" style=\"padding:8px 10px;text-align:right;color:${color};background:${bg};cursor:help;\"><div style=\\"font-weight:600;\\">${rate}%</div><div style=\\"font-size:12px;opacity:0.9;\\">${profitText}</div></td>`;
             }).join('');
@@ -3126,45 +3160,63 @@ function getProfitBaseInputs() {
 }
 
 /**
- * 基于利润页口径，计算给定"广告占比/退货率"组合下的利润与利润率（复用 calculateProfit 的口径）
+ * 基于利润页口径，计算给定"广告占比/退货率"组合下的利润与利润率（重构为使用统一函数）
  * 参数：
  * - base：getProfitBaseInputs() 返回的固定参数
  * - adRate：全店付费占比（0~1 小数）
  * - returnRate：预计退货率（0~1 小数）
  * 返回：{ profit, profitRate }，其中 profitRate 为小数（如 0.123 表示 12.3%）
+ * 
+ * 重构说明：现在使用统一的 calculateProfitUnified() 函数，确保与主页面利润率计算tab结果完全一致
  */
 function computeProfitScenario(base, adRate, returnRate) {
-    // 进货成本相关
-    const invoiceCost = base.costPrice * base.inputTaxRate;            // 开票成本
-    const totalPurchaseCost = base.costPrice + invoiceCost;            // 总进货成本
-    const purchaseVAT = base.costPrice * base.outputTaxRate;           // 商品进项税
-    const effectiveCost = totalPurchaseCost;                           // 实际成本
+    try {
+        // 构建统一参数格式，调用统一的利润计算函数
+        const inputs = {
+            costPrice: base.costPrice,
+            actualPrice: base.actualPrice,
+            inputTaxRate: base.inputTaxRate,
+            outputTaxRate: base.outputTaxRate,
+            salesTaxRate: base.salesTaxRate,
+            platformRate: base.platformRate,
+            shippingCost: base.shippingCost,
+            shippingInsurance: base.shippingInsurance,
+            adRate: adRate,
+            otherCost: base.otherCost,
+            returnRate: returnRate
+        };
 
-    // 有效率与按(1-退货率)分摊的费用
-    const effectiveRate = 1 - returnRate;                              // 有效销售率
-    const platformFee = base.actualPrice * base.platformRate;          // 平台佣金（可退回）
-    const adCost = base.actualPrice * adRate;                          // 广告费（不可退回，需分摊）
-    const adCostEffective = adCost / effectiveRate;                    // 广告费分摊
-    const adVAT = adCostEffective * 0.06 / 1.06;                              // 广告费进项税抵扣（6%）：从含税金额中剥离税额
-
-    const shippingCostEffective = base.shippingCost / effectiveRate;   // 物流费分摊
-    const insuranceCostEffective = base.shippingInsurance / effectiveRate; // 运费险分摊
-    const otherCostEffective = base.otherCost / effectiveRate;         // 其他成本分摊
-
-    // 销项税相关
-    const netPrice = base.actualPrice / (1 + base.salesTaxRate);       // 不含税售价
-    const outputVAT = netPrice * base.salesTaxRate;                    // 销项税额
-
-    // 进项抵扣合计（商品 + 广告费 + 平台佣金）
-    const totalVATDeduction = purchaseVAT + adVAT + (platformFee * 0.06 / 1.06); // 平台佣金进项税：从含税金额中剥离税额
-    const actualVAT = outputVAT - totalVATDeduction;                   // 实缴税费
-
-    // 总成本与利润
-    const totalCost = effectiveCost + platformFee + adCostEffective + shippingCostEffective + insuranceCostEffective + otherCostEffective + actualVAT;
-    const profit = base.actualPrice - totalCost;
-    const profitRate = profit / base.actualPrice;                      // 小数
-
-    return { profit, profitRate };
+        // 使用统一的利润计算函数，确保计算逻辑完全一致
+        const result = calculateProfitUnified(inputs);
+        
+        // 返回需要的字段，保持原有接口兼容性
+        // 同时返回详细的计算结果，支持 tooltip 显示
+        return {
+            profit: result.profit,
+            profitRate: result.profitRate,
+            // 添加详细字段，支持 tooltip 显示
+            totalCost: result.totalCost,
+            actualVAT: result.actualVAT,
+            totalVATDeduction: result.totalVATDeduction,
+            purchaseVAT: result.purchaseVAT,
+            adVAT: result.adVAT,
+            effectiveCost: result.effectiveCost,
+            platformFee: result.platformFee,
+            adCostEffective: result.adCostEffective,
+            shippingCostEffective: result.shippingCostEffective,
+            insuranceCostEffective: result.insuranceCostEffective,
+            otherCostEffective: result.otherCostEffective,
+            netPrice: result.netPrice,
+            outputVAT: result.outputVAT
+        };
+    } catch (error) {
+        console.error('computeProfitScenario 计算错误:', error);
+        // 错误时返回默认值，保持系统稳定性
+        return {
+            profit: NaN,
+            profitRate: NaN
+        };
+    }
 }
 /**
  * 初始化"平台免佣"开关，并与输入框联动
