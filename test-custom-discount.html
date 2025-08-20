@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>测试自定义立减功能</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        button { margin: 5px; padding: 8px 15px; }
+        input { padding: 5px; margin: 5px; }
+        .result { margin: 10px 0; padding: 10px; background: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <h1>测试自定义立减功能</h1>
+
+    <div class="test-section">
+        <h2>功能测试</h2>
+        <button onclick="testAddDiscountRate()">测试添加立减档位</button>
+        <button onclick="testRemoveDiscountRate()">测试删除立减档位</button>
+        <button onclick="testInitDiscountRates()">测试初始化立减档位</button>
+        <button onclick="testCalculateListPrice()">测试计算标价</button>
+    </div>
+
+    <div class="test-section">
+        <h2>界面预览</h2>
+        <div id="testContainer">
+            <!-- 这里会动态插入测试界面 -->
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>测试结果</h2>
+        <div id="testResults"></div>
+    </div>
+
+    <script>
+        // 模拟添加立减档位功能
+        function addDiscountRate() {
+            const container = document.getElementById('rateOptions');
+            if (!container) return;
+
+            const row = document.createElement('div');
+            row.className = 'discount-rate-row';
+            row.style.display = 'flex';
+            row.style.alignItems = 'center';
+            row.style.gap = '8px';
+            row.style.flexWrap = 'wrap';
+
+            row.innerHTML = '<span style="color:#666; font-size:0.9rem;">立减</span>' +
+                            '<input type="number" class="discount-rate-input" value="15" step="1" min="0" max="95" style="width:80px;text-align:center;">' +
+                            '<span style="color:#666; font-size:0.9rem;">%</span>' +
+                            '<button type="button" onclick="removeDiscountRate(this)">删除</button>';
+
+            container.appendChild(row);
+            logResult('添加了新的立减档位：15%');
+        }
+
+        // 模拟删除立减档位功能
+        function removeDiscountRate(btn) {
+            const row = btn.closest('.discount-rate-row');
+            if (row && row.parentNode) {
+                const value = row.querySelector('.discount-rate-input').value;
+                row.parentNode.removeChild(row);
+                logResult('删除了立减档位：' + value + '%');
+            }
+        }
+
+        // 模拟初始化立减档位功能
+        function initDiscountRates() {
+            const container = document.getElementById('rateOptions');
+            if (!container) return;
+
+            container.innerHTML = '';
+
+            const row = document.createElement('div');
+            row.className = 'discount-rate-row';
+            row.style.display = 'flex';
+            row.style.alignItems = 'center';
+            row.style.gap = '8px';
+            row.style.flexWrap = 'wrap';
+
+            row.innerHTML = '<span style="color:#666; font-size:0.9rem;">立减</span>' +
+                            '<input type="number" class="discount-rate-input" value="10" step="1" min="0" max="95" style="width:80px;text-align:center;">' +
+                            '<span style="color:#666; font-size:0.9rem;">%</span>' +
+                            '<button type="button" onclick="removeDiscountRate(this)">删除</button>';
+
+            container.appendChild(row);
+            logResult('初始化了默认立减档位：10%');
+        }
+
+        // 测试函数
+        function testAddDiscountRate() {
+            addDiscountRate();
+        }
+
+        function testRemoveDiscountRate() {
+            const rows = document.querySelectorAll('.discount-rate-row');
+            if (rows.length > 1) {
+                removeDiscountRate(rows[rows.length - 1].querySelector('button'));
+            } else {
+                logResult('至少需要保留一个立减档位');
+            }
+        }
+
+        function testInitDiscountRates() {
+            initDiscountRates();
+        }
+
+        function testCalculateListPrice() {
+            const inputs = document.querySelectorAll('.discount-rate-input');
+            const rates = Array.from(inputs).map(input => parseFloat(input.value) / 100).filter(rate => isFinite(rate) && rate > 0 && rate < 1);
+            logResult('当前立减比例：' + rates.map(r => (r * 100) + '%').join(', '));
+        }
+
+        // 日志记录
+        function logResult(message) {
+            const results = document.getElementById('testResults');
+            const timestamp = new Date().toLocaleTimeString();
+            results.innerHTML += `<div class="result">[${timestamp}] ${message}</div>`;
+            results.scrollTop = results.scrollHeight;
+        }
+
+        // 初始化测试界面
+        window.onload = function() {
+            const container = document.getElementById('testContainer');
+            container.innerHTML = `
+                <div style="font-weight:600; margin-bottom:6px;">单品立减档位</div>
+                <div id="rateOptions" style="display:flex; flex-direction:column; gap:8px;">
+                    <!-- 立减输入框将在这里显示 -->
+                </div>
+                <div style="margin-top:8px;">
+                    <button onclick="addDiscountRate()">+ 添加立减档位</button>
+                </div>
+            `;
+
+            // 初始化默认档位
+            initDiscountRates();
+            logResult('测试界面初始化完成，默认立减档位：10%');
+        };
+    </script>
+</body>
+</html>

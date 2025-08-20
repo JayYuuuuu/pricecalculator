@@ -417,97 +417,104 @@
 
         <!-- 标价计算tab -->
         <div id="listpriceTab" class="tab-content">
-            <div class="section" style="margin-bottom: 12px;">
-                <h3 style="display:flex; align-items:center; gap:8px; margin-bottom:1.5rem;">
-                    标价计算
-                    <span style="font-size:12px; font-weight:500; color:#666; background:#f3f4f6; border:1px solid #e5e7eb; padding:2px 6px; border-radius:999px;">到手价为核心，活动为变量</span>
-                </h3>
-                <div class="step-description" style="margin-bottom:12px; color:#666;">
-                    先确定<strong>目标到手价</strong>（叠加优惠后的买家实付），再选择店铺活动；系统将<span style="font-weight:600;">实时倒推</span>活动前的建议标价。<span style="color:#2ea44f; font-weight:600;">✨ 修改任何参数后结果会自动更新</span>
-                </div>
+            <div class="section">
+                
 
-                <!-- C位：目标到手价 + 活动选择（紧凑主卡片） -->
-                <div class="primary-card" style="background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px; box-shadow: 0 1px 2px rgba(0,0,0,0.04);">
-                    <!-- 顶部：目标到手价设置 -->
-                    <div style="display:grid; grid-template-columns: 1.2fr 1.8fr; gap:16px; align-items:start;">
-                        <div>
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                                <label style="font-weight:600;">目标到手价（含税，元）</label>
-                                <div style="display:flex; gap:8px; align-items:center;">
-                                    <button type="button" class="batch-modal-btn" style="margin:0; padding:4px 8px; font-size:12px;" onclick="addTargetPrice()">新增</button>
-                                    <button type="button" class="batch-modal-btn" style="margin:0; padding:4px 8px; font-size:12px;" onclick="clearAllTargetPrices()">清空</button>
+                <!-- 主要内容区 -->
+                <div class="main-content">
+                    <!-- 左侧：输入配置区 -->
+                    <div class="config-section">
+                        <!-- 目标到手价卡片 -->
+                        <div class="config-card target-price-card">
+                            <div class="card-header">
+                                <div class="card-icon">🎯</div>
+                                <h3>目标到手价</h3>
+                                <div class="card-actions">
+                                    <button class="action-btn primary" onclick="addTargetPrice()">
+                                        <span class="btn-icon">+</span>
+                                        <span class="btn-text">新增</span>
+                                    </button>
+                                    <button class="action-btn secondary" onclick="clearAllTargetPrices()">
+                                        <span class="btn-text">清空</span>
+                                    </button>
                                 </div>
                             </div>
                             
-                            <!-- 到手价目标列表 -->
-                            <div id="targetPriceList" style="display:flex; flex-direction:column; gap:8px;">
+                            <div id="targetPriceList" class="price-inputs">
                                 <div class="target-price-row">
-                                    <div class="input-wrapper" style="display:flex; gap:8px;">
-                                        <input type="number" class="target-price-input" value="59" step="0.01" 
-                                               style="font-size:1.4rem; font-weight:700; padding:12px 14px; width:100%; border-radius:10px;">
-                                        <button class="save-button" onclick="saveInputs()">保存</button>
-                                        <button type="button" class="batch-modal-btn" onclick="removeTargetPrice(this)" style="margin:0; padding:8px 12px;">删除</button>
+                                    <div class="price-input-group">
+                                        <input type="number" class="target-price-input" value="59" step="0.01" placeholder="输入目标到手价">
+                                        <button class="save-btn" onclick="saveInputs()">
+                                            <span class="save-icon">✓</span>
+                                        </button>
+                                        <button type="button" class="action-btn secondary" onclick="removeTargetPrice(this)">删除</button>
                                     </div>
                                 </div>
                             </div>
                             
-                            <div class="field-hint" style="margin-top:6px;">买家最终支付价（叠加所有优惠后）。可设置多个目标价进行批量计算。</div>
+                            <div class="card-hint">
+                                <span class="hint-icon">💡</span>
+                                买家最终支付的实付价格
+                            </div>
                         </div>
 
-                        <!-- 活动勾选：单品立减 + 满减概览 -->
-                        <div>
-                            <div style="display:grid; grid-template-columns: 1fr; gap:12px;">
-                                <div>
-                                    <div style="font-weight:600; margin-bottom:6px;">单品立减档位</div>
-                                    <div id="rateOptions" class="input-wrapper" style="display:flex; flex-wrap:wrap; gap:12px;">
-                                        <!-- 默认勾选：10%、12%、15%；其他不勾选。这里仅改变“默认状态”，用户更改后会由 saveInputs() 持久化到 localStorage -->
-                                        <label style="display:flex; align-items:center; gap:6px;">
-                                            <input type="checkbox" class="lp-rate" value="0"> 无立减
-                                        </label>
-                                        <label style="display:flex; align-items:center; gap:6px;">
-                                            <input type="checkbox" class="lp-rate" value="0.10" checked> 立减10%
-                                        </label>
-                                        <label style="display:flex; align-items:center; gap:6px;">
-                                            <input type="checkbox" class="lp-rate" value="0.12" checked> 立减12%
-                                        </label>
-                                        <label style="display:flex; align-items:center; gap:6px;">
-                                            <input type="checkbox" class="lp-rate" value="0.15" checked> 立减15%
-                                        </label>
-                                        <label style="display:flex; align-items:center; gap:6px;">
-                                            <input type="checkbox" class="lp-rate" value="0.18"> 立减18%
-                                        </label>
-                                    </div>
+                        <!-- 优惠设置卡片 -->
+                        <div class="config-card discount-card">
+                            <div class="card-header">
+                                <div class="card-icon">🏷️</div>
+                                <h3>优惠设置</h3>
+                            </div>
+
+                            <!-- 立减设置 -->
+                            <div class="setting-group">
+                                <div class="setting-header">
+                                    <span class="setting-title">立减比例</span>
+                                    <button class="add-btn" onclick="addDiscountRate()">
+                                        <span class="add-icon">+</span>
+                                    </button>
                                 </div>
-                                <div>
-                                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                                        <div style="font-weight:600;">满减规则</div>
-                                        <div style="font-size:12px; color:#666;">（可设置多档）</div>
-                                    </div>
-                                    <div id="fullReductionList" style="display:flex; flex-direction: column; gap: 8px; margin-top:6px;">
-                                        <!-- 行模板：由脚本生成；但提供一行默认值便于开箱即用 -->
-                                        <div class="tier-row" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                                            <span style="color:#666; font-size:0.9rem;">满</span>
-                                            <input type="number" class="tier-threshold" value="99" step="0.01" style="width:120px;max-width:100%;">
-                                            <span style="color:#666; font-size:0.9rem;">减</span>
-                                            <input type="number" class="tier-off" value="10" step="0.01" style="width:120px;max-width:100%;">
-                                            <button type="button" class="save-button" onclick="saveInputs()" style="margin:0;">保存</button>
-                                            <button type="button" class="batch-modal-btn" onclick="removeTierRow(this)" style="margin:0;">删除</button>
-                                        </div>
-                                    </div>
-                                    <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
-                                        <button type="button" class="batch-modal-btn primary" style="margin:0;" onclick="addTierRow()">新增一档</button>
-                                        <button type="button" class="batch-modal-btn" style="margin:0;" onclick="saveInputs()">保存规则</button>
-                                    </div>
+                                <div id="rateOptions" class="setting-inputs">
+                                    <!-- 动态生成的立减输入框将在这里显示 -->
+                                </div>
+                            </div>
+
+                            <!-- 满减设置 -->
+                            <div class="setting-group">
+                                <div class="setting-header">
+                                    <span class="setting-title">满减规则</span>
+                                    <button class="add-btn" onclick="addTierRow()">
+                                        <span class="add-icon">+</span>
+                                    </button>
+                                </div>
+                                <div id="fullReductionList" class="setting-inputs">
+                                    <!-- 满减规则将在这里显示 -->
                                 </div>
                             </div>
                         </div>
                     </div>
 
-
+                    <!-- 右侧：结果展示区 -->
+                    <div class="result-section">
+                        <div class="result-card">
+                            <div class="result-header">
+                                <div class="result-icon">💰</div>
+                                <h3>计算结果</h3>
+                            </div>
+                            
+                            <div id="listpriceResult" class="result-content">
+                                <!-- 结果将在这里显示 -->
+                                <div class="empty-state">
+                                    <div class="empty-icon">⏳</div>
+                                    <h4>等待计算</h4>
+                                    <p>请设置参数后查看结果</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <!-- 操作区：已移除计算按钮，改为实时计算 -->
+
+            </div>
         </div>
 
         <!-- 到手价推演tab -->

@@ -315,10 +315,19 @@ function switchTab(tabName) {
         }
     } catch (_) {}
 
-    // 若切到标价页，初始化一次展示（尝试实时计算）
+    // 若切到标价页，初始化立减档位并计算
     try {
         if (tabName === 'listprice') {
-            calculateListPrice();
+            // 初始化默认立减档位
+            initDiscountRates();
+            // 延迟一小段时间后计算，确保DOM更新完成
+            setTimeout(() => {
+                try {
+                    calculateListPrice();
+                } catch (error) {
+                    console.warn('标价计算自动计算失败:', error);
+                }
+            }, 100);
         }
         // 若切到售价计算页，自动计算并显示结果
         if (tabName === 'price') {
@@ -1376,10 +1385,11 @@ window.addEventListener('load', () => {
                     input.addEventListener('change', onLPChange);
                 });
                 
-                // 立减比例复选框
-                const rateCheckboxes = document.querySelectorAll('.lp-rate');
-                rateCheckboxes.forEach(checkbox => {
-                    checkbox.addEventListener('change', onLPChange);
+                // 立减比例输入框
+                const rateInputs = document.querySelectorAll('.discount-rate-input');
+                rateInputs.forEach(input => {
+                    input.addEventListener('input', onLPChange);
+                    input.addEventListener('change', onLPChange);
                 });
                 
                 // 满减规则输入框
@@ -1408,6 +1418,15 @@ window.addEventListener('load', () => {
                                     });
                                 }
                                 
+                                // 检查新添加的立减比例输入框
+                                const newRateInputs = node.querySelectorAll && node.querySelectorAll('.discount-rate-input');
+                                if (newRateInputs) {
+                                    newRateInputs.forEach(input => {
+                                        input.addEventListener('input', onLPChange);
+                                        input.addEventListener('change', onLPChange);
+                                    });
+                                }
+
                                 // 检查新添加的满减规则输入框
                                 const newTierInputs = node.querySelectorAll && node.querySelectorAll('.tier-threshold, .tier-off');
                                 if (newTierInputs) {
@@ -1498,13 +1517,17 @@ function calculateListPrice() {
         throw new Error('请至少设置一个有效的目标到手价');
     }
     
-    const rateValues = Array.from(document.querySelectorAll('.lp-rate')).filter(x => x.checked).map(x => parseFloat(x.value));
+    // 获取自定义立减比例
+    const rateInputs = document.querySelectorAll('.discount-rate-input');
+    const rateValues = Array.from(rateInputs)
+        .map(input => parseFloat(input.value) / 100)
+        .filter(rate => isFinite(rate) && rate > 0 && rate < 1);
     const tiers = Array.from(document.querySelectorAll('#fullReductionList .tier-row')).map(row => ({
         threshold: parseFloat(row.querySelector('.tier-threshold').value),
         off: parseFloat(row.querySelector('.tier-off').value)
     })).filter(t => isFinite(t.threshold) && isFinite(t.off) && t.threshold > 0 && t.off >= 0);
 
-    if (!rateValues.length) throw new Error('请至少选择一个单品立减档位');
+    if (!rateValues.length) throw new Error('请至少设置一个有效的单品立减比例（1%-95%）');
 
     // 若无满减档，按 off=0 处理
     const offCandidates = tiers.length ? tiers.map(t => t.off).sort((a,b)=>a-b) : [0];
@@ -1600,11 +1623,20 @@ function calculateListPrice() {
         };
     });
 
-    // 渲染结果
-    document.getElementById('result').innerHTML = generateBatchListPriceHtml({
+    // 渲染结果到新的结果区域
+    const resultHtml = generateBatchListPriceHtml({
         allResults,
         tiers
     });
+
+    const resultContainer = document.getElementById('listpriceResult');
+    if (resultContainer) {
+        resultContainer.innerHTML = resultHtml;
+    } else {
+        // 降级到原来的result区域
+        document.getElementById('result').innerHTML = resultHtml;
+    }
+
     try { if (window.__setShareButtonsEnabled) window.__setShareButtonsEnabled(true); } catch (e) {}
 
     // 绑定建议标价悬浮说明（列出各立减档的到手价）
@@ -1613,11 +1645,15 @@ function calculateListPrice() {
     // 移动端：在表格卡片中也可点击行查看详单（同浮窗内容），便于触摸设备
     try {
         if (window.matchMedia && !window.matchMedia('(hover: hover)').matches) {
-            const tapContainer = document.getElementById('result');
+            const tapContainer = document.getElementById('listpriceResult');
             const onTap = (e) => {
-                const el = e.target.closest('.price-card');
+                const el = e.target.closest('.result-item');
                 if (!el || !tapContainer.contains(el)) return;
-                const S = parseFloat(el.getAttribute('data-s'));
+                // 从立减比例中提取标价信息
+                const discountRate = el.querySelector('.discount-rate')?.textContent;
+                const priceText = el.querySelector('.price-value.green')?.textContent;
+                if (!discountRate || !priceText) return;
+                const S = parseFloat(priceText.replace('¥', ''));
                 if (!isFinite(S) || S <= 0) return;
                 const html = (function(){
                     const discountRates = [0.10, 0.12, 0.15, 0.18, 0.20];
@@ -1671,9 +1707,9 @@ function addTierRow() {
     row.style.gap = '8px';
     row.style.flexWrap = 'wrap';
     row.innerHTML = '<span style="color:#666; font-size:0.9rem;">满</span>'+
-                    '<input type="number" class="tier-threshold" value="199" step="0.01" style="width:120px;max-width:100%;">'+
+                    '<input type="number" class="tier-threshold" value="0" step="0.01" style="width:120px;max-width:100%;">'+
                     '<span style="color:#666; font-size:0.9rem;">减</span>'+
-                    '<input type="number" class="tier-off" value="20" step="0.01" style="width:120px;max-width:100%;">'+
+                    '<input type="number" class="tier-off" value="0" step="0.01" style="width:120px;max-width:100%;">'+
                     '<button type="button" class="save-button" onclick="saveInputs()" style="margin:0;">保存</button>'+
                     '<button type="button" class="batch-modal-btn" onclick="removeTierRow(this)" style="margin:0;">删除</button>';
     list.appendChild(row);
@@ -1707,10 +1743,141 @@ function addTierRow() {
             }
         });
     }
+    
+    // 添加完成后立即触发计算
+    if (document.getElementById('listpriceTab').classList.contains('active')) {
+        try { calculateListPrice(); } catch (_) {}
+    }
 }
 function removeTierRow(btn) {
     const row = btn && btn.closest('.tier-row');
-    if (row && row.parentNode) row.parentNode.removeChild(row);
+    if (row && row.parentNode) {
+        row.parentNode.removeChild(row);
+        
+        // 删除完成后立即触发计算
+        if (document.getElementById('listpriceTab').classList.contains('active')) {
+            try { calculateListPrice(); } catch (_) {}
+        }
+    }
+}
+
+// 添加自定义立减档位
+function addDiscountRate() {
+    const container = document.getElementById('rateOptions');
+    if (!container) return;
+
+    // 限制最多10个立减档位
+    const existingRates = container.querySelectorAll('.discount-rate-row');
+    if (existingRates.length >= 10) {
+        alert('最多只能设置10个立减档位');
+        return;
+    }
+
+    const row = document.createElement('div');
+    row.className = 'discount-rate-row';
+    row.style.display = 'flex';
+    row.style.alignItems = 'center';
+    row.style.gap = '8px';
+    row.style.flexWrap = 'wrap';
+
+    // 计算默认值：基于现有档位递增
+    const existingValues = Array.from(existingRates)
+        .map(row => parseFloat(row.querySelector('.discount-rate-input').value))
+        .filter(val => isFinite(val) && val > 0);
+    const lastValue = existingValues.length > 0 ? Math.max(...existingValues) : 10;
+    const defaultValue = Math.min(lastValue + 2, 95); // 默认递增2%，最大95%
+
+    row.innerHTML = '<span style="color:#666; font-size:0.9rem;">立减</span>' +
+                    '<input type="number" class="discount-rate-input" value="' + defaultValue + '" step="1" min="0" max="95" style="width:80px;text-align:center;">' +
+                    '<span style="color:#666; font-size:0.9rem;">%</span>' +
+                    '<button type="button" class="save-button" onclick="saveInputs()" style="margin:0;">保存</button>' +
+                    '<button type="button" class="batch-modal-btn" onclick="removeDiscountRate(this)" style="margin:0;">删除</button>';
+
+    container.appendChild(row);
+
+    // 为新添加的输入框绑定实时计算事件
+    const newInput = row.querySelector('.discount-rate-input');
+    if (newInput) {
+        newInput.addEventListener('input', () => {
+            if (document.getElementById('listpriceTab').classList.contains('active')) {
+                try { calculateListPrice(); } catch (_) {}
+            }
+        });
+        newInput.addEventListener('change', () => {
+            if (document.getElementById('listpriceTab').classList.contains('active')) {
+                try { calculateListPrice(); } catch (_) {}
+            }
+        });
+    }
+    
+    // 添加完成后立即触发计算
+    if (document.getElementById('listpriceTab').classList.contains('active')) {
+        try { calculateListPrice(); } catch (_) {}
+    }
+}
+
+// 删除立减档位
+function removeDiscountRate(btn) {
+    const row = btn && btn.closest('.discount-rate-row');
+    if (row && row.parentNode) {
+        // 确保至少保留一个立减档位
+        const container = document.getElementById('rateOptions');
+        if (container && container.children.length > 1) {
+            row.parentNode.removeChild(row);
+            
+            // 删除完成后立即触发计算
+            if (document.getElementById('listpriceTab').classList.contains('active')) {
+                try { calculateListPrice(); } catch (_) {}
+            }
+        } else {
+            alert('至少需要保留一个立减档位');
+        }
+    }
+}
+
+// 初始化立减档位（默认10%）
+function initDiscountRates() {
+    const container = document.getElementById('rateOptions');
+    if (!container) return;
+
+    // 清空现有内容
+    container.innerHTML = '';
+
+    // 创建默认的10%立减档位
+    const row = document.createElement('div');
+    row.className = 'discount-rate-row';
+    row.style.display = 'flex';
+    row.style.alignItems = 'center';
+    row.style.gap = '8px';
+    row.style.flexWrap = 'wrap';
+
+    row.innerHTML = '<span style="color:#666; font-size:0.9rem;">立减</span>' +
+                    '<input type="number" class="discount-rate-input" value="10" step="1" min="0" max="95" style="width:80px;text-align:center;">' +
+                    '<span style="color:#666; font-size:0.9rem;">%</span>' +
+                    '<button type="button" class="save-button" onclick="saveInputs()" style="margin:0;">保存</button>' +
+                    '<button type="button" class="batch-modal-btn" onclick="removeDiscountRate(this)" style="margin:0;">删除</button>';
+
+    container.appendChild(row);
+
+    // 为默认输入框绑定实时计算事件
+    const defaultInput = row.querySelector('.discount-rate-input');
+    if (defaultInput) {
+        defaultInput.addEventListener('input', () => {
+            if (document.getElementById('listpriceTab').classList.contains('active')) {
+                try { calculateListPrice(); } catch (_) {}
+            }
+        });
+        defaultInput.addEventListener('change', () => {
+            if (document.getElementById('listpriceTab').classList.contains('active')) {
+                try { calculateListPrice(); } catch (_) {}
+            }
+        });
+    }
+    
+    // 初始化完成后立即触发计算
+    if (document.getElementById('listpriceTab').classList.contains('active')) {
+        try { calculateListPrice(); } catch (_) {}
+    }
 }
 
 // 标价页：增加/删除到手价目标
@@ -1738,11 +1905,12 @@ function addTargetPrice() {
     const lastPrice = existingPrices.length > 0 ? Math.max(...existingPrices) : 59;
     const defaultPrice = lastPrice + 10; // 默认递增10元
     
-    row.innerHTML = '<div class="input-wrapper" style="display:flex; gap:8px;">' +
-                    '<input type="number" class="target-price-input" value="' + defaultPrice + '" step="0.01" ' +
-                    'style="font-size:1.4rem; font-weight:700; padding:12px 14px; width:100%; border-radius:10px;">' +
-                    '<button class="save-button" onclick="saveInputs()" style="margin:0;">保存</button>' +
-                    '<button type="button" class="batch-modal-btn" onclick="removeTargetPrice(this)" style="margin:0; padding:8px 12px;">删除</button>' +
+    row.innerHTML = '<div class="price-input-group">' +
+                    '<input type="number" class="target-price-input" value="' + defaultPrice + '" step="0.01" placeholder="输入目标到手价">' +
+                    '<button class="save-btn" onclick="saveInputs()">' +
+                    '<span class="save-icon">✓</span>' +
+                    '</button>' +
+                    '<button type="button" class="action-btn secondary" onclick="removeTargetPrice(this)">删除</button>' +
                     '</div>';
     list.appendChild(row);
     
@@ -1760,6 +1928,11 @@ function addTargetPrice() {
             }
         });
     }
+    
+    // 添加完成后立即触发计算
+    if (document.getElementById('listpriceTab').classList.contains('active')) {
+        try { calculateListPrice(); } catch (_) {}
+    }
 }
 
 function removeTargetPrice(btn) {
@@ -1769,6 +1942,11 @@ function removeTargetPrice(btn) {
         const list = document.getElementById('targetPriceList');
         if (list && list.children.length > 1) {
             row.parentNode.removeChild(row);
+            
+            // 删除完成后立即触发计算
+            if (document.getElementById('listpriceTab').classList.contains('active')) {
+                try { calculateListPrice(); } catch (_) {}
+            }
         } else {
             alert('至少需要保留一个目标到手价');
         }
@@ -1789,6 +1967,11 @@ function clearAllTargetPrices() {
         const firstInput = list.querySelector('.target-price-input');
         if (firstInput) {
             firstInput.value = '59';
+        }
+        
+        // 清空完成后立即触发计算
+        if (document.getElementById('listpriceTab').classList.contains('active')) {
+            try { calculateListPrice(); } catch (_) {}
         }
     }
 }
@@ -1828,12 +2011,15 @@ function initSuggestPriceTooltip(tiers) {
 
     const buildHtml = (S, el) => {
         try {
-            // 获取基础信息
-            const targetPrice = el ? el.getAttribute('data-target') : null;
-            const discountRate = el ? el.getAttribute('data-r') : null;
-
-            // 解析立减比例
-            const r = discountRate ? parseFloat(discountRate) : 0.10; // 从data-r属性获取立减比例
+            // 从新的HTML结构中获取基础信息
+            const discountRateText = el ? el.querySelector('.discount-rate')?.textContent : null;
+            const targetPriceText = el ? el.closest('.target-result-section')?.querySelector('h4')?.textContent : null;
+            
+            // 解析立减比例（从"10%立减"中提取10）
+            const r = discountRateText ? parseFloat(discountRateText.match(/(\d+)%/)?.[1] || '10') / 100 : 0.10;
+            
+            // 解析目标到手价（从"目标到手价 ¥59.00 的标价建议"中提取59.00）
+            const targetPrice = targetPriceText ? parseFloat(targetPriceText.match(/¥([\d.]+)/)?.[1] || '0') : null;
 
             // 计算立减后的价格
             const afterDiscount = S * (1 - r);
@@ -1928,19 +2114,27 @@ function initSuggestPriceTooltip(tiers) {
     };
 
     // 事件委托到结果容器，避免多次绑定
-    const container = document.getElementById('result');
+    const container = document.getElementById('listpriceResult');
     if (!container) return;
     const onOver = (e) => {
-        const el = e.target.closest('.price-card');
+        const el = e.target.closest('.result-item');
         if (!el || !container.contains(el)) return hide();
-        const S = parseFloat(el.getAttribute('data-s'));
+        // 从立减比例中提取标价信息
+        const discountRate = el.querySelector('.discount-rate')?.textContent;
+        const priceText = el.querySelector('.price-value.green')?.textContent;
+        if (!discountRate || !priceText) return hide();
+        const S = parseFloat(priceText.replace('¥', ''));
         if (!isFinite(S) || S <= 0) return hide();
         show(buildHtml(S, el), e.clientX, e.clientY);
     };
     const onMove = (e) => {
-        const el = e.target.closest('.price-card');
+        const el = e.target.closest('.result-item');
         if (!el || !container.contains(el)) return hide();
-        const S = parseFloat(el.getAttribute('data-s'));
+        // 从立减比例中提取标价信息
+        const discountRate = el.querySelector('.discount-rate')?.textContent;
+        const priceText = el.querySelector('.price-value.green')?.textContent;
+        if (!discountRate || !priceText) return hide();
+        const S = parseFloat(priceText.replace('¥', ''));
         if (!isFinite(S) || S <= 0) return hide();
         show(buildHtml(S, el), e.clientX, e.clientY);
     };
@@ -7814,6 +8008,14 @@ function saveTakeHomeInputs() {
 document.addEventListener('DOMContentLoaded', function() {
     // 延迟执行，确保DOM完全加载
     setTimeout(() => {
+        // 初始化立减档位（如果在标价tab）
+        try {
+            if (document.getElementById('listpriceTab').classList.contains('active')) {
+                initDiscountRates();
+            }
+        } catch (error) {
+            console.warn('初始化立减档位失败:', error);
+        }
         const takehomeInputs = [
             'takehomeCostPrice', 'takehomeInputTaxRate', 'takehomeOutputTaxRate',
             'takehomePlatformRate', 'takehomeSalesTaxRate', 'takehomeShippingCost',
