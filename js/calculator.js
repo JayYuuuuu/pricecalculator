@@ -320,6 +320,26 @@ function switchTab(tabName) {
         if (tabName === 'listprice') {
             calculateListPrice();
         }
+        // 若切到售价计算页，自动计算并显示结果
+        if (tabName === 'price') {
+            setTimeout(() => {
+                try {
+                    calculate();
+                } catch (error) {
+                    console.warn('售价计算自动计算失败:', error);
+                }
+            }, 100);
+        }
+        // 若切到利润计算页，自动计算并显示结果
+        if (tabName === 'profit') {
+            setTimeout(() => {
+                try {
+                    calculateProfit();
+                } catch (error) {
+                    console.warn('利润计算自动计算失败:', error);
+                }
+            }, 100);
+        }
         // 若切到到手价推演页，初始化参数并尝试实时计算
         if (tabName === 'takehome') {
             console.log('切换到到手价推演tab');
@@ -7335,6 +7355,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 const profitTab = document.getElementById('profitTab');
                 if (profitTab) {
                     profitTab.classList.add('active');
+                }
+            }
+            
+            // 为当前激活的tab自动计算结果
+            const currentActiveTab = document.querySelector('.tab-content.active');
+            if (currentActiveTab) {
+                const tabId = currentActiveTab.id;
+                if (tabId === 'profitTab') {
+                    setTimeout(() => {
+                        try {
+                            calculateProfit();
+                        } catch (error) {
+                            console.warn('页面加载时利润计算自动计算失败:', error);
+                        }
+                    }, 200);
+                } else if (tabId === 'priceTab') {
+                    setTimeout(() => {
+                        try {
+                            calculate();
+                        } catch (error) {
+                            console.warn('页面加载时售价计算自动计算失败:', error);
+                        }
+                    }, 200);
                 }
             }
         } catch (_) {}
