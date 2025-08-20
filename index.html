@@ -652,6 +652,22 @@
                     <button id="btnCatalogFullscreen" class="header-btn" style="margin:0;">全屏显示</button>
                     <button id="btnCatalogUndoImport" class="header-btn" style="margin:0; display:none;">撤销上次导入</button>
                 </div>
+
+                <!-- 验证提示说明 -->
+                <div style="margin-bottom:16px; padding:12px; background:#f0f9ff; border:1px solid #3b82f6; border-radius:8px; border-left:4px solid #3b82f6;">
+                    <div style="display:flex; align-items:flex-start; gap:8px;">
+                        <span style="color:#3b82f6; font-size:16px;">💡</span>
+                        <div style="flex:1;">
+                            <div style="font-weight:600; color:#1e40af; margin-bottom:4px;">数据验证说明</div>
+                            <div style="font-size:13px; color:#374151; line-height:1.4;">
+                                • 系统会自动验证每行数据的完整性，包括商品名称、货号、平台、售价、进货价等必填字段<br>
+                                • <span style="color:#dc2626; font-weight:600;">异常数据会以红色高亮显示，并闪烁提示</span><br>
+                                • 点击底部的异常数量可以查看详细错误信息<br>
+                                • 修正数据后会自动重新验证，无需手动刷新
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 
                 <!-- 搜索和筛选工具栏 -->
                 <div id="catalogSearchToolbar" style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:16px; padding:16px; background:#f8fafc; border:1px solid #e5e7eb; border-radius:8px;">

@@ -5415,8 +5415,26 @@ function renderCatalogRow(index) {
 		let errDiv = nameCell.querySelector('.catalog-error');
 		const hasErr = (res.errors||[]).length>0;
 		if (errDiv) {
-			errDiv.textContent = hasErr ? res.errors.join('；') : '';
-			errDiv.style.display = hasErr ? '' : 'none';
+			if (hasErr) {
+				// 改进错误信息的显示样式
+				errDiv.innerHTML = `<div style="background: #dc2626; color: white; padding: 6px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; margin-top: 4px; animation: pulse-error 2s infinite;">
+					<span style="color: #fbbf24; font-size: 14px;">⚠️</span> ${res.errors.join('；')}
+				</div>`;
+				errDiv.style.display = '';
+				// 如果有错误，在商品名称列添加明显的错误样式
+				nameCell.style.backgroundColor = '#fef2f2';
+				nameCell.style.border = '2px solid #ef4444';
+				nameCell.style.borderRadius = '6px';
+				// 同时为整行添加错误标识
+				tr.style.backgroundColor = '#fef7f7';
+			} else {
+				errDiv.textContent = '';
+				errDiv.style.display = 'none';
+				nameCell.style.backgroundColor = '';
+				nameCell.style.border = '';
+				nameCell.style.borderRadius = '';
+				tr.style.backgroundColor = '';
+			}
 		}
 	}
 	
@@ -6105,15 +6123,164 @@ function updateCatalogStatus() {
 	const el = document.getElementById('catalogStatus'); if (!el) return;
 	const allRows = catalogState.rows || [];
 	const filteredRows = catalogFilterState.filteredRows.length > 0 ? catalogFilterState.filteredRows : allRows;
-	let err = 0; 
-	filteredRows.forEach(r => { if (r && r.__result && (r.__result.errors||[]).length) err++; });
-	
+	let err = 0;
+	let errorMessages = [];
+	filteredRows.forEach(r => {
+		if (r && r.__result && (r.__result.errors||[]).length) {
+			err++;
+			// 收集具体的错误信息
+			const rowErrors = r.__result.errors;
+			const rowName = r.name || '未命名商品';
+			const rowSku = r.sku || '无货号';
+			errorMessages.push(`${rowName}(${rowSku}): ${rowErrors.join('；')}`);
+		}
+	});
+
 	// 显示筛选状态
 	if (catalogFilterState.searchText || catalogFilterState.platform || catalogFilterState.returnRateMin || catalogFilterState.returnRateMax || catalogFilterState.dangerFilter || catalogFilterState.sortBy) {
-		el.innerHTML = `共 ${allRows.length} 条，筛选后 ${filteredRows.length} 条，${err} 条异常 <span style="color:#6b7280; font-size:0.9em;">（已应用筛选）</span>`;
+		if (err > 0) {
+			el.innerHTML = `共 ${allRows.length} 条，筛选后 ${filteredRows.length} 条，
+				<span style="background:#dc2626; color:white; padding:2px 6px; border-radius:12px; font-weight:600; animation:pulse-error 2s infinite;" title="${errorMessages.slice(0, 5).join('\n')}">
+					⚠️ ${err} 条异常
+				</span>
+				<span style="color:#6b7280; font-size:0.9em;">（已应用筛选）</span>`;
+		} else {
+			el.innerHTML = `共 ${allRows.length} 条，筛选后 ${filteredRows.length} 条，${err} 条异常 <span style="color:#6b7280; font-size:0.9em;">（已应用筛选）</span>`;
+		}
 	} else {
-		el.textContent = `共 ${allRows.length} 条，${err} 条异常`;
+		if (err > 0) {
+			el.innerHTML = `共 ${allRows.length} 条，
+				<span style="background:#dc2626; color:white; padding:2px 6px; border-radius:12px; font-weight:600; animation:pulse-error 2s infinite;" title="${errorMessages.slice(0, 5).join('\n')}">
+					⚠️ ${err} 条异常
+				</span>`;
+		} else {
+			el.textContent = `共 ${allRows.length} 条，${err} 条异常`;
+		}
 	}
+
+	// 显示全局错误提示
+	showGlobalErrorAlert(err, errorMessages);
+}
+
+// 全局错误提示功能
+function showGlobalErrorAlert(errorCount, errorMessages) {
+	let alertEl = document.getElementById('catalog-global-error-alert');
+
+	if (errorCount > 0) {
+		if (!alertEl) {
+			// 创建全局错误提示框
+			alertEl = document.createElement('div');
+			alertEl.id = 'catalog-global-error-alert';
+			alertEl.style.cssText = `
+				position: fixed;
+				top: 20px;
+				right: 20px;
+				background: #dc2626;
+				color: white;
+				padding: 12px 16px;
+				border-radius: 8px;
+				box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+				z-index: 1000;
+				font-size: 14px;
+				font-weight: 600;
+				animation: pulse-error 2s infinite;
+				cursor: pointer;
+				max-width: 300px;
+				border: 2px solid #b91c1c;
+			`;
+			document.body.appendChild(alertEl);
+		}
+
+		// 更新错误提示内容
+		const previewMessages = errorMessages.slice(0, 3);
+		let message = `发现 ${errorCount} 条数据异常`;
+		if (previewMessages.length > 0) {
+			message += '\n' + previewMessages.join('\n');
+		}
+		if (errorMessages.length > 3) {
+			message += '\n...点击查看更多详情';
+		}
+
+		alertEl.innerHTML = `<span style="color: #fbbf24; font-size: 16px;">⚠️</span> ${message.replace(/\n/g, '<br>')}`;
+		alertEl.style.display = 'block';
+
+		// 点击显示详细错误信息
+		alertEl.onclick = () => {
+			showDetailedErrors(errorMessages);
+		};
+	} else {
+		// 隐藏错误提示
+		if (alertEl) {
+			alertEl.style.display = 'none';
+		}
+	}
+}
+
+// 显示详细错误信息
+function showDetailedErrors(errorMessages) {
+	const overlay = document.createElement('div');
+	overlay.style.cssText = `
+		position: fixed;
+		inset: 0;
+		background: rgba(0,0,0,0.5);
+		z-index: 10000;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	`;
+
+	const panel = document.createElement('div');
+	panel.style.cssText = `
+		background: white;
+		border-radius: 12px;
+		padding: 20px;
+		max-width: 600px;
+		max-height: 80vh;
+		overflow-y: auto;
+		box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+	`;
+
+	const title = document.createElement('h3');
+	title.textContent = '数据验证异常详情';
+	title.style.cssText = 'margin: 0 0 16px 0; color: #dc2626; font-size: 18px;';
+
+	const closeBtn = document.createElement('button');
+	closeBtn.textContent = '关闭';
+	closeBtn.style.cssText = `
+		float: right;
+		background: #6b7280;
+		color: white;
+		border: none;
+		padding: 6px 12px;
+		border-radius: 6px;
+		cursor: pointer;
+	`;
+	closeBtn.onclick = () => document.body.removeChild(overlay);
+
+	const errorList = document.createElement('div');
+	errorList.style.cssText = 'margin-top: 16px;';
+
+	errorMessages.forEach((msg, index) => {
+		const item = document.createElement('div');
+		item.style.cssText = `
+			padding: 8px 12px;
+			margin: 4px 0;
+			background: #fef2f2;
+			border-left: 4px solid #dc2626;
+			border-radius: 4px;
+			font-family: monospace;
+			font-size: 13px;
+			line-height: 1.4;
+		`;
+		item.innerHTML = `<strong>${index + 1}.</strong> ${msg}`;
+		errorList.appendChild(item);
+	});
+
+	panel.appendChild(closeBtn);
+	panel.appendChild(title);
+	panel.appendChild(errorList);
+	overlay.appendChild(panel);
+	document.body.appendChild(overlay);
 }
 
 function loadCatalogFromStorage() {

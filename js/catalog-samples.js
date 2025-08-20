@@ -75,9 +75,9 @@ window.CATALOG_SAMPLE_ROWS = [
 	// 空气层加绒套装 - 多档售价 + 多档进货价
 	{ name:'空气层加绒套装', sku:'FWL240161', platform:'淘宝', salePrice:0, salePriceTiers:[125.10, 134.10, 143.10], returnRate:'14.87%', costTiers:[59.00, 64.00, 69.00] },
 	// 羊毛衫 - 多档售价 + 多档进货价
-	{ name:'羊毛衫', sku:'', platform:'淘宝', salePrice:0, salePriceTiers:[229.00, 239.00, 249.00, 289.00, 299.00, 309.00, 319.00, 329.00], returnRate:'25.00%', costTiers:[147.00, 157.00, 157.00, 167.00, 167.00, 177.00, 182.00, 192.00] },
+	{ name:'羊毛衫', sku:'JYMBQ2262A', platform:'淘宝', salePrice:0, salePriceTiers:[229.00, 239.00, 249.00, 289.00, 299.00, 309.00, 319.00, 329.00], returnRate:'25.00%', costTiers:[147.00, 157.00, 157.00, 167.00, 167.00, 177.00, 182.00, 192.00] },
 	// 全棉针织衫 - 多档售价 + 多档进货价
-	{ name:'全棉针织衫', sku:'', platform:'淘宝', salePrice:0, salePriceTiers:[109.00, 129.00], returnRate:'23.84%', costTiers:[62.00, 72.00] },
+	{ name:'全棉针织衫', sku:'HG03HDCJB', platform:'淘宝', salePrice:0, salePriceTiers:[109.00, 129.00], returnRate:'23.84%', costTiers:[62.00, 72.00] },
 	// 加绒单上衣 - 单一售价 + 单一进货价
 	{ name:'加绒单上衣', sku:'HYXC60001', platform:'淘宝', salePrice:79, returnRate:'16.04%', costTiers:[36] },
 	// 绵绵绒套装 - 多档售价 + 多档进货价
