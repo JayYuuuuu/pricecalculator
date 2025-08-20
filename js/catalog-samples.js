@@ -15,7 +15,7 @@ window.CATALOG_SAMPLE_ROWS = [
 	// 暖阳绒 - 单一售价 + 单一进货价
 	{ name:'暖阳绒', sku:'HYXY8101', platform:'淘宝', salePrice:79.8, returnRate:'10.82%', costTiers:[38] },
 	// 绵绵绒上衣 - 单一售价 + 多档进货价
-	{ name:'绵绵绒上衣', sku:'FWL240441', platform:'淘宝', salePrice:44.1, returnRate:'14.27%', costTiers:[18.50, 20.50] },
+	{ name:'绵绵绒上衣', sku:'FWL240441', platform:'淘宝', salePrice:49.8, returnRate:'14.27%', costTiers:[18.50, 20.50] },
 	// 色纱棉毛 - 单一售价 + 单一进货价
 	{ name:'色纱棉毛', sku:'HYXY50001', platform:'淘宝', salePrice:89.1, returnRate:'8.89%', costTiers:[44] },
 	// 色纱加绒 - 单一售价 + 单一进货价
@@ -72,6 +72,8 @@ window.CATALOG_SAMPLE_ROWS = [
 	{ name:'纯棉内裤4条小童', sku:'FWL2405141', platform:'淘宝', salePrice:69.75, returnRate:'6.23%', costTiers:[28.50, 30.00] },
 	// 纯棉内裤3条 - 单一售价 + 多档进货价
 	{ name:'纯棉内裤3条', sku:'FWL2505131', platform:'淘宝', salePrice:59, returnRate:'4.82%', costTiers:[23.40, 25.00] },
+	// 加绒套装 - 单一售价 + 单一进货价
+	{ name:'加绒套装', sku:'HYX1881', platform:'淘宝', salePrice:99, returnRate:'12.87%', costTiers:[58] },
 	// 空气层加绒套装 - 多档售价 + 多档进货价
 	{ name:'空气层加绒套装', sku:'FWL240161', platform:'淘宝', salePrice:0, salePriceTiers:[125.10, 134.10, 143.10], returnRate:'14.87%', costTiers:[59.00, 64.00, 69.00] },
 	// 羊毛衫 - 多档售价 + 多档进货价
@@ -81,7 +83,7 @@ window.CATALOG_SAMPLE_ROWS = [
 	// 加绒单上衣 - 单一售价 + 单一进货价
 	{ name:'加绒单上衣', sku:'HYXC60001', platform:'淘宝', salePrice:79, returnRate:'16.04%', costTiers:[36] },
 	// 绵绵绒套装 - 多档售价 + 多档进货价
-	{ name:'绵绵绒套装', sku:'FWL240141', platform:'淘宝', salePrice:0, salePriceTiers:[59.40, 62.10], returnRate:'8.66%', costTiers:[29.00, 30.50] },
+	{ name:'绵绵绒套装', sku:'FWL240141', platform:'淘宝', salePrice:0, salePriceTiers:[59.80, 69.80], returnRate:'8.66%', costTiers:[29.00, 30.50] },
 	// 空气层马甲（老） - 单一售价 + 单一进货价
 	{ name:'空气层马甲（老）', sku:'HYXB8401', platform:'淘宝', salePrice:59.4, returnRate:'15.58%', costTiers:[25.5] },
 	
@@ -91,7 +93,7 @@ window.CATALOG_SAMPLE_ROWS = [
 	// 暖阳绒 - 单一售价 + 单一进货价
 	{ name:'暖阳绒', sku:'HYXY8101', platform:'天猫', salePrice:79.8, returnRate:'10.24%', costTiers:[38] },
 	// 绵绵绒上衣 - 单一售价 + 多档进货价
-	{ name:'绵绵绒上衣', sku:'FWL240441', platform:'天猫', salePrice:44.1, returnRate:'9.74%', costTiers:[18.50, 20.50] },
+	{ name:'绵绵绒上衣', sku:'FWL240441', platform:'天猫', salePrice:49.8, returnRate:'9.74%', costTiers:[18.50, 20.50] },
 	// 色纱棉毛 - 单一售价 + 单一进货价
 	{ name:'色纱棉毛', sku:'HYXY50001', platform:'天猫', salePrice:89.1, returnRate:'10.55%', costTiers:[44] },
 	// 色纱加绒 - 单一售价 + 单一进货价
@@ -151,7 +153,7 @@ window.CATALOG_SAMPLE_ROWS = [
 	// 加绒单上衣 - 单一售价 + 单一进货价
 	{ name:'加绒单上衣', sku:'HYXC60001', platform:'天猫', salePrice:79, returnRate:'18.60%', costTiers:[36] },
 	// 绵绵绒套装 - 多档售价 + 多档进货价
-	{ name:'绵绵绒套装', sku:'FWL240141', platform:'天猫', salePrice:0, salePriceTiers:[59.40, 62.10], returnRate:'3.45%', costTiers:[29.00, 30.50] },
+	{ name:'绵绵绒套装', sku:'FWL240141', platform:'天猫', salePrice:0, salePriceTiers:[59.80, 69.80], returnRate:'3.45%', costTiers:[29.00, 30.50] },
 	// 空气层马甲（老） - 单一售价 + 单一进货价
 	{ name:'空气层马甲（老）', sku:'HYXB8401', platform:'天猫', salePrice:59.4, returnRate:'17.12%', costTiers:[25.5] }
 ];
