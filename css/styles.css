@@ -1422,39 +1422,7 @@ button:hover {
 }
 
 /* 分享工具栏样式 */
-.share-toolbar {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); /* 与简化版一致的渐变背景 */
-    border-radius: 15px; /* 与简化版一致的圆角 */
-    padding: 20px; /* 与简化版一致的内边距 */
-    margin-top: 20px;
-    border: 2px solid #dee2e6; /* 与简化版一致的边框 */
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* 与简化版一致的阴影 */
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    flex-wrap: wrap;
-}
-.share-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); /* 与简化版一致的渐变背景 */
-    color: white;
-    border: none;
-    padding: 12px 20px; /* 与简化版一致的内边距 */
-    border-radius: 8px; /* 与简化版一致的圆角 */
-    font-size: 0.9rem; /* 与简化版一致的字体大小 */
-    font-weight: 600; /* 与简化版一致的字重 */
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3); /* 与简化版一致的阴影 */
-}
 
-.share-btn:hover:not(:disabled) {
-    transform: translateY(-1px); /* 与简化版一致的悬停效果 */
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4); /* 与简化版一致的悬停阴影 */
-}
-.share-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
 
 /* --------------------------- */
 /* 响应式：移动端/小屏优化       */
@@ -1544,8 +1512,7 @@ button:hover {
 @media (max-width: 480px) {
     .tabs { flex-wrap: wrap; }
     .tab { flex: 1 1 auto; text-align: center; }
-    .share-toolbar { flex-wrap: wrap; }
-    .share-btn { flex: 1 1 calc(50% - 6px);}
+
     label { font-size: 0.85rem; }
     /* iOS 防止输入时触发页面缩放：保证 >=16px */
     input { font-size: 16px; }
@@ -1579,39 +1546,8 @@ button:hover {
     .save-button { width: 100%; margin-top: 6px; }
 }
 
-/* 分享图片用的内嵌样式（由 html2canvas 读取） */
-.share-section-title {
-    margin-top: 12px;
-    margin-bottom: 8px;
-    font-weight: 600;
-    color: #1d1d1f;
-}
-.share-badges {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 12px;
-}
-.share-badge {
-    display: inline-block;
-    padding: 6px 10px;
-    font-size: 12px;
-    background: #f3f4f6;
-    border: 1px solid #e5e7eb;
-    border-radius: 999px;
-    color: #374151;
-}
-.share-conclusion {
-    margin: 8px 0 16px 0;
-    padding: 12px;
-    background: #f0fdf4;
-    border: 1px solid #86efac;
-    border-radius: 8px;
-}
-.share-conclusion-text {
-    color: #14532d;
-    font-weight: 600;
-}
+/* 分享功能已移除 */
+
 
 /* --------------------------- */
 /* 标价计算：结果表格美化           */
@@ -2153,7 +2089,7 @@ button:hover {
         font-size: 0.8rem;
     }
     
-    .result, .description, .share-toolbar {
+    .result, .description {
         padding: 20px;
         margin-top: 20px;
     }
@@ -2743,7 +2679,6 @@ button:hover {
     font-size: 3rem;
     font-weight: 800;
     margin-bottom: 1rem;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .page-subtitle {
@@ -3281,12 +3216,10 @@ button:hover {
 
 .price-value.green {
     color: #22c55e;
-    text-shadow: 0 2px 4px rgba(34, 197, 94, 0.2);
 }
 
 .price-value.orange {
     color: #f59e0b;
-    text-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
 }
 
 .full-reduction-info {
@@ -3358,3 +3291,4 @@ button:hover {
         justify-content: center;
     }
 }
+
