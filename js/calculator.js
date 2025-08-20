@@ -302,10 +302,10 @@ function switchTab(tabName) {
     // 清空结果区域，并禁用分享按钮
     document.getElementById('result').innerHTML = '';
     // 分享功能已移除
-    // 针对商品清单页隐藏结果与分享模块，其它页面恢复显示
+    // 针对商品清单页、标价计算页、到手价推演页、成本价推演页隐藏结果与分享模块，其它页面恢复显示
     try {
         const resultEl = document.getElementById('result');
-        if (tabName === 'catalog' || tabName === 'listprice' || tabName === 'takehome') {
+        if (tabName === 'catalog' || tabName === 'listprice' || tabName === 'takehome' || tabName === 'cost') {
             if (resultEl) resultEl.style.display = 'none';
         } else {
             if (resultEl) resultEl.style.display = '';
@@ -7751,6 +7751,23 @@ function displayTakeHomePriceResults(results, inputs, adRates, targetProfitRates
             }
         });
     }
+
+    // 为表格添加tooltip事件监听器
+    const table = document.getElementById('takehomeExplorationTable');
+    if (table) {
+        // 添加tooltip功能
+        table.addEventListener('mouseover', function(e) {
+            if (e.target.hasAttribute('data-tooltip')) {
+                showTooltip(e, e.target.getAttribute('data-tooltip'));
+            }
+        });
+
+        table.addEventListener('mouseout', function(e) {
+            if (e.target.hasAttribute('data-tooltip')) {
+                hideTooltip();
+            }
+        });
+    }
 }
 
 /**
@@ -7766,9 +7783,11 @@ function generateTakeHomePriceTableHtmlForExploration(returnRateResults, adRates
     const header = `
         <tr>
             <th style="border-bottom:2px solid #e5e7eb;padding:12px 16px;color:#374151;font-weight:600;text-align:center;background:#f8fafc;font-size:14px;min-width:120px;">付费占比 \\ 目标利润率</th>
-            ${targetProfitRates.map(rate => 
-                `<th style="border-bottom:2px solid #e5e7eb;padding:12px 16px;color:#374151;font-weight:600;text-align:center;background:#f8fafc;font-size:14px;min-width:100px;">${(rate * 100).toFixed(1)}%</th>`
-            ).join('')}
+            ${targetProfitRates.map(rate => {
+                const isProfitHighlighted = rate >= 0.05 && rate <= 0.10;
+                const headerStyle = isProfitHighlighted ? 'background:linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); border:2px solid #10b981; color:#065f46;' : 'background:#f8fafc; color:#374151;';
+                return `<th style="border-bottom:2px solid #e5e7eb;padding:12px 16px;font-weight:600;text-align:center;font-size:14px;min-width:100px;${headerStyle}">${(rate * 100).toFixed(1)}%</th>`;
+            }).join('')}
         </tr>`;
     
     // 表格行：每行显示一个付费占比，每列显示对应目标利润率的综合信息
@@ -7777,11 +7796,20 @@ function generateTakeHomePriceTableHtmlForExploration(returnRateResults, adRates
         const isHighlighted = Math.abs(adRate - 0.20) < 0.001;
         const rowStyle = isHighlighted ? 'background:linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border:2px solid #f59e0b;' : '';
         
-        const rowHeader = `<td style="padding:12px 16px;text-align:center;border-right:2px solid #e5e7eb;background:#f8fafc;font-weight:600;color:#3b82f6;font-size:14px;min-width:120px;">${(adRate * 100).toFixed(0)}%</td>`;
+        const rowHeader = `<td style="padding:12px 16px;text-align:center;border-right:2px solid #e5e7eb;background:#f8fafc;font-weight:600;color:#3b82f6;font-size:14px;min-width:120px;${rowStyle}">${(adRate * 100).toFixed(0)}%</td>`;
         
         const cells = targetProfitRates.map(targetRate => {
             const takeHomePrice = returnRateResults[adRate][targetRate];
-            const isPositive = takeHomePrice > 0;
+            
+            if (isNaN(takeHomePrice) || takeHomePrice <= 0) {
+                return `<td style="padding:12px 16px;text-align:center;font-size:13px;color:#9ca3af;${rowStyle}">—</td>`;
+            }
+            
+            // 5%-10%利润率列高亮显示
+            const isProfitHighlighted = targetRate >= 0.05 && targetRate <= 0.10;
+            const cellStyle = isProfitHighlighted ?
+                'background:linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); border:2px solid #10b981;' :
+                rowStyle;
             
             // 计算保本ROI和保本广告占比
             let breakevenROI = '-';
@@ -7815,24 +7843,50 @@ function generateTakeHomePriceTableHtmlForExploration(returnRateResults, adRates
                 }
             }
             
-            const tooltip = `目标利润率：${(targetRate * 100).toFixed(1)}%\n付费占比：${(adRate * 100).toFixed(0)}%\n退货率：${(returnRate * 100).toFixed(1)}%\n到手价：¥${takeHomePrice.toFixed(2)}\n保本ROI：${breakevenROI}\n保本广告占比：${breakevenAdRate}`;
+            const tooltip = `=== 到手价推演结果 ===\n\n` +
+                `📊 当前参数：\n` +
+                `• 目标利润率：${(targetRate * 100).toFixed(1)}%\n` +
+                `• 付费占比：${(adRate * 100).toFixed(0)}%\n` +
+                `• 退货率：${(returnRate * 100).toFixed(1)}%\n\n` +
+                `💰 推演结果：\n` +
+                `• 到手价：¥${takeHomePrice.toFixed(2)}\n` +
+                `• 保本ROI：${breakevenROI}\n` +
+                `• 保本广告占比：${breakevenAdRate}\n\n` +
+                `📈 利润分析：\n` +
+                `• 基于进货价：¥${(parseFloat(document.getElementById('takehomeCostPrice').value) || 0).toFixed(2)}\n` +
+                `• 预期利润率：${(targetRate * 100).toFixed(1)}%`;
             
-            // 直接在单元格中显示三个数值，减少嵌套层级
-            const cellContent = isFinite(takeHomePrice) ? 
-                `<span class="price-main">¥${takeHomePrice.toFixed(2)}</span><br>
-                 <span class="roi-info">ROI: ${breakevenROI}</span><br>
-                 <span class="adrate-info">广告: ${breakevenAdRate}</span>` : '-';
-            
-            return `<td class="${isPositive ? 'positive' : 'negative'}" data-tooltip="${tooltip.replace(/"/g, '&quot;')}">
-                ${cellContent}
+            return `<td style="padding:12px 16px;text-align:center;font-size:13px;font-weight:500;${cellStyle}" data-tooltip="${tooltip.replace(/"/g, '&quot;')}">
+                <div class="price-main" style="font-size:16px; font-weight:700; color:#059669; margin-bottom:2px;">¥${takeHomePrice.toFixed(2)}</div>
+                <div class="roi-info" style="font-size:12px; color:#6b7280; margin-top:1px;">ROI: ${breakevenROI}</div>
+                <div class="adrate-info" style="font-size:12px; color:#6b7280; margin-top:1px;">广告: ${breakevenAdRate}</div>
             </td>`;
         }).join('');
         
-        const rowClass = isHighlighted ? 'highlighted' : '';
-        return `<tr class="${rowClass}">${rowHeader}${cells}</tr>`;
+        return `<tr style="${rowStyle}">${rowHeader}${cells}</tr>`;
     }).join('');
     
-    return `<table class="takehome-result-table">${header}${rows}</table>`;
+    return `
+        <div style="background:#fff; border:1px solid #e5e7eb; border-radius:12px; overflow:hidden; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);">
+            <table style="width:100%; border-collapse:collapse; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;" class="takehome-result-table" id="takehomeExplorationTable">
+                ${header}
+                ${rows}
+            </table>
+        </div>
+        <div style="margin-top:16px; padding:16px; background:#f8fafc; border-radius:8px; border:1px solid #e5e7eb; font-size:13px; color:#6b7280; line-height:1.5;">
+            <div style="display:flex; align-items:flex-start; gap:8px;">
+                <span style="color:#3b82f6; font-size:16px;">💡</span>
+                <div>
+                    <div style="font-weight:600; color:#374151; margin-bottom:4px;">表格说明：</div>
+                    <div>• <strong>黄色高亮行</strong>：20%付费占比（常用参考值）</div>
+                    <div>• <strong>绿色高亮列</strong>：5%-10%利润率区间（推荐范围）</div>
+                    <div>• <strong>¥-</strong>：表示该参数组合下无法达到目标利润</div>
+                    <div>• 表格显示了在不同付费占比和利润率下，达到目标利润所需的到手价</div>
+                    <div>• <em>鼠标悬停可查看详细参数信息</em></div>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 /**
