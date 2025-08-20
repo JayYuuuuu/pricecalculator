@@ -2543,3 +2543,150 @@ button:hover {
     flex-wrap: nowrap;
     align-items: center;
 }
+
+/* 利润计算tab费用设置模块专用的横向布局样式 */
+.profit-fees-horizontal-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.profit-fees-section {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.profit-fees-section .section-title {
+    color: #333;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #667eea;
+}
+
+.profit-fees-section .input-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.profit-fees-section .input-row:last-child {
+    margin-bottom: 0;
+}
+
+.profit-fees-section .input-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.profit-fees-section .input-item label {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #374151;
+    margin: 0;
+}
+
+.profit-fees-section .input-item .input-wrapper {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.profit-fees-section .input-item .input-wrapper input {
+    flex: 1;
+    min-width: 80px;
+    max-width: 120px;
+    padding: 8px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.profit-fees-section .input-item .input-wrapper input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* 紧凑快速调整拉杆样式 */
+.quick-slider-compact {
+    margin-top: 8px;
+    padding: 8px;
+    background: #f8f9fa;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+}
+
+.quick-slider-compact input[type="range"] {
+    width: 100%;
+    height: 4px;
+    background: #d1d5db;
+    border-radius: 2px;
+    outline: none;
+    margin-bottom: 6px;
+}
+
+.quick-slider-compact input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background: #667eea;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.quick-slider-compact input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: #667eea;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+}
+
+.quick-slider-compact .quick-slider-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.75rem;
+}
+
+.quick-slider-compact .quick-slider-label {
+    color: #6b7280;
+}
+
+.quick-slider-compact .quick-slider-value {
+    color: #667eea;
+    font-weight: 600;
+}
+
+/* 响应式布局优化 - 电脑端支持更多列 */
+@media (min-width: 1200px) {
+    .profit-fees-section .input-row {
+        grid-template-columns: repeat(6, 1fr);
+    }
+    
+    .profit-fees-section .input-item .input-wrapper input {
+        min-width: 60px;
+        max-width: 100px;
+    }
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+    .profit-fees-section .input-row {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 767px) {
+    .profit-fees-section .input-row {
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    }
+}
