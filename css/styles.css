@@ -614,16 +614,29 @@ button:hover {
 }
 
 .takehome-result-table td:hover {
-    background-color: #3b82f6;
-    color: #ffffff;
-    font-weight: 700;
+    background-color: #3b82f6 !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
     position: relative;
+    z-index: 10;
 }
 
 .takehome-result-table td:hover .price-main,
 .takehome-result-table td:hover .roi-info,
 .takehome-result-table td:hover .adrate-info {
     color: #ffffff !important;
+}
+
+/* 确保绿色高亮区域的悬停效果与其他区域完全一致 */
+.takehome-result-table td[style*="background:linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)"]:hover {
+    background: #3b82f6 !important;
+    border-color: #3b82f6 !important;
+}
+
+/* 确保黄色高亮区域的悬停效果与其他区域完全一致 */
+.takehome-result-table td[style*="background:linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)"]:hover {
+    background: #3b82f6 !important;
+    border-color: #3b82f6 !important;
 }
 
 /* 表格行高亮样式 */
