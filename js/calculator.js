@@ -1353,6 +1353,63 @@ window.addEventListener('load', () => {
             };
             lpTab.addEventListener('input', onLPChange);
             lpTab.addEventListener('change', onLPChange);
+            
+            // 为标价计算页面的所有输入框添加实时计算
+            const addRealTimeCalculation = () => {
+                // 目标到手价输入框
+                const targetPriceInputs = document.querySelectorAll('#targetPriceList .target-price-input');
+                targetPriceInputs.forEach(input => {
+                    input.addEventListener('input', onLPChange);
+                    input.addEventListener('change', onLPChange);
+                });
+                
+                // 立减比例复选框
+                const rateCheckboxes = document.querySelectorAll('.lp-rate');
+                rateCheckboxes.forEach(checkbox => {
+                    checkbox.addEventListener('change', onLPChange);
+                });
+                
+                // 满减规则输入框
+                const tierInputs = document.querySelectorAll('#fullReductionList .tier-threshold, #fullReductionList .tier-off');
+                tierInputs.forEach(input => {
+                    input.addEventListener('input', onLPChange);
+                    input.addEventListener('change', onLPChange);
+                });
+            };
+            
+            // 初始绑定
+            addRealTimeCalculation();
+            
+            // 监听DOM变化，为新添加的输入框绑定事件
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.type === 'childList') {
+                        mutation.addedNodes.forEach((node) => {
+                            if (node.nodeType === Node.ELEMENT_NODE) {
+                                // 检查新添加的目标到手价输入框
+                                const newTargetInputs = node.querySelectorAll && node.querySelectorAll('.target-price-input');
+                                if (newTargetInputs) {
+                                    newTargetInputs.forEach(input => {
+                                        input.addEventListener('input', onLPChange);
+                                        input.addEventListener('change', onLPChange);
+                                    });
+                                }
+                                
+                                // 检查新添加的满减规则输入框
+                                const newTierInputs = node.querySelectorAll && node.querySelectorAll('.tier-threshold, .tier-off');
+                                if (newTierInputs) {
+                                    newTierInputs.forEach(input => {
+                                        input.addEventListener('input', onLPChange);
+                                        input.addEventListener('change', onLPChange);
+                                    });
+                                }
+                            }
+                        });
+                    }
+                });
+            });
+            
+            observer.observe(document.body, { childList: true, subtree: true });
         }
     } catch (_) {}
 });
@@ -1607,6 +1664,36 @@ function addTierRow() {
                     '<button type="button" class="save-button" onclick="saveInputs()" style="margin:0;">保存</button>'+
                     '<button type="button" class="batch-modal-btn" onclick="removeTierRow(this)" style="margin:0;">删除</button>';
     list.appendChild(row);
+    
+    // 为新添加的满减输入框绑定实时计算事件
+    const newThresholdInput = row.querySelector('.tier-threshold');
+    const newOffInput = row.querySelector('.tier-off');
+    
+    if (newThresholdInput) {
+        newThresholdInput.addEventListener('input', () => {
+            if (document.getElementById('listpriceTab').classList.contains('active')) {
+                try { calculateListPrice(); } catch (_) {}
+            }
+        });
+        newThresholdInput.addEventListener('change', () => {
+            if (document.getElementById('listpriceTab').classList.contains('active')) {
+                try { calculateListPrice(); } catch (_) {}
+            }
+        });
+    }
+    
+    if (newOffInput) {
+        newOffInput.addEventListener('input', () => {
+            if (document.getElementById('listpriceTab').classList.contains('active')) {
+                try { calculateListPrice(); } catch (_) {}
+            }
+        });
+        newOffInput.addEventListener('change', () => {
+            if (document.getElementById('listpriceTab').classList.contains('active')) {
+                try { calculateListPrice(); } catch (_) {}
+            }
+        });
+    }
 }
 function removeTierRow(btn) {
     const row = btn && btn.closest('.tier-row');
@@ -1645,6 +1732,21 @@ function addTargetPrice() {
                     '<button type="button" class="batch-modal-btn" onclick="removeTargetPrice(this)" style="margin:0; padding:8px 12px;">删除</button>' +
                     '</div>';
     list.appendChild(row);
+    
+    // 为新添加的输入框绑定实时计算事件
+    const newInput = row.querySelector('.target-price-input');
+    if (newInput) {
+        newInput.addEventListener('input', () => {
+            if (document.getElementById('listpriceTab').classList.contains('active')) {
+                try { calculateListPrice(); } catch (_) {}
+            }
+        });
+        newInput.addEventListener('change', () => {
+            if (document.getElementById('listpriceTab').classList.contains('active')) {
+                try { calculateListPrice(); } catch (_) {}
+            }
+        });
+    }
 }
 
 function removeTargetPrice(btn) {
@@ -1711,67 +1813,104 @@ function initSuggestPriceTooltip(tiers) {
     // 新增：5位小数格式化
     const formatYuan5 = (n) => `¥ ${Number(n).toFixed(5)}`;
 
-    const buildHtml = (S) => {
+    const buildHtml = (S, el) => {
         try {
-            // 给定标价 S 时：先按各档立减得到 S1，再按满减触发的最大减额计算最终到手价，展示逆推过程
-            const rows = discountRates.map(r => {
-                const k = 1 - r;
-                // 工具：给定标价S0，计算折后价与满减，返回最终到手价 + 触发信息
-                const calcFinal = (S0) => {
-                    const s1 = S0 * k;
-                    const available = (tiers||[]).filter(t => isFinite(t.threshold) && isFinite(t.off) && t.threshold > 0 && t.off >= 0 && s1 >= t.threshold);
-                    let off = 0, usedThreshold = null;
-                    if (available.length) {
-                        off = Math.max(...available.map(t => t.off));
-                        const first = available.find(t => t.off === off);
-                        usedThreshold = first ? first.threshold : null;
-                    }
-                    return { s1, off, usedThreshold, final: s1 - off };
-                };
+            // 获取基础信息
+            const targetPrice = el ? el.getAttribute('data-target') : null;
+            const discountRate = el ? el.getAttribute('data-r') : null;
 
-                // 当前解（系统建议标价 S）
-                const cur = calcFinal(S);
-                // 邻近候选（上/下一分）
-                const up  = calcFinal(Number((S + 0.01).toFixed(2)));
-                const down= calcFinal(Number((S - 0.01).toFixed(2)));
+            // 解析立减比例
+            const r = discountRate ? parseFloat(discountRate) : 0.10; // 从data-r属性获取立减比例
 
-                // 2位小数显示
-                const step = cur.usedThreshold
-                    ? `S×k=${formatYuan(cur.s1)} ≥ 满${formatYuan(cur.usedThreshold)} → 减${formatYuan(cur.off)} → P=${formatYuan(cur.final)}`
-                    : `S×k=${formatYuan(cur.s1)}（未触发满减）→ P=${formatYuan(cur.final)}`;
-                // 5位小数验证显示
-                const stepVerify = cur.usedThreshold
-                    ? `验证：S×k=${formatYuan5(cur.s1)} ≥ 满${formatYuan5(cur.usedThreshold)} → 减${formatYuan5(cur.off)} → P=${formatYuan5(cur.final)}`
-                    : `验证：S×k=${formatYuan5(cur.s1)}（未触发满减）→ P=${formatYuan5(cur.final)}`;
+            // 计算立减后的价格
+            const afterDiscount = S * (1 - r);
 
-                // 比对逻辑：以当前P作为“目标上限”，展示相邻候选对P的影响
-                const diffUp   = (up.final  - cur.final);
-                const diffDown = (cur.final - down.final);
-                const sign = (x) => x > 0 ? `↑${formatYuan(x)}` : (x < 0 ? `↓${formatYuan(Math.abs(x))}` : '不变');
-                const compareHtml = `
-                    <div style="opacity:.75;font-size:11px;line-height:1.4;margin-top:4px;">
-                        <div>比对逻辑：</div>
-                        <div>• 候选 <b>S+0.01</b> → P<sub>+</sub>=${formatYuan(up.final)}（相对当前 ${sign(diffUp)}）</div>
-                        <div>• 候选 <b>S-0.01</b> → P<sub>-</sub>=${formatYuan(down.final)}（相对当前 ${sign(-diffDown)}）</div>
-                        <div>• 选择理由：遵循“到手价不超过目标且最接近”的准则，<b>当前 S</b> 相比更高标价会使到手价更高（可能越线），相比更低标价又更接近目标。</div>
+            // 计算满减
+            let fullReduction = 0;
+            let usedThreshold = null;
+            if (tiers && tiers.length > 0) {
+                const available = tiers.filter(t =>
+                    isFinite(t.threshold) && isFinite(t.off) &&
+                    t.threshold > 0 && t.off >= 0 &&
+                    afterDiscount >= t.threshold
+                );
+                if (available.length > 0) {
+                    fullReduction = Math.max(...available.map(t => t.off));
+                    const first = available.find(t => t.off === fullReduction);
+                    usedThreshold = first ? first.threshold : null;
+                }
+            }
+
+            // 计算最终到手价
+            const finalPrice = afterDiscount - fullReduction;
+
+            // 计算标价+0.01后的到手价
+            const S_plus = S + 0.01;
+            const afterDiscount_plus = S_plus * (1 - r);
+            let fullReduction_plus = 0;
+            if (tiers && tiers.length > 0) {
+                const available_plus = tiers.filter(t =>
+                    isFinite(t.threshold) && isFinite(t.off) &&
+                    t.threshold > 0 && t.off >= 0 &&
+                    afterDiscount_plus >= t.threshold
+                );
+                if (available_plus.length > 0) {
+                    fullReduction_plus = Math.max(...available_plus.map(t => t.off));
+                }
+            }
+            const finalPrice_plus = afterDiscount_plus - fullReduction_plus;
+
+            // 格式化函数（4位小数）
+            const formatYuan4 = (n) => `¥ ${Number(n).toFixed(4)}`;
+
+            return `<div style="font-weight:600;margin-bottom:8px;">标价验证</div>
+                    <div>系统标价：<b>${formatYuan4(S)}</b></div>
+                    ${targetPrice ? `<div>目标到手价：${formatYuan4(parseFloat(targetPrice))}</div>` : ''}
+                    <div style="margin:8px 0; padding:8px; background:rgba(255,255,255,0.1); border-radius:4px;">
+                        <div style="font-weight:600; margin-bottom:4px;">反推计算过程：</div>
+                        <div>立减比例：${(r*100).toFixed(0)}%</div>
+                        <div>立减后价格：${formatYuan4(S)} × (1 - ${r.toFixed(2)}) = ${formatYuan4(afterDiscount)}</div>
+                        ${usedThreshold ?
+                            `<div>触发满减：满 ${formatYuan4(usedThreshold)} 减 ${formatYuan4(fullReduction)}</div>` :
+                            `<div>未触发满减</div>`
+                        }
+                        <div style="border-top:1px solid rgba(255,255,255,0.3); padding-top:4px; margin-top:4px;">
+                            <div><b>最终到手价：${formatYuan4(finalPrice)}</b></div>
+                        </div>
+                    </div>
+
+                    <div style="margin:8px 0; padding:8px; background:rgba(255,255,255,0.05); border-radius:4px; border-left:3px solid #fbbf24;">
+                        <div style="font-weight:600; margin-bottom:4px; color:#fbbf24;">上调验证（+0.01）：</div>
+                        <div>上调后标价：${formatYuan4(S_plus)}</div>
+                        <div>立减后价格：${formatYuan4(S_plus)} × (1 - ${r.toFixed(2)}) = ${formatYuan4(afterDiscount_plus)}</div>
+                        ${(() => {
+                            if (tiers && tiers.length > 0) {
+                                const available_plus = tiers.filter(t =>
+                                    isFinite(t.threshold) && isFinite(t.off) &&
+                                    t.threshold > 0 && t.off >= 0 &&
+                                    afterDiscount_plus >= t.threshold
+                                );
+                                if (available_plus.length > 0) {
+                                    const maxOff = Math.max(...available_plus.map(t => t.off));
+                                    const first = available_plus.find(t => t.off === maxOff);
+                                    return `<div>触发满减：满 ${formatYuan4(first.threshold)} 减 ${formatYuan4(maxOff)}</div>`;
+                                }
+                            }
+                            return `<div>未触发满减</div>`;
+                        })()}
+                        <div style="border-top:1px solid rgba(255,255,255,0.2); padding-top:4px; margin-top:4px;">
+                            <div><b>上调后到手价：${formatYuan4(finalPrice_plus)}</b></div>
+                            <div style="font-size:11px; color:#fbbf24; margin-top:2px;">
+                                差值：${finalPrice_plus > finalPrice ? '+' : ''}${formatYuan4(finalPrice_plus - finalPrice)}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="font-size:11px; color:#ccc; margin-top:4px;">
+                        注：所有金额精确到小数点后4位
                     </div>`;
-
-                return `
-                    <tr>
-                        <td style="padding:2px 8px;color:#a7f3d0;vertical-align:top;">${(r*100).toFixed(0)}%</td>
-                        <td style="padding:2px 8px;vertical-align:top;">
-                            <div><b>${formatYuan(cur.final)}</b></div>
-                            <div style="opacity:.8;font-size:11px;line-height:1.5;">${step}</div>
-                            <div style="opacity:.65;font-size:11px;line-height:1.5;">${stepVerify}</div>
-                            ${compareHtml}
-                        </td>
-                    </tr>`;
-            }).join('');
-            return `<div style="font-weight:600;margin-bottom:4px;">标价 <b>${formatYuan(S)}</b></div>
-                    <div style="font-weight:600;margin-bottom:6px;">各立减档到手价 · 逆推过程</div>
-                    <table style="border-collapse:collapse;">${rows}</table>`;
         } catch (_) {
-            return '无法计算';
+            return '验证计算错误';
         }
     };
 
@@ -1783,14 +1922,14 @@ function initSuggestPriceTooltip(tiers) {
         if (!el || !container.contains(el)) return hide();
         const S = parseFloat(el.getAttribute('data-s'));
         if (!isFinite(S) || S <= 0) return hide();
-        show(buildHtml(S), e.clientX, e.clientY);
+        show(buildHtml(S, el), e.clientX, e.clientY);
     };
     const onMove = (e) => {
         const el = e.target.closest('.price-card');
         if (!el || !container.contains(el)) return hide();
         const S = parseFloat(el.getAttribute('data-s'));
         if (!isFinite(S) || S <= 0) return hide();
-        show(buildHtml(S), e.clientX, e.clientY);
+        show(buildHtml(S, el), e.clientX, e.clientY);
     };
     const onLeave = hide;
 

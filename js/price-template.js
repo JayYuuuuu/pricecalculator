@@ -112,7 +112,7 @@ function generateListPriceHtml({ targetFinalPrice, tiers, results }) {
         const statusClass = isExact ? 'status-success' : 'status-warning';
         const statusText = isExact ? '精确匹配' : `偏差 ¥${Math.abs((item.finalPrice||0)-targetFinalPrice).toFixed(2)}`;
         
-        return `<div class="price-card" data-s="${Number(item.price).toFixed(2)}">
+        return `<div class="price-card" data-s="${Number(item.price).toFixed(2)}" data-r="${item.r}">
             <div class="price-card-header">
                 <span class="discount-rate">${rPct}</span>
                 <span class="status-badge ${statusClass}">${statusText}</span>
@@ -195,7 +195,7 @@ function generateBatchListPriceHtml({ allResults, tiers }) {
             const statusClass = isExact ? 'status-success' : 'status-warning';
             const statusText = isExact ? '精确匹配' : `偏差 ¥${Math.abs((item.finalPrice||0)-targetFinalPrice).toFixed(2)}`;
             
-            return `<div class="price-card" data-s="${Number(item.price).toFixed(2)}">
+            return `<div class="price-card" data-s="${Number(item.price).toFixed(2)}" data-r="${item.r}">
                 <div class="price-card-header">
                     <span class="discount-rate">${rPct}</span>
                     <span class="status-badge ${statusClass}">${statusText}</span>
@@ -220,16 +220,14 @@ function generateBatchListPriceHtml({ allResults, tiers }) {
         }).join('');
 
         return `
-            <div class="target-price-section">
-                <div class="target-price-header">
-                    <h4>目标到手价：¥${targetFinalPrice.toFixed(2)}</h4>
-                    <div class="target-price-summary">
-                        共 ${sorted.length} 个立减档位，${sorted.filter(r => isFinite(r.price)).length} 个有效标价建议
-                    </div>
+            <div class="target-price-header">
+                <h4>目标到手价：¥${targetFinalPrice.toFixed(2)}</h4>
+                <div class="target-price-summary">
+                    共 ${sorted.length} 个立减档位，${sorted.filter(r => isFinite(r.price)).length} 个有效标价建议
                 </div>
-                <div class="price-cards-container">
-                    ${priceCards}
-                </div>
+            </div>
+            <div class="price-cards-container">
+                ${priceCards}
             </div>
         `;
     }).join('');
@@ -246,21 +244,6 @@ function generateBatchListPriceHtml({ allResults, tiers }) {
     ) : '<div style="font-size:0.9rem;color:#666;margin-top:6px;">未设置满减，按无满减计算</div>';
 
     return `
-        <div class="section calculation-process lp-card">
-            <h3>批量标价建议与校验</h3>
-            <div class="batch-summary">
-                <div class="summary-item">
-                    <span class="summary-label">目标到手价数量：</span>
-                    <span class="summary-value">${sortedResults.length} 个</span>
-                </div>
-                <div class="summary-item">
-                    <span class="summary-label">价格区间：</span>
-                    <span class="summary-value">¥${Math.min(...sortedResults.map(r => r.targetFinalPrice)).toFixed(2)} - ¥${Math.max(...sortedResults.map(r => r.targetFinalPrice)).toFixed(2)}</span>
-                </div>
-                ${tierSummary}
-            </div>
-            
-            ${targetPriceSections}
-        </div>
+        ${targetPriceSections}
     `;
 }

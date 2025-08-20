@@ -35,15 +35,12 @@
         <!-- 售价计算tab -->
         <div id="priceTab" class="tab-content">
             <div class="section">
-                <h3 style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                <h3 style="display:flex; align-items:center; gap:8px; margin-bottom:1.5rem;">
                     售价计算
-                    <span style="font-size:12px; color:#666; font-weight:500;">基于目标利润率和参数设置，计算合理的含税售价</span>
+                    <span style="font-size:12px; font-weight:500; color:#666; background:#f3f4f6; border:1px solid #e5e7eb; padding:2px 6px; border-radius:999px;">基于目标利润率和参数设置，计算合理的含税售价</span>
                 </h3>
                 <div class="step-description" style="margin-bottom:12px; color:#666;">
-                    设置各项成本参数和目标利润率，系统将自动计算满足目标利润的合理售价。
-                    <div style="margin-top: 8px; padding: 8px 12px; background: #f0f7ff; border-radius: 6px; border-left: 3px solid #3b82f6; font-size: 0.9rem; color: #1e40af;">
-                        💡 <strong>实时计算</strong>：修改任何参数后，结果会自动更新，无需手动点击计算按钮
-                    </div>
+                    设置各项成本参数和目标利润率，系统将自动计算满足目标利润的合理售价。<span style="color:#2ea44f; font-weight:600;">✨ 修改任何参数后结果会自动更新</span>
                 </div>
                 
                 <!-- 参数输入区域 - 紧凑横向布局 -->
@@ -183,7 +180,7 @@
         <div id="profitTab" class="tab-content active">
             <div class="section">
                 <div class="section-header">
-                    <h3>利润计算</h3>
+                    <h3 style="margin-bottom:1.5rem;">利润计算</h3>
                     <!-- 顶部右侧区域：免佣开关 + 批量推演按钮（置于模块标题行） -->
                     <div class="header-actions" title="免佣开关：与下方平台费用免佣联动">
                         <div class="switch-wrapper switch-chip">
@@ -199,11 +196,8 @@
                         <button id="btnPriceExploration" class="header-btn">价格推演</button>
                     </div>
                 </div>
-                <div class="step-description">
-                    输入商品的进货价和实际售价，计算各项成本和最终利润。
-                    <div style="margin-top: 8px; padding: 8px 12px; background: #f0f7ff; border-radius: 6px; border-left: 3px solid #3b82f6; font-size: 0.9rem; color: #1e40af;">
-                        💡 <strong>实时计算</strong>：修改任何参数后，结果会自动更新，无需手动点击计算按钮
-                    </div>
+                <div class="step-description" style="margin-bottom:12px; color:#666;">
+                    输入商品的进货价和实际售价，计算各项成本和最终利润。<span style="color:#2ea44f; font-weight:600;">✨ 修改任何参数后结果会自动更新</span>
                 </div>
                 <div class="input-groups-container">
                     <div class="input-group">
@@ -429,7 +423,7 @@
                     <span style="font-size:12px; font-weight:500; color:#666; background:#f3f4f6; border:1px solid #e5e7eb; padding:2px 6px; border-radius:999px;">到手价为核心，活动为变量</span>
                 </h3>
                 <div class="step-description" style="margin-bottom:12px; color:#666;">
-                    先确定<strong>目标到手价</strong>（叠加优惠后的买家实付），再选择店铺活动；系统将<span style="font-weight:600;">实时倒推</span>活动前的建议标价。
+                    先确定<strong>目标到手价</strong>（叠加优惠后的买家实付），再选择店铺活动；系统将<span style="font-weight:600;">实时倒推</span>活动前的建议标价。<span style="color:#2ea44f; font-weight:600;">✨ 修改任何参数后结果会自动更新</span>
                 </div>
 
                 <!-- C位：目标到手价 + 活动选择（紧凑主卡片） -->
@@ -513,21 +507,18 @@
                 </div>
             </div>
 
-            <!-- 操作区：强引导只保留一个主按钮 -->
-            <div style="display:flex; justify-content:flex-end; gap:8px;">
-                <button onclick="calculateListPrice()">计算标价</button>
-            </div>
+            <!-- 操作区：已移除计算按钮，改为实时计算 -->
         </div>
 
         <!-- 到手价推演tab -->
         <div id="takehomeTab" class="tab-content">
             <div class="section">
-                <h3 style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                <h3 style="display:flex; align-items:center; gap:8px; margin-bottom:1.5rem;">
                     到手价推演
-                    <span style="font-size:12px; color:#666; font-weight:500;">基于目标利润率和参数设置，实时计算不同退货率和付费占比下的到手价</span>
+                    <span style="font-size:12px; font-weight:500; color:#666; background:#f3f4f6; border:1px solid #e5e7eb; padding:2px 6px; border-radius:999px;">基于目标利润率和参数设置，实时计算不同退货率和付费占比下的到手价</span>
                 </h3>
                 <div class="step-description" style="margin-bottom:12px; color:#666;">
-                    输入各项参数后，系统将自动计算在不同退货率和付费占比下，达到目标利润率所需的到手价。支持实时计算和结果展示。
+                    输入各项参数后，系统将自动计算在不同退货率和付费占比下，达到目标利润率所需的到手价。<span style="color:#2ea44f; font-weight:600;">✨ 修改任何参数后结果会自动更新</span>
                 </div>
                 
                 <!-- 参数输入区域 - 横向布局 -->
@@ -644,9 +635,9 @@
         <!-- 商品清单tab -->
         <div id="catalogTab" class="tab-content">
             <div class="section">
-                <h3 style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                <h3 style="display:flex; align-items:center; gap:8px; margin-bottom:1.5rem;">
                     商品清单
-                    <span style="font-size:12px; color:#666; font-weight:500;">多商品多平台批量计算（利润/利润率/保本ROI/保本广告占比）</span>
+                    <span style="font-size:12px; font-weight:500; color:#666; background:#f3f4f6; border:1px solid #e5e7eb; padding:2px 6px; border-radius:999px;">多商品多平台批量计算（利润/利润率/保本ROI/保本广告占比）</span>
                 </h3>
                 <!-- 工具栏 -->
                 <div id="catalogToolbar" style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:12px;">
