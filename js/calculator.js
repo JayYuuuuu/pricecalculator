@@ -1045,8 +1045,8 @@ function calculatePrices(purchaseCost, salesCost, inputs) {
     const VAT_RATE = 0.06; // 现代服务业增值税率6%
     const taxFactorOnFinal = inputs.salesTaxRate / (1 + inputs.salesTaxRate); // 销项税占最终售价比例
     const adFactorEffective = inputs.adRate / salesCost.effectiveRate;       // 广告费分摊（不可退回）
-    const adVatCreditFactor = VAT_RATE * adFactorEffective;                  // 广告费进项税抵扣占比
-    const platformVatCreditFactor = VAT_RATE * inputs.platformRate;          // 平台佣金进项税抵扣占比
+    const adVatCreditFactor = (VAT_RATE / (1 + VAT_RATE)) * adFactorEffective;  // 价内剥离 v/(1+v)
+    const platformVatCreditFactor = (VAT_RATE / (1 + VAT_RATE)) * inputs.platformRate; // 价内剥离 v/(1+v)
     const profitFactorEffective = inputs.targetProfitRate;                   // 目标利润率按最终售价口径，不随退货分摊
     
     // 分子：C（进货成本）- 商品进项税 + F_不可退回/(1-R)
@@ -1064,15 +1064,16 @@ function calculatePrices(purchaseCost, salesCost, inputs) {
     const platformFee = finalPrice * inputs.platformRate;
     const adCost = finalPrice * inputs.adRate;
     const outputVAT = netPrice * inputs.salesTaxRate;
-    
-    // 5. 计算广告费进项税（广告费为可抵扣6%，且为不可退回成本，需按(1-R)分摊）
-    const adVAT = (adCost / salesCost.effectiveRate) * VAT_RATE;
-    
+
+    // 5. 计算广告费进项税（广告费为可抵扣6%，且为不可退回成本，需按(1-R)分摊，价内剥离）
+    const adVAT = (adCost / salesCost.effectiveRate) * (VAT_RATE / (1 + VAT_RATE)); // 价内剥离
+
     // 6. 计算实际税负（销项税 - 进项税）
     // 实缴增值税口径：销项税 - (商品进项税 + 广告费进项税 + 平台佣金进项税)
-    // 注：虽然在联立分子里已经扣除了"商品进项税"作为常数项，但实际缴税仍需抵扣商品进项税，
-    // 才能保证求解出的含税价在目标利润率下利润=F*t（t=0时利润为0）。
-    const totalVATDeduction = purchaseCost.purchaseVAT + adVAT + (platformFee * VAT_RATE);
+    // 平台佣金可抵扣进项税采用价内剥离
+    const totalVATDeduction = purchaseCost.purchaseVAT
+        + adVAT
+        + (platformFee * (VAT_RATE / (1 + VAT_RATE))); // 平台佣金可抵扣进项税采用价内剥离
     const actualVAT = outputVAT - totalVATDeduction;
 
     // 7. 计算实际利润（收入减去所有成本和费用）
@@ -1198,61 +1199,7 @@ function calculateBreakevenROI(params) {
     }
 }
 
-// === 闭式解：由到手价P直接反解成本价C（无需二分） ===
-// 说明：与 calculatePrices 中的联立口径保持一致：
-// P = [ C*(1 + i - o) + F ] / [ 1 - p - t - A + v*A + v*p ]
-// 其中：i=inputTaxRate, o=outputTaxRate, s=salesTaxRate, p=platformRate,
-//       a=adRate, E=1-returnRate, A=a/E, t=s/(1+s), v=0.06,
-//       F=(shippingCost + shippingInsurance + otherCost)/E
-function solveCostFromFinalPrice(params) {
-    const {
-        finalPrice,           // 含税售价 P（到手价）
-        inputTaxRate,         // i
-        outputTaxRate,        // o
-        salesTaxRate,         // s
-        platformRate,         // p
-        adRate,               // a
-        returnRate,           // R
-        shippingCost,
-        shippingInsurance,
-        otherCost
-    } = params;
 
-    // 1) 基本防护
-    const P = Number(finalPrice);
-    if (!(P > 0)) return { costPrice: NaN, feasible: false, reason: '售价无效' };
-
-    // 2) 公共量
-    const E = Math.max(1 - (Number(returnRate) || 0), 1e-6); // 避免除0
-    const F = (Number(shippingCost) || 0) + (Number(shippingInsurance) || 0) + (Number(otherCost) || 0);
-    const F_eff = F / E;
-
-    const s = Math.max(0, Number(salesTaxRate) || 0);
-    const t = s / (1 + s);
-
-    const a = Math.max(0, Number(adRate) || 0);
-    const A = a / E;
-
-    const p = Math.max(0, Number(platformRate) || 0);
-    const v = 0.06;
-
-    // 与 calculatePrices 的分母一致
-    const D = 1 - p - t - A + v * A + v * p;
-
-    // 与 calculatePurchaseCost 的线性系数一致
-    const kC = 1 + (Number(inputTaxRate) || 0) - (Number(outputTaxRate) || 0);
-
-    if (!(D > 0)) return { costPrice: NaN, feasible: false, reason: '参数组合不可解（分母≤0）' };
-    if (!(kC > 0)) return { costPrice: NaN, feasible: false, reason: '参数异常：1+i-o ≤ 0' };
-
-    // 3) 闭式解
-    const C = (P * D - F_eff) / kC;
-
-    if (!isFinite(C) || C <= 0) {
-        return { costPrice: NaN, feasible: false, reason: '解为非正数/非数' };
-    }
-    return { costPrice: Number(C.toFixed(6)), feasible: true };
-}
 
 // 实时计算进货成本
 function updatePurchaseCostSummary() {
@@ -1268,191 +1215,7 @@ function updateSalesCostSummary(finalPrice = 0) {
     return;
 }
 
-// === 成本价推演主函数（闭式解版，异常兜底二分） ===
-function calculateCostPriceExploration() {
-    try {
-        // 读取到手价（优先成本推演tab的输入，其次通用字段）
-        let finalPrice = NaN;
-        const costFinalEl = document.getElementById('costFinalPrice');
-        if (costFinalEl) finalPrice = parseFloat(costFinalEl.value);
-        if (!(finalPrice > 0)) {
-            const targetInput = document.querySelector('#targetPriceList .target-price-input');
-            if (targetInput) finalPrice = parseFloat(targetInput.value);
-        }
-        if (!(finalPrice > 0)) {
-            const actualEl = document.getElementById('actualPrice');
-            if (actualEl) finalPrice = parseFloat(actualEl.value);
-        }
-        if (!(finalPrice > 0)) throw new Error('未获取到有效的到手价（含税售价）');
 
-        // 读取共用参数（尽量与现有ID对齐，缺失时按0处理）
-        const valPct = (id) => {
-            const el = document.getElementById(id);
-            if (!el) return 0;
-            const v = parseFloat(el.value);
-            return isFinite(v) ? v / 100 : 0;
-        };
-        const valNum = (id, d = 0) => {
-            const el = document.getElementById(id);
-            if (!el) return d;
-            const v = parseFloat(el.value);
-            return isFinite(v) ? v : d;
-        };
-
-        const paramsCommon = {
-            inputTaxRate: valPct('inputTaxRate') || valPct('profitInputTaxRate'),
-            outputTaxRate: valPct('outputTaxRate') || valPct('profitOutputTaxRate'),
-            salesTaxRate:  valPct('salesTaxRate')  || valPct('profitSalesTaxRate'),
-            platformRate:  valPct('platformRate')  || valPct('profitPlatformRate'),
-            returnRate:    valPct('returnRate')    || valPct('profitReturnRate'),
-            shippingCost:  valNum('shippingCost')  || valNum('profitShippingCost'),
-            shippingInsurance: valNum('shippingInsurance') || valNum('profitShippingInsurance'),
-            otherCost:     valNum('otherCost')     || valNum('profitOtherCost')
-        };
-
-        // 行：广告付费占比列表（优先从成本推演tab读取；否则默认）
-        let adRates = Array.from(document.querySelectorAll('.cost-ad-rate'))
-            .map(el => parseFloat(el.value) / 100)
-            .filter(x => isFinite(x) && x >= 0 && x < 1);
-        if (!adRates.length) adRates = [0.00, 0.05, 0.08, 0.10, 0.12, 0.15, 0.18, 0.20];
-
-        // 列：目标利润率列表（优先从成本推演tab读取；否则默认）
-        let profitRates = Array.from(document.querySelectorAll('.cost-profit-rate'))
-            .map(el => parseFloat(el.value) / 100)
-            .filter(x => isFinite(x) && x >= 0 && x < 1);
-        if (!profitRates.length) profitRates = [0.00, 0.05, 0.10, 0.15, 0.20];
-
-        // 结果矩阵计算
-        const matrix = [];
-        for (let i = 0; i < adRates.length; i++) {
-            const a = adRates[i];
-            const row = [];
-            for (let j = 0; j < profitRates.length; j++) {
-                const g = profitRates[j];
-
-                // 拼装本格参数
-                const params = {
-                    finalPrice,
-                    adRate: a,
-                    ...paramsCommon
-                };
-
-                // 先用闭式解
-                let solved = solveCostFromFinalPrice(params);
-                let costC = solved.costPrice;
-                let feasible = solved.feasible;
-                let reason = solved.reason || '';
-
-                // 结果验证（用你的统一利润计算函数）
-                let verifyProfit = NaN;
-                if (feasible && isFinite(costC) && costC > 0) {
-                    const verifyInputs = {
-                        costPrice: costC,
-                        actualPrice: finalPrice,
-                        inputTaxRate: params.inputTaxRate,
-                        outputTaxRate: params.outputTaxRate,
-                        salesTaxRate: params.salesTaxRate,
-                        platformRate: params.platformRate,
-                        shippingCost: paramsCommon.shippingCost,
-                        shippingInsurance: paramsCommon.shippingInsurance,
-                        adRate: a,
-                        otherCost: paramsCommon.otherCost,
-                        returnRate: paramsCommon.returnRate
-                    };
-                    try {
-                        const vr = calculateProfitUnified(verifyInputs);
-                        verifyProfit = vr.profitRate; // 小数
-                    } catch (e) {}
-                }
-
-                // 校验利润是否接近目标：容差 0.0005（≈0.05 个百分点）
-                const closeEnough = isFinite(verifyProfit) && Math.abs(verifyProfit - g) <= 0.0005;
-
-                // 若闭式口径与验证口径存在微小差异，也可保留；若偏差显著，兜底用微二分修正
-                if (feasible && !closeEnough) {
-                    try {
-                        // 兜底：在 [0, finalPrice] 区间做 12~18 次迭代的小二分
-                        let lo = 0, hi = Math.max(finalPrice, costC * 2);
-                        for (let iter = 0; iter < 16; iter++) {
-                            const mid = (lo + hi) / 2;
-                            const testInputs = {
-                                costPrice: mid,
-                                actualPrice: finalPrice,
-                                inputTaxRate: params.inputTaxRate,
-                                outputTaxRate: params.outputTaxRate,
-                                salesTaxRate: params.salesTaxRate,
-                                platformRate: params.platformRate,
-                                shippingCost: paramsCommon.shippingCost,
-                                shippingInsurance: paramsCommon.shippingInsurance,
-                                adRate: a,
-                                otherCost: paramsCommon.otherCost,
-                                returnRate: paramsCommon.returnRate
-                            };
-                            const vr = calculateProfitUnified(testInputs);
-                            if (!isFinite(vr.profitRate)) break;
-                            if (vr.profitRate < g) {
-                                // 利润偏低 —— 成本应更低
-                                hi = mid;
-                            } else {
-                                lo = mid;
-                            }
-                        }
-                        costC = (lo + hi) / 2;
-                    } catch (_) {}
-                }
-
-                row.push({
-                    adRate: a, targetProfitRate: g,
-                    cost: isFinite(costC) && costC > 0 ? Number(costC.toFixed(4)) : NaN,
-                    feasible: feasible,
-                    note: reason || (closeEnough ? '' : '已用兜底微调')
-                });
-            }
-            matrix.push(row);
-        }
-
-        // 渲染（若存在成本推演结果容器）
-        const container = document.getElementById('costExplorationResult');
-        if (container) {
-            const fmtPct = (x) => (x * 100).toFixed(0) + '%';
-            let html = '';
-            html += '<div class="table-wrap">';
-            html += '<table class="calc-table">';
-            // 头
-            html += '<thead><tr><th>付费占比 \\ 目标利润率</th>';
-            for (const g of profitRates) html += `<th>${fmtPct(g)}</th>`;
-            html += '</tr></thead>';
-
-            // 行
-            html += '<tbody>';
-            for (let i = 0; i < adRates.length; i++) {
-                html += '<tr>';
-                html += `<th>${fmtPct(adRates[i])}</th>`;
-                for (let j = 0; j < profitRates.length; j++) {
-                    const cell = matrix[i][j];
-                    if (!cell.feasible || !isFinite(cell.cost)) {
-                        html += '<td style="color:#999;">—</td>';
-                    } else {
-                        html += `<td title="${cell.note || ''}">¥ ${cell.cost.toFixed(2)}</td>`;
-                    }
-                }
-                html += '</tr>';
-            }
-            html += '</tbody></table>';
-            html += '</div>';
-            container.innerHTML = html;
-        } else {
-            // 无容器则输出到控制台，避免报错
-            console.table(matrix.map(row => row.map(c => c.cost)));
-        }
-    } catch (err) {
-        console.error('成本价推演失败：', err);
-        const container = document.getElementById('costExplorationResult');
-        if (container) {
-            container.innerHTML = `<div class="error">${err.message}</div>`;
-        }
-    }
-}
 
 // 售价计算主函数
 function calculate() {
@@ -8224,7 +7987,7 @@ function calculateCostPriceExploration() {
 }
 
 /**
- * 生成成本价推演结果
+ * 生成成本价推演结果（优先使用闭式解，失败时回退到二分查找）
  * @param {Object} inputs 输入参数
  * @param {Array} adRates 付费占比数组
  * @param {Array} targetProfitRates 目标利润率数组
@@ -8236,12 +7999,25 @@ function generateCostPriceResults(inputs, adRates, targetProfitRates) {
     adRates.forEach(adRate => {
         results[adRate] = {};
         targetProfitRates.forEach(targetProfitRate => {
-            const costPrice = calculateCostPriceForExploration(
+            // 优先使用闭式解方法
+            let costPrice = calculateCostPriceByClosedForm(
                 inputs.takeHomePrice,
                 adRate,
                 targetProfitRate,
                 inputs
             );
+            
+            // 如果闭式解失败，回退到二分查找
+            if (isNaN(costPrice) || costPrice <= 0) {
+                console.log(`闭式解失败，使用二分查找：付费占比${(adRate*100).toFixed(0)}%，目标利润率${(targetProfitRate*100).toFixed(1)}%`);
+                costPrice = calculateCostPriceForExploration(
+                    inputs.takeHomePrice,
+                    adRate,
+                    targetProfitRate,
+                    inputs
+                );
+            }
+            
             results[adRate][targetProfitRate] = costPrice;
         });
     });
@@ -8250,7 +8026,71 @@ function generateCostPriceResults(inputs, adRates, targetProfitRates) {
 }
 
 /**
- * 计算成本价（推演专用）
+ * 使用闭式解方法计算成本价（推演专用）
+ * 基于数学公式：P = [ C*(1 + i - o) + F ] / [ 1 - p - t - A + v*A + v*p ]
+ * 反解：C = (P * D - F_eff) / kC
+ * @param {number} takeHomePrice 到手价
+ * @param {number} adRate 付费占比
+ * @param {number} targetProfitRate 目标利润率
+ * @param {Object} params 其他参数
+ * @returns {number} 成本价
+ */
+function calculateCostPriceByClosedForm(takeHomePrice, adRate, targetProfitRate, params) {
+    try {
+        // 1) 基本防护
+        const P = Number(takeHomePrice);
+        if (!(P > 0)) return NaN;
+
+        // 2) 公共量计算
+        const E = Math.max(1 - (Number(params.returnRate) || 0), 1e-6); // 有效销售率，避免除0
+        const F = (Number(params.shippingCost) || 0) + (Number(params.shippingInsurance) || 0) + (Number(params.otherCost) || 0);
+        const F_eff = F / E; // 分摊后的固定成本
+
+        const s = Math.max(0, Number(params.salesTaxRate) || 0);
+        const t = s / (1 + s); // 销项税占最终售价比例
+
+        const a = Math.max(0, Number(adRate) || 0);
+        const A = a / E; // 广告费分摊（不可退回）
+
+        const p = Math.max(0, Number(params.platformRate) || 0);
+        const v = 0.06; // 现代服务业增值税率6%
+
+        // 与 calculatePrices 的分母一致（进项抵扣一律价内剥离）
+        const D = 1 - p - t - targetProfitRate - A + (v / (1 + v)) * A + (v / (1 + v)) * p;
+
+        // 与 calculatePurchaseCost 的线性系数一致
+        const kC = 1 + (Number(params.inputTaxRate) || 0) - (Number(params.outputTaxRate) || 0);
+
+        // 3) 验证参数有效性
+        if (!(D > 0)) {
+            console.warn('闭式解参数组合不可解（分母≤0）：', { D, p, t, targetProfitRate, A, v });
+            return NaN;
+        }
+        if (!(kC > 0)) {
+            console.warn('闭式解参数异常：1+i-o ≤ 0', { kC, inputTaxRate: params.inputTaxRate, outputTaxRate: params.outputTaxRate });
+            return NaN;
+        }
+
+        // 4) 闭式解计算
+        const C = (P * D - F_eff) / kC;
+
+        // 5) 验证结果
+        if (!isFinite(C) || C <= 0) {
+            console.warn('闭式解结果无效：', { C, P, D, F_eff, kC });
+            return NaN;
+        }
+
+        // 6) 精度控制并返回
+        return Number(C.toFixed(6));
+
+    } catch (error) {
+        console.error('闭式解计算错误:', error);
+        return NaN;
+    }
+}
+
+/**
+ * 计算成本价（推演专用，二分查找方法）
  * @param {number} takeHomePrice 到手价
  * @param {number} adRate 付费占比
  * @param {number} targetProfitRate 目标利润率
