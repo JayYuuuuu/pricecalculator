@@ -1356,6 +1356,56 @@ window.addEventListener('load', () => {
         }
     } catch (_) {}
 });
+// ===== 精度安全工具（避免浮点误差） =====
+// 把金额(元)转为“分”的整数；支持字符串/数字，最多两位小数，超出部分截断
+function yuanToCents(x) {
+    const s = String(x ?? '').trim();
+    if (!s) return 0;
+    const m = s.match(/^(-?\d+)(?:\.(\d{0,}))?$/);
+    if (!m) return Math.round(Number(x) * 100); // 兜底
+    const int = parseInt(m[1], 10);
+    const dec = (m[2] || '').padEnd(2, '0').slice(0, 2);
+    const sign = int < 0 ? -1 : 1;
+    return sign * (Math.abs(int) * 100 + parseInt(dec || '0', 10));
+}
+// “分”转元（Number，保留2位）
+function centsToYuan(c) { return Number((c / 100).toFixed(2)); }
+// 最大公约数
+function __gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { const t = a % b; a = b; b = t; } return a || 1; }
+// 将十进制小数(如0.90, 0.88)稳定地转为最简分数 num/den
+function decimalToFractionSafe(d) {
+    // 用字符串避免0.3000000004这类二进制误差
+    const str = String(d);
+    if (!str.includes('.')) return { num: Number(str), den: 1 };
+    const [i, frac] = str.split('.');
+    const den = Math.pow(10, frac.length);
+    const num = Math.round(Number(str) * den);
+    const g = __gcd(num, den);
+    return { num: num / g, den: den / g };
+}
+// 在“厘”(0.001元)精度下乘以分数 (priceCents × num/den)，结果返回“厘”的整数
+function mulCentsByFractionToMils(priceCents, num, den) {
+    // 先把分换算成厘(×10)，再乘分数并向下取整，确保不过冲
+    return Math.floor((priceCents * 10 * num) / den);
+}
+// 计算给定S（分）在折扣后触发的最大满减off（分）与阈值（分）；tiers为{threshold, off}的数组(单位：元)
+function calcTierForPriceCents(priceCents, kNum, kDen, tiers) {
+    if (!tiers || !tiers.length) return { maxOffCents: 0, usedThresholdCents: null };
+    // 用“分”的保守口径判断触发：向下取整到分，避免把临界值算成已达标
+    const afterDiscountCents = Math.floor((priceCents * kNum) / kDen);
+    let maxOffCents = 0;
+    let usedThresholdCents = null;
+    for (const t of tiers) {
+        const thrC = yuanToCents(t.threshold);
+        const offC = yuanToCents(t.off);
+        if (afterDiscountCents >= thrC && offC >= maxOffCents) {
+            maxOffCents = offC;
+            usedThresholdCents = thrC;
+        }
+    }
+    return { maxOffCents, usedThresholdCents };
+}
+
 /**
  * 标价计算核心逻辑
  * 目标：给定"目标到手价 P_final"，在可叠加优惠（单品立减 r、满减 T→O）下，反推页面标价 S。
@@ -1393,36 +1443,87 @@ function calculateListPrice() {
     const allResults = targetFinalPrices.map(targetFinalPrice => {
         // 对每个立减比例分别给出建议标价
         const results = rateValues.map(r => {
-            let best = null; // { price, off, thresholdUsed, finalPrice, diff }
-            const k = 1 - r;
-            if (k <= 0) return { r, price: NaN, finalPrice: NaN, detail: [], note: '立减过高' };
+            if (1 - r <= 0) return { r, price: NaN, finalPrice: NaN, detail: [], note: '立减过高' };
 
-            // 穷举可能的 off（由各档可触发的最大减额决定）。考虑不触发满减的 off=0 场景
-            const candidates = new Set(offCandidates.concat([0]));
-            candidates.forEach(off => {
-                // 反解标价 S = (P + off)/k
-                const S = (targetFinalPrice + off) / k;
-                if (!isFinite(S) || S <= 0) return;
-                const S1 = S * k; // 立减后价
-                // 找到在 S1 下能触发的最大满减档位（若有）
-                const available = tiers.filter(t => S1 >= t.threshold);
-                const maxOff = available.length ? Math.max(...available.map(t => t.off)) : 0;
-                // 验证该解是否自洽：若我们假设的 off 与实际可触发 maxOff 不一致，则该解不成立
-                if (Math.abs((off||0) - (maxOff||0)) > 1e-6) return;
-                const P = S1 - (maxOff||0);
-                const diff = Math.abs(P - targetFinalPrice);
-                const candidate = { price: S, off: maxOff||0, thresholdUsed: (function(){
-                    if (!maxOff) return null;
-                    const t = available.find(x => x.off === maxOff);
-                    return t ? t.threshold : null;
-                })(), finalPrice: P, diff };
-                if (!best || diff < best.diff || (Math.abs(diff - best.diff) < 1e-9 && S < best.price)) {
-                    best = candidate;
+            // 使用精度安全整数口径 + 保守回推
+            const k = 1 - r;
+            const { num: kNum, den: kDen } = decimalToFractionSafe(k);
+
+            const targetCents = yuanToCents(targetFinalPrice);
+            // 穷举可能的 off（已有 candidates 集合），此处循环体里已拿到 off（元）
+            const offCentsFixed = yuanToCents(offCandidates[0]);
+            // 反解理论标价（分）：S* ≈ (P + off) / k = (P+off) * kDen / kNum
+            // 但我们要穷举所有 off 候选
+            let best = null;
+            for (const off of new Set(offCandidates.concat([0]))) {
+                const offCentsFixed = yuanToCents(off);
+                const exactCents = ((targetCents + offCentsFixed) * kDen) / kNum;
+                // 只考察上下两侧的“分”候选，再必要时向下微调
+                const seedCandidates = [Math.floor(exactCents + 1e-9), Math.ceil(exactCents - 1e-9)];
+                const targetMils = targetCents * 10; // 目标到手价(厘)
+                function evaluate(priceCents) {
+                    if (!isFinite(priceCents) || priceCents <= 0) return null;
+                    // 计算折后价（厘，不四舍五入，向下取整，防止过冲）
+                    const afterDiscountMils = mulCentsByFractionToMils(priceCents, kNum, kDen);
+                    // 触发的满减（分）
+                    const { maxOffCents, usedThresholdCents } = calcTierForPriceCents(priceCents, kNum, kDen, tiers);
+                    // 自洽校验：与假设的 off 一致才成立
+                    if (Math.abs(maxOffCents - offCentsFixed) > 0) return null;
+                    const finalMils = afterDiscountMils - offCentsFixed * 10;
+                    return { priceCents, finalMils, usedThresholdCents };
                 }
-            });
-            return { r, price: best? best.price : NaN, finalPrice: best? best.finalPrice : NaN, off: best? best.off : 0, thresholdUsed: best? best.thresholdUsed : null };
+                // 1) 先评估floor/ceil两个种子
+                let localBest = null;
+                for (const c of seedCandidates) {
+                    const res = evaluate(c);
+                    if (!res) continue;
+                    // 要求：不超过目标价（以厘为准）
+                    if (res.finalMils <= targetMils) {
+                        const diff = targetMils - res.finalMils; // 越小越接近
+                        if (!localBest || diff < localBest.diff || (diff === localBest.diff && c < localBest.priceCents)) {
+                            localBest = { ...res, diff };
+                        }
+                    }
+                }
+                // 2) 若两个都“超过”目标或不自洽，则从较小的那一个开始，每次下调1分尝试（通常一次即可）
+                if (!localBest) {
+                    let c = Math.min(...seedCandidates.filter(x => isFinite(x)));
+                    for (let i = 0; i < 6; i++) { // 最多回退6分，足够覆盖边界
+                        const res = evaluate(c);
+                        if (res && res.finalMils <= targetMils) {
+                            localBest = { ...res, diff: targetMils - res.finalMils };
+                            break;
+                        }
+                        c -= 1; // 下调1分
+                    }
+                }
+                if (localBest) {
+                    // 记录最优解
+                    if (!best || localBest.diff < best.diff || (localBest.diff === best.diff && localBest.priceCents < best.priceCents)) {
+                        best = {
+                            priceCents: localBest.priceCents,
+                            finalMils: localBest.finalMils,
+                            thresholdUsed: localBest.usedThresholdCents,
+                            offCentsFixed,
+                            r
+                        };
+                    }
+                }
+            }
+            if (best) {
+                const finalPriceYuan = Number((best.finalMils / 1000).toFixed(2));
+                return {
+                    r,
+                    price: centsToYuan(best.priceCents),
+                    finalPrice: finalPriceYuan,
+                    off: centsToYuan(best.offCentsFixed),
+                    thresholdUsed: best.thresholdUsed ? centsToYuan(best.thresholdUsed) : null
+                };
+            } else {
+                return { r, price: NaN, finalPrice: NaN, detail: [], note: '无法找到自洽解' };
+            }
         });
-        
+
         return {
             targetFinalPrice,
             results
