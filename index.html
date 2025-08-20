@@ -35,162 +35,148 @@
         <!-- 售价计算tab -->
         <div id="priceTab" class="tab-content">
             <div class="section">
-                <h3>第一步：基础成本</h3>
-                <div class="step-description">
-                    这部分是您需要支付给供应商的费用，包括商品本身的成本和相关税费。
+                <h3 style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                    售价计算
+                    <span style="font-size:12px; color:#666; font-weight:500;">基于目标利润率和参数设置，计算合理的含税售价</span>
+                </h3>
+                <div class="step-description" style="margin-bottom:12px; color:#666;">
+                    设置各项成本参数和目标利润率，系统将自动计算满足目标利润的合理售价。
                 </div>
-                <div class="input-groups-container">
-                    <div class="input-group">
-                        <label>进货价（不含税）:</label>
-                        <div class="input-wrapper">
-                            <input type="number" id="costPrice" value="38" step="0.01">
-                            <button class="save-button" onclick="saveInputs()">保存</button>
-                        </div>
-                        <div class="field-hint">这是供应商提供的不含税商品价格</div>
-                    </div>
-
-                    <div class="input-group">
-                        <label>开票成本（%）:</label>
-                        <div class="input-wrapper">
-                            <input type="number" id="inputTaxRate" value="6" step="0.1">
-                            <button class="save-button" onclick="saveInputs()">保存</button>
-                        </div>
-                        <div class="field-hint">供应商开具发票时收取的额外费用比例（通常是6%）</div>
-                    </div>
-
-                    <div class="input-group">
-                        <label>进项税率（%）:</label>
-                        <div class="input-wrapper">
-                            <input type="number" id="outputTaxRate" value="13" step="0.1">
-                            <button class="save-button" onclick="saveInputs()">保存</button>
-                        </div>
-                        <div class="field-hint">商品的进项税率（如服装类13%），这部分税费将来可用于抵扣销项税</div>
-                    </div>
-                </div>
-
                 
+                <!-- 参数输入区域 - 紧凑横向布局 -->
+                <div class="price-horizontal-layout">
+                    <!-- 基础成本参数 -->
+                    <div class="price-section">
+                        <div class="section-title">基础成本</div>
+                        <div class="input-row">
+                            <div class="input-item input-item-primary">
+                                <label>进货价（不含税）:</label>
+                                <div class="input-wrapper">
+                                    <input type="number" id="costPrice" value="38" step="0.01">
+                                    <button class="save-button" onclick="saveInputs()">保存</button>
+                                </div>
+                                <div class="field-hint-compact">供应商提供的不含税商品价格</div>
+                            </div>
+                            
+                            <div class="input-item">
+                                <label>开票成本（%）:</label>
+                                <div class="input-wrapper">
+                                    <input type="number" id="inputTaxRate" value="6" step="0.1">
+                                    <button class="save-button" onclick="saveInputs()">保存</button>
+                                </div>
+                                <div class="field-hint-compact">供应商开票的额外费用比例（通常6%）</div>
+                            </div>
+                            
+                            <div class="input-item">
+                                <label>进项税率（%）:</label>
+                                <div class="input-wrapper">
+                                    <input type="number" id="outputTaxRate" value="13" step="0.1">
+                                    <button class="save-button" onclick="saveInputs()">保存</button>
+                                </div>
+                                <div class="field-hint-compact">商品进项税率（如服装类13%）</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 销售环节费用 -->
+                    <div class="price-section">
+                        <div class="section-title">销售环节费用</div>
+                        <div class="input-row">
+                            <div class="input-item">
+                                <label>平台佣金（%）:</label>
+                                <div class="input-wrapper">
+                                    <input type="number" id="platformRate" value="5.5" step="0.1" class="compact-number">
+                                    <div class="commission-free-toggle">
+                                        <label class="switch">
+                                            <input type="checkbox" id="platformFreeToggle">
+                                            <span class="slider"></span>
+                                        </label>
+                                        <span class="switch-label">免佣</span>
+                                    </div>
+                                    <button class="save-button" onclick="saveInputs()">保存</button>
+                                </div>
+                                <div class="field-hint-compact">平台交易佣金，基于含税售价计算</div>
+                            </div>
+                            
+                            <div class="input-item">
+                                <label>物流费（元/单）:</label>
+                                <div class="input-wrapper">
+                                    <input type="number" id="shippingCost" value="2.8" step="0.01">
+                                    <button class="save-button" onclick="saveInputs()">保存</button>
+                                </div>
+                                <div class="field-hint-compact">每个订单的快递费用</div>
+                            </div>
+                            
+                            <div class="input-item">
+                                <label>运费险（元/单）:</label>
+                                <div class="input-wrapper">
+                                    <input type="number" id="shippingInsurance" value="1.5" step="0.01">
+                                    <button class="save-button" onclick="saveInputs()">保存</button>
+                                </div>
+                                <div class="field-hint-compact">每个订单的运费险费用</div>
+                            </div>
+                        </div>
+                        
+                        <div class="input-row">
+                            <div class="input-item">
+                                <label>广告费占比（%）:</label>
+                                <div class="input-wrapper">
+                                    <input type="number" id="adRate" value="30" step="0.1">
+                                    <button class="save-button" onclick="saveInputs()">保存</button>
+                                </div>
+                                <div class="field-hint-compact">广告费占最终售价的比例</div>
+                            </div>
+                            
+                            <div class="input-item">
+                                <label>其他成本（元/单）:</label>
+                                <div class="input-wrapper">
+                                    <input type="number" id="otherCost" value="2.5" step="0.01">
+                                    <button class="save-button" onclick="saveInputs()">保存</button>
+                                </div>
+                                <div class="field-hint-compact">包装材料等其他固定成本</div>
+                            </div>
+                            
+                            <div class="input-item">
+                                <label>销项税率（%）:</label>
+                                <div class="input-wrapper">
+                                    <input type="number" id="salesTaxRate" value="13" step="0.1">
+                                    <button class="save-button" onclick="saveInputs()">保存</button>
+                                </div>
+                                <div class="field-hint-compact">销售时的增值税税率</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 目标设定 -->
+                    <div class="price-section">
+                        <div class="section-title">目标设定</div>
+                        <div class="input-row">
+                            <div class="input-item input-item-primary">
+                                <label>目标利润率（%）:</label>
+                                <div class="input-wrapper">
+                                    <input type="number" id="targetProfitRate" value="5" step="0.1">
+                                    <button class="save-button" onclick="saveInputs()">保存</button>
+                                </div>
+                                <div class="field-hint-compact">期望的利润率，基于最终售价计算</div>
+                            </div>
+                            
+                            <div class="input-item input-item-primary">
+                                <label>预计退货率（%）:</label>
+                                <div class="input-wrapper">
+                                    <input type="number" id="returnRate" value="20" step="0.1">
+                                    <button class="save-button" onclick="saveInputs()">保存</button>
+                                </div>
+                                <div class="field-hint-compact">预计的退货率，影响成本分摊</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 计算按钮 -->
+                <div style="margin-top: 15px; text-align: center;">
+                    <button onclick="calculate()" class="header-btn" style="padding: 10px 20px; font-size: 15px;">计算售价</button>
+                </div>
             </div>
-
-            <div class="section">
-                <h3>第二步：销售环节费用</h3>
-                <div class="step-description">
-                    这部分是在销售过程中产生的各项费用，包括平台费用、物流费用和营销费用。
-                </div>
-                <div class="input-groups-container">
-                    <div class="cost-category">
-                        <div class="category-title">平台费用
-                            <div class="switch-wrapper" title="免佣开关：开启后平台佣金按0%计算">
-                                <span class="switch-label">免佣</span>
-                                <label class="switch">
-                                    <input type="checkbox" id="platformFreeToggle">
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
-                        </div>
-                        <div class="input-group">
-                            <label>平台抽佣比例（%）:</label>
-                            <div class="input-wrapper">
-                                <input type="number" id="platformRate" value="5.5" step="0.1" class="compact-number">
-                                <button class="save-button" onclick="saveInputs()">保存</button>
-                            </div>
-                            <div class="field-hint">电商平台收取的交易佣金，基于最终售价（含税）计算</div>
-                        </div>
-                    </div>
-
-                    <div class="cost-category">
-                        <div class="category-title">物流费用</div>
-                        <div class="input-group">
-                            <label>物流费（元/单）:</label>
-                            <div class="input-wrapper">
-                                <input type="number" id="shippingCost" value="2.8" step="0.01">
-                                <button class="save-button" onclick="saveInputs()">保存</button>
-                            </div>
-                            <div class="field-hint">每个订单的快递费用</div>
-                        </div>
-
-                        <div class="input-group">
-                            <label>运费险（元/单）:</label>
-                            <div class="input-wrapper">
-                                <input type="number" id="shippingInsurance" value="1.5" step="0.01">
-                                <button class="save-button" onclick="saveInputs()">保存</button>
-                            </div>
-                            <div class="field-hint">每个订单的运费险费用</div>
-                        </div>
-                    </div>
-
-                    <div class="cost-category">
-                        <div class="category-title">营销费用</div>
-                        <div class="input-group">
-                            <label>全店付费占比（%）:</label>
-                            <div class="input-wrapper">
-                                <input type="number" id="adRate" value="30" step="0.1">
-                                <button class="save-button" onclick="saveInputs()">保存</button>
-                            </div>
-                            <div class="field-hint">广告费占最终售价的比例（全店口径），广告服务商可开具6%专票用于进项抵扣</div>
-                        </div>
-                    </div>
-
-                    <div class="cost-category">
-                        <div class="category-title">其他费用</div>
-                        <div class="input-group">
-                            <label>其他成本（元/单）:</label>
-                            <div class="input-wrapper">
-                                <input type="number" id="otherCost" value="2.5" step="0.01">
-                                <button class="save-button" onclick="saveInputs()">保存</button>
-                            </div>
-                            <div class="field-hint">包装材料等其他固定成本（提示：该项为“预估”口径，建议纳入包装材料、耗材、办公与管理等未单独计提的固定/间接费用；不含随增值税附征的城建税、教育费附加、地方教育附加等税费）</div>
-                        </div>
-                    </div>
-
-                     <!-- 新增：税费设置（将原先位于“其他费用”内的销项税率独立成单独模块） -->
-                     <div class="cost-category">
-                         <div class="category-title">税费设置</div>
-                         <div class="input-group">
-                             <label>销项税率（%）:</label>
-                             <div class="input-wrapper">
-                                 <!-- 保持原有ID不变：salesTaxRate，确保计算脚本中的读取逻辑无需改动 -->
-                                 <input type="number" id="salesTaxRate" value="13" step="0.1">
-                                 <button class="save-button" onclick="saveInputs()">保存</button>
-                             </div>
-                             <div class="field-hint">销项税率（如13%）。注意：销项税不是直接用含税价×13%，而是要先去税，即：含税价÷1.13×13%</div>
-                         </div>
-                     </div>
-                </div>
-            </div>
-
-            <div class="section">
-                <h3>第三步：目标设定</h3>
-                <div class="step-description">
-                    设置您的经营目标和风险预期，这将影响最终售价的计算。
-                </div>
-                <div class="input-groups-container">
-                    <div class="cost-category">
-                        <div class="category-title">经营目标</div>
-                        <div class="input-group">
-                            <label>目标利润率（%）:</label>
-                            <div class="input-wrapper">
-                                <input type="number" id="targetProfitRate" value="5" step="0.1">
-                                <button class="save-button" onclick="saveInputs()">保存</button>
-                            </div>
-                            <div class="field-hint">您期望的利润率，基于最终售价计算（例：5%意味着每100元售价中有5元是利润）</div>
-                        </div>
-                    </div>
-
-                    <div class="cost-category">
-                        <div class="category-title">风险预期</div>
-                        <div class="input-group">
-                            <label>预计退货率（%）:</label>
-                            <div class="input-wrapper">
-                                <input type="number" id="returnRate" value="20" step="0.1">
-                                <button class="save-button" onclick="saveInputs()">保存</button>
-                            </div>
-                            <div class="field-hint">预计的退货率，影响成本分摊（例：20%意味着每100单中有20单会退货）</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <button onclick="calculate()">计算售价</button>
         </div><!-- 结束售价计算tab -->
 
         <!-- 利润计算tab -->
