@@ -1708,20 +1708,67 @@ function initSuggestPriceTooltip(tiers) {
 
     const discountRates = [0.10, 0.12, 0.15, 0.18, 0.20];
     const formatYuan = (n) => `¥ ${Number(n).toFixed(2)}`;
+    // 新增：5位小数格式化
+    const formatYuan5 = (n) => `¥ ${Number(n).toFixed(5)}`;
 
     const buildHtml = (S) => {
         try {
-            // 给定标价 S 时：先按各档立减得到 S1，再按满减触发的最大减额计算最终到手价
+            // 给定标价 S 时：先按各档立减得到 S1，再按满减触发的最大减额计算最终到手价，展示逆推过程
             const rows = discountRates.map(r => {
                 const k = 1 - r;
-                const s1 = S * k;
-                const available = (tiers||[]).filter(t => isFinite(t.threshold) && isFinite(t.off) && t.threshold > 0 && t.off >= 0 && s1 >= t.threshold);
-                const off = available.length ? Math.max(...available.map(t => t.off)) : 0;
-                const final = s1 - off;
-                return `<tr><td style="padding:2px 8px;color:#a7f3d0;">${(r*100).toFixed(0)}%</td><td style="padding:2px 8px;">${formatYuan(final)}</td></tr>`;
+                // 工具：给定标价S0，计算折后价与满减，返回最终到手价 + 触发信息
+                const calcFinal = (S0) => {
+                    const s1 = S0 * k;
+                    const available = (tiers||[]).filter(t => isFinite(t.threshold) && isFinite(t.off) && t.threshold > 0 && t.off >= 0 && s1 >= t.threshold);
+                    let off = 0, usedThreshold = null;
+                    if (available.length) {
+                        off = Math.max(...available.map(t => t.off));
+                        const first = available.find(t => t.off === off);
+                        usedThreshold = first ? first.threshold : null;
+                    }
+                    return { s1, off, usedThreshold, final: s1 - off };
+                };
+
+                // 当前解（系统建议标价 S）
+                const cur = calcFinal(S);
+                // 邻近候选（上/下一分）
+                const up  = calcFinal(Number((S + 0.01).toFixed(2)));
+                const down= calcFinal(Number((S - 0.01).toFixed(2)));
+
+                // 2位小数显示
+                const step = cur.usedThreshold
+                    ? `S×k=${formatYuan(cur.s1)} ≥ 满${formatYuan(cur.usedThreshold)} → 减${formatYuan(cur.off)} → P=${formatYuan(cur.final)}`
+                    : `S×k=${formatYuan(cur.s1)}（未触发满减）→ P=${formatYuan(cur.final)}`;
+                // 5位小数验证显示
+                const stepVerify = cur.usedThreshold
+                    ? `验证：S×k=${formatYuan5(cur.s1)} ≥ 满${formatYuan5(cur.usedThreshold)} → 减${formatYuan5(cur.off)} → P=${formatYuan5(cur.final)}`
+                    : `验证：S×k=${formatYuan5(cur.s1)}（未触发满减）→ P=${formatYuan5(cur.final)}`;
+
+                // 比对逻辑：以当前P作为“目标上限”，展示相邻候选对P的影响
+                const diffUp   = (up.final  - cur.final);
+                const diffDown = (cur.final - down.final);
+                const sign = (x) => x > 0 ? `↑${formatYuan(x)}` : (x < 0 ? `↓${formatYuan(Math.abs(x))}` : '不变');
+                const compareHtml = `
+                    <div style="opacity:.75;font-size:11px;line-height:1.4;margin-top:4px;">
+                        <div>比对逻辑：</div>
+                        <div>• 候选 <b>S+0.01</b> → P<sub>+</sub>=${formatYuan(up.final)}（相对当前 ${sign(diffUp)}）</div>
+                        <div>• 候选 <b>S-0.01</b> → P<sub>-</sub>=${formatYuan(down.final)}（相对当前 ${sign(-diffDown)}）</div>
+                        <div>• 选择理由：遵循“到手价不超过目标且最接近”的准则，<b>当前 S</b> 相比更高标价会使到手价更高（可能越线），相比更低标价又更接近目标。</div>
+                    </div>`;
+
+                return `
+                    <tr>
+                        <td style="padding:2px 8px;color:#a7f3d0;vertical-align:top;">${(r*100).toFixed(0)}%</td>
+                        <td style="padding:2px 8px;vertical-align:top;">
+                            <div><b>${formatYuan(cur.final)}</b></div>
+                            <div style="opacity:.8;font-size:11px;line-height:1.5;">${step}</div>
+                            <div style="opacity:.65;font-size:11px;line-height:1.5;">${stepVerify}</div>
+                            ${compareHtml}
+                        </td>
+                    </tr>`;
             }).join('');
             return `<div style="font-weight:600;margin-bottom:4px;">标价 <b>${formatYuan(S)}</b></div>
-                    <div style="font-weight:600;margin-bottom:6px;">各立减档到手价</div>
+                    <div style="font-weight:600;margin-bottom:6px;">各立减档到手价 · 逆推过程</div>
                     <table style="border-collapse:collapse;">${rows}</table>`;
         } catch (_) {
             return '无法计算';
