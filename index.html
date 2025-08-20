@@ -563,14 +563,14 @@
                     到手价推演
                     <span style="font-size:12px; color:#666; font-weight:500;">基于目标利润率和参数设置，实时计算不同退货率和付费占比下的到手价</span>
                 </h3>
-                <div class="step-description" style="margin-bottom:16px; color:#666;">
+                <div class="step-description" style="margin-bottom:12px; color:#666;">
                     输入各项参数后，系统将自动计算在不同退货率和付费占比下，达到目标利润率所需的到手价。支持实时计算和结果展示。
                 </div>
                 
                 <!-- 参数输入区域 -->
-                <div class="input-groups-container">
+                <div class="input-groups-container" style="--card-min-width: 240px; gap: 1rem;">
                     <!-- 基础成本 -->
-                    <div class="cost-category">
+                    <div class="cost-category takehome-compact">
                         <div class="category-title">基础成本</div>
                         <div class="input-group">
                             <label>进货价（不含税）:</label>
@@ -601,7 +601,7 @@
                     </div>
                     
                     <!-- 销售环节费用 -->
-                    <div class="cost-category">
+                    <div class="cost-category takehome-compact">
                         <div class="category-title">销售环节费用</div>
                         <div class="input-group">
                             <label>平台佣金（%）:</label>
@@ -651,10 +651,10 @@
                 </div>
                 
                 <!-- 推演参数设置 -->
-                <div class="section" style="margin-top: 20px;">
+                <div class="section" style="margin-top: 15px;">
                     <h4>推演参数设置</h4>
-                    <div class="input-groups-container">
-                        <div class="cost-category">
+                    <div class="input-groups-container" style="--card-min-width: 240px; gap: 1rem;">
+                        <div class="cost-category takehome-compact">
                             <div class="category-title">退货率设置</div>
                             <div class="input-group">
                                 <label>退货率（%）:</label>
@@ -666,14 +666,14 @@
                             </div>
                         </div>
                         
-                        <div class="cost-category">
+                        <div class="cost-category takehome-compact">
                             <div class="category-title">付费占比范围</div>
                             <div class="input-group">
                                 <label>付费占比范围（%）:</label>
-                                <div class="input-wrapper" style="display:flex; gap:8px; align-items:center;">
-                                    <input type="number" id="takehomeAdRateMin" value="0" step="5" min="0" max="100" style="width:80px;">
+                                <div class="input-wrapper" style="display:flex; gap:6px; align-items:center;">
+                                    <input type="number" id="takehomeAdRateMin" value="0" step="5" min="0" max="100" style="width:70px;">
                                     <span style="color:#666;">~</span>
-                                    <input type="number" id="takehomeAdRateMax" value="40" step="5" min="0" max="100" style="width:80px;">
+                                    <input type="number" id="takehomeAdRateMax" value="40" step="5" min="0" max="100" style="width:70px;">
                                     <span style="color:#666;">%</span>
                                     <button class="save-button" onclick="saveInputs()">保存</button>
                                 </div>
@@ -684,12 +684,12 @@
                 </div>
                 
                 <!-- 计算按钮 -->
-                <div style="margin-top: 20px; text-align: center;">
-                    <button onclick="calculateTakeHomePriceExploration()" class="header-btn" style="padding: 12px 24px; font-size: 16px;">开始推演计算</button>
+                <div style="margin-top: 15px; text-align: center;">
+                    <button onclick="calculateTakeHomePriceExploration()" class="header-btn" style="padding: 10px 20px; font-size: 15px;">开始推演计算</button>
                 </div>
                 
                 <!-- 推演结果展示区域 -->
-                <div id="takehomeResultContainer" style="margin-top: 20px; display: none;">
+                <div id="takehomeResultContainer" style="margin-top: 15px; display: none;">
                     <div class="section">
                         <h4>推演结果</h4>
                         <div id="takehomeResultContent"></div>

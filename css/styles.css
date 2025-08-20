@@ -352,6 +352,35 @@ button:hover {
     border: 2px solid #dee2e6; /* 与简化版一致的边框 */
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* 与简化版一致的阴影 */
 }
+
+/* 到手价推演tab专用的紧凑样式 */
+.cost-category.takehome-compact {
+    padding: 15px; /* 减少内边距 */
+    border-radius: 10px; /* 稍微减小圆角 */
+}
+
+.cost-category.takehome-compact .input-group {
+    margin-bottom: 18px; /* 减少输入组之间的间距 */
+}
+
+.cost-category.takehome-compact .input-group:last-child {
+    margin-bottom: 0; /* 最后一个输入组无底部间距 */
+}
+
+.cost-category.takehome-compact label {
+    font-size: 1.1rem; /* 稍微减小标签字体大小 */
+    margin-bottom: 6px; /* 减少标签底部间距 */
+}
+
+.cost-category.takehome-compact .field-hint {
+    font-size: 0.85rem; /* 减小提示文字大小 */
+    margin-top: 4px; /* 减少提示文字顶部间距 */
+}
+
+.cost-category.takehome-compact .input-wrapper input {
+    max-width: 120px; /* 限制输入框最大宽度，避免过长 */
+    min-width: 80px; /* 设置最小宽度保证可用性 */
+}
 .category-title {
     color: #333; /* 与简化版一致的颜色 */
     font-size: 1.1rem; /* 与简化版一致的字体大小 */

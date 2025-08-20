@@ -1227,8 +1227,13 @@ window.addEventListener('load', () => {
         initPriceExploration();
     } catch (e) {}
 
-    // 为所有输入框添加实时计算功能
+    // 为所有输入框添加实时计算功能（排除到手价推演tab的输入框，因为它们有专用的实时计算逻辑）
     document.querySelectorAll('input').forEach(input => {
+        // 排除到手价推演tab的输入框，避免冲突
+        if (input.id && input.id.startsWith('takehome')) {
+            return; // 跳过到手价推演tab的输入框
+        }
+        
         input.addEventListener('input', () => {
             try {
                 // 判断当前激活的tab
@@ -7249,16 +7254,16 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // 确保默认tab正确显示
+        // 确保默认tab正确显示（只在没有任何tab激活时设置默认值）
         try {
-            // 隐藏所有tab内容
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
-            });
-            // 显示默认的利润计算tab
-            const profitTab = document.getElementById('profitTab');
-            if (profitTab) {
-                profitTab.classList.add('active');
+            // 检查是否已有激活的tab
+            const activeTabContent = document.querySelector('.tab-content.active');
+            if (!activeTabContent) {
+                // 如果没有激活的tab，则显示默认的利润计算tab
+                const profitTab = document.getElementById('profitTab');
+                if (profitTab) {
+                    profitTab.classList.add('active');
+                }
             }
         } catch (_) {}
     }, 1000);
