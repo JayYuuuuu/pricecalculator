@@ -821,7 +821,12 @@ function saveInputs() {
         profitReturnRate: document.getElementById("profitReturnRate").value,
 
         // 标价计算tab 输入
-        targetFinalPrice: (document.getElementById('targetFinalPrice')||{}).value,
+        targetFinalPrice: (function(){
+            try {
+                const firstInput = document.querySelector('#targetPriceList .target-price-input');
+                return firstInput ? firstInput.value : '59';
+            } catch(_) { return '59'; }
+        })(),
         listPriceRates: (function(){
             try {
                 return Array.from(document.querySelectorAll('.lp-rate'))
@@ -864,7 +869,15 @@ function loadSavedInputs() {
             }
         });
 
-        // 恢复标价页：立减勾选、满减档位
+        // 恢复标价页：目标到手价、立减勾选、满减档位
+        try {
+            if (inputs.targetFinalPrice && inputs.targetFinalPrice !== '59') {
+                const firstInput = document.querySelector('#targetPriceList .target-price-input');
+                if (firstInput) {
+                    firstInput.value = inputs.targetFinalPrice;
+                }
+            }
+        } catch (_) {}
         try {
             if (Array.isArray(inputs.listPriceRates)) {
                 const all = document.querySelectorAll('.lp-rate');
@@ -3890,13 +3903,36 @@ function initAutoInputMemory() {
 		const el = e.target;
 		if (!el || !(el.tagName === 'INPUT')) return;
 		if ((el.type || '').toLowerCase() !== 'number') return;
-		if (!el.id) return;
-		autoSaveSingleInput(el.id, el.value);
+
+		// 处理有ID的输入框
+		if (el.id) {
+			autoSaveSingleInput(el.id, el.value);
+			return;
+		}
+
+		// 特殊处理目标到手价输入框（没有ID）
+		if (el.classList.contains('target-price-input')) {
+			autoSaveTargetPrice(el.value);
+		}
 	};
 	// input 事件：实时写入
 	document.addEventListener('input', onNumberInput, true);
 	// change 兜底：防止某些浏览器仅在 change 才更新值
 	document.addEventListener('change', onNumberInput, true);
+}
+
+// 自动保存目标到手价到 localStorage
+function autoSaveTargetPrice(value) {
+	try {
+		const key = 'priceCalculatorInputs';
+		let saved = localStorage.getItem(key);
+		let obj = {};
+		try { obj = saved ? JSON.parse(saved) : {}; } catch (_) { obj = {}; }
+		obj.targetFinalPrice = value;
+		localStorage.setItem(key, JSON.stringify(obj));
+	} catch (e) {
+		console.warn('自动保存目标到手价失败:', e);
+	}
 }
 
 // ------------------------------
