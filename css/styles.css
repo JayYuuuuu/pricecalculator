@@ -1626,9 +1626,16 @@ button:hover {
 /* 价格卡片容器 */
 .price-cards-container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 16px;
     margin-top: 16px;
+}
+
+/* 移动端响应式：小屏幕时改为单列布局 */
+@media (max-width: 768px) {
+    .price-cards-container {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* 价格卡片样式 */
