@@ -557,12 +557,12 @@ button:hover {
     font-style: italic;
 }
 
-/* 到手价推演结果表格样式 */
+/* 到手价推演结果表格样式 - 紧凑型布局 */
 .takehome-table-container {
     overflow-x: auto;
-    margin: 20px 0;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    margin: 10px 0;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .takehome-result-table {
@@ -580,14 +580,14 @@ button:hover {
     top: 0;
     z-index: 10;
     border-bottom: 2px solid #e5e7eb;
-    padding: 16px 20px;
+    padding: 8px 12px;
     color: #374151;
     font-weight: 600;
     text-align: center;
     background: #f8fafc;
     font-size: 14px;
-    min-width: 120px;
     white-space: nowrap;
+    line-height: 1.2;
 }
 
 .takehome-result-table th:first-child {
@@ -596,13 +596,14 @@ button:hover {
 }
 
 .takehome-result-table td {
-    padding: 16px 20px;
+    padding: 6px 10px;
     text-align: center;
     border-bottom: 1px solid #f3f4f6;
     border-right: 1px solid #f3f4f6;
     font-weight: 600;
     white-space: nowrap;
     transition: all 0.2s ease;
+    line-height: 1.2;
 }
 
 .takehome-result-table td:first-child {
@@ -613,10 +614,16 @@ button:hover {
 }
 
 .takehome-result-table td:hover {
-    transform: scale(1.02);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    z-index: 5;
+    background-color: #3b82f6;
+    color: #ffffff;
+    font-weight: 700;
     position: relative;
+}
+
+.takehome-result-table td:hover .price-main,
+.takehome-result-table td:hover .roi-info,
+.takehome-result-table td:hover .adrate-info {
+    color: #ffffff !important;
 }
 
 /* 表格行高亮样式 */
@@ -636,7 +643,7 @@ button:hover {
     border-bottom-color: #fecaca;
 }
 
-/* 价格单元格内容布局样式 - 简化版本 */
+/* 价格单元格内容布局样式 - 紧凑但可读版本 */
 .takehome-result-table .price-main {
     font-size: 16px;
     font-weight: 600;
@@ -656,37 +663,64 @@ button:hover {
     color: #3b82f6;
 }
 
-.takehome-result-table .adrate-info {
-    color: #059669;
-}
+/* 表格列宽调整已移除 - 不再限制最小宽度 */
 
-/* 表格列宽调整 */
-.takehome-result-table th {
-    min-width: 70px;
-}
+/* 响应式列宽调整已移除 - 不再限制最小宽度 */
 
-/* 响应式列宽调整 */
-@media (min-width: 1200px) {
-    .takehome-result-table th {
-        min-width: 85px;
-    }
-}
-
-@media (min-width: 1400px) {
-    .takehome-result-table th {
-        min-width: 80px;
-    }
-}
-
-@media (min-width: 1600px) {
-    .takehome-result-table th {
-        min-width: 75px;
-    }
-}
-
-/* 表格滚动条样式 - 直接应用到表格 */
+/* 表格滚动条样式 - 紧凑版本 */
 .takehome-result-table::-webkit-scrollbar {
-    height: 8px;
+    height: 6px;
+}
+
+/* 到手价推演免佣复选框样式 */
+.free-commission-wrapper {
+    margin-top: 8px;
+}
+
+.free-commission-wrapper .checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #374151;
+}
+
+.free-commission-wrapper input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #3b82f6;
+    cursor: pointer;
+}
+
+.free-commission-wrapper .checkbox-label {
+    user-select: none;
+}
+
+/* 表格标题栏中的免佣按钮样式 */
+.takehome-free-commission-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f8fafc;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+}
+
+.takehome-free-commission-header input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #3b82f6;
+    cursor: pointer;
+}
+
+.takehome-free-commission-header label {
+    font-size: 14px;
+    color: #374151;
+    cursor: pointer;
+    margin: 0;
+    user-select: none;
 }
 
 .takehome-result-table::-webkit-scrollbar-track {

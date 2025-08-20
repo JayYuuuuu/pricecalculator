@@ -7364,7 +7364,7 @@ function removeTaxTooltip() {
 function initTakeHomeTab() {
     // 从localStorage加载保存的参数
     const savedInputs = JSON.parse(localStorage.getItem('takehomeInputs') || '{}');
-    
+
     // 设置默认值
     const defaults = {
         takehomeCostPrice: 38,
@@ -7377,17 +7377,25 @@ function initTakeHomeTab() {
         takehomeOtherCost: 2.5,
         takehomeReturnRate: 20,
         takehomeAdRateMin: 0,
-        takehomeAdRateMax: 40
+        takehomeAdRateMax: 40,
+        takehomeFreeCommission: false
     };
     
     // 应用保存的值或默认值
     Object.keys(defaults).forEach(key => {
         const element = document.getElementById(key);
         if (element) {
-            element.value = savedInputs[key] || defaults[key];
+            if (element.type === 'checkbox') {
+                element.checked = savedInputs[key] !== undefined ? savedInputs[key] : defaults[key];
+            } else {
+                element.value = savedInputs[key] || defaults[key];
+            }
         }
     });
-    
+
+    // 初始化免佣功能
+    initTakeHomeFreeCommission();
+
     // 立即尝试自动计算一次，不等待
     try {
         // 使用requestAnimationFrame确保DOM更新完成后再计算
@@ -7398,6 +7406,53 @@ function initTakeHomeTab() {
         console.warn('到手价推演自动计算失败:', error);
         // 如果自动计算失败，不阻塞界面显示
     }
+}
+
+/**
+ * 初始化到手价推演免佣功能
+ */
+function initTakeHomeFreeCommission() {
+    const freeCommissionCheckbox = document.getElementById('takehomeFreeCommission');
+    const platformRateInput = document.getElementById('takehomePlatformRate');
+
+    if (!freeCommissionCheckbox || !platformRateInput) return;
+
+    // 免佣复选框变化事件
+    freeCommissionCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            // 免佣开启：佣金设为0，输入框禁用
+            platformRateInput.value = '0';
+            platformRateInput.disabled = true;
+            platformRateInput.style.opacity = '0.5';
+        } else {
+            // 免佣关闭：恢复输入框可用状态，佣金设为默认值5.5%
+            platformRateInput.value = '5.5';
+            platformRateInput.disabled = false;
+            platformRateInput.style.opacity = '1';
+        }
+
+        // 同步到表格中的免佣按钮
+        const tableFreeCommission = document.getElementById('tableFreeCommission');
+        if (tableFreeCommission) {
+            tableFreeCommission.checked = this.checked;
+        }
+
+        // 触发计算
+        calculateTakeHomePriceExploration();
+    });
+
+    // 平台佣金输入框变化时，自动取消免佣
+    platformRateInput.addEventListener('input', function() {
+        const freeCommissionCheckbox = document.getElementById('takehomeFreeCommission');
+        if (freeCommissionCheckbox && this.value !== '0' && freeCommissionCheckbox.checked) {
+            freeCommissionCheckbox.checked = false;
+            // 同步取消表格中的免佣按钮
+            const tableFreeCommission = document.getElementById('tableFreeCommission');
+            if (tableFreeCommission) {
+                tableFreeCommission.checked = false;
+            }
+        }
+    });
 }
 
 /**
@@ -7451,6 +7506,25 @@ function calculateTakeHomePriceExploration() {
         
         // 保存参数到localStorage
         saveTakeHomeInputs();
+
+        // 同步免佣状态到平台佣金输入框和表格中的免佣按钮
+        const freeCommissionCheckbox = document.getElementById('takehomeFreeCommission');
+        const platformRateInput = document.getElementById('takehomePlatformRate');
+        if (freeCommissionCheckbox && platformRateInput) {
+            if (freeCommissionCheckbox.checked) {
+                platformRateInput.value = '0';
+                platformRateInput.disabled = true;
+                platformRateInput.style.opacity = '0.5';
+            } else {
+                platformRateInput.disabled = false;
+                platformRateInput.style.opacity = '1';
+            }
+            // 同步到表格中的免佣按钮
+            const tableFreeCommission = document.getElementById('tableFreeCommission');
+            if (tableFreeCommission) {
+                tableFreeCommission.checked = freeCommissionCheckbox.checked;
+            }
+        }
         
     } catch (error) {
         console.error('到手价推演计算错误:', error);
@@ -7610,14 +7684,45 @@ function displayTakeHomePriceResults(results, inputs, adRates, targetProfitRates
     
     // 只有一个退货率，直接生成结果表格
     const returnRate = inputs.returnRate;
+    const freeCommissionChecked = document.getElementById('takehomeFreeCommission')?.checked ? 'checked' : '';
     html += `
-        <h4 style="margin:20px 0 16px 0; text-align:center; color:#1e40af; font-size:16px;">
-            📈 推演进货价：¥${inputs.costPrice.toFixed(2)}，预计退货率：${(returnRate * 100).toFixed(1)}%
-        </h4>
+        <div style="margin:20px 0 16px 0; display:flex; justify-content:center; align-items:center; gap:16px; flex-wrap:wrap;">
+            <h4 style="margin:0; text-align:center; color:#1e40af; font-size:16px;">
+                📈 推演进货价：¥${inputs.costPrice.toFixed(2)}，预计退货率：${(returnRate * 100).toFixed(1)}%
+            </h4>
+            <div class="takehome-free-commission-header">
+                <input type="checkbox" id="tableFreeCommission" ${freeCommissionChecked}>
+                <label for="tableFreeCommission">免佣</label>
+            </div>
+        </div>
         ${generateTakeHomePriceTableHtmlForExploration(results[returnRate], adRates, targetProfitRates, returnRate)}
     `;
     
     content.innerHTML = html;
+
+    // 为表格中的免佣按钮添加事件监听
+    const tableFreeCommission = document.getElementById('tableFreeCommission');
+    if (tableFreeCommission) {
+        tableFreeCommission.addEventListener('change', function() {
+            const paramFreeCommission = document.getElementById('takehomeFreeCommission');
+            if (paramFreeCommission) {
+                paramFreeCommission.checked = this.checked;
+                // 触发参数区域的免佣逻辑
+                const platformRateInput = document.getElementById('takehomePlatformRate');
+                if (this.checked) {
+                    platformRateInput.value = '0';
+                    platformRateInput.disabled = true;
+                    platformRateInput.style.opacity = '0.5';
+                } else {
+                    platformRateInput.value = '5.5';
+                    platformRateInput.disabled = false;
+                    platformRateInput.style.opacity = '1';
+                }
+                // 重新计算
+                calculateTakeHomePriceExploration();
+            }
+        });
+    }
 }
 
 /**
@@ -7717,7 +7822,8 @@ function saveTakeHomeInputs() {
         takehomeOtherCost: document.getElementById('takehomeOtherCost').value,
         takehomeReturnRate: document.getElementById('takehomeReturnRate').value,
         takehomeAdRateMin: document.getElementById('takehomeAdRateMin').value,
-        takehomeAdRateMax: document.getElementById('takehomeAdRateMax').value
+        takehomeAdRateMax: document.getElementById('takehomeAdRateMax').value,
+        takehomeFreeCommission: document.getElementById('takehomeFreeCommission').checked
     };
     
     localStorage.setItem('takehomeInputs', JSON.stringify(inputs));
