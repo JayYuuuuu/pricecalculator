@@ -323,25 +323,66 @@ function switchTab(tabName) {
         // 若切到到手价推演页，初始化参数并尝试实时计算
         if (tabName === 'takehome') {
             console.log('切换到到手价推演tab');
+            
+            // 立即显示加载提示
+            const takehomeTab = document.getElementById('takehomeTab');
+            if (takehomeTab) {
+                const loadingDiv = document.createElement('div');
+                loadingDiv.id = 'takehomeLoading';
+                loadingDiv.innerHTML = `
+                    <div style="text-align:center; padding:40px; color:#6b7280;">
+                        <div style="font-size:24px; margin-bottom:16px;">⏳</div>
+                        <div style="font-size:16px; margin-bottom:8px;">正在加载推演数据...</div>
+                        <div style="font-size:14px; color:#9ca3af;">请稍候</div>
+                    </div>
+                `;
+                takehomeTab.appendChild(loadingDiv);
+            }
+            
             try { 
-                // 延迟初始化，确保DOM完全加载
+                // 减少延迟时间，提高响应速度
                 setTimeout(() => {
                     console.log('开始初始化到手价推演tab');
                     if (typeof initTakeHomeTab === 'function') {
                         console.log('initTakeHomeTab函数存在，开始执行');
                         initTakeHomeTab(); 
+                        
+                        // 移除加载提示
+                        const loadingDiv = document.getElementById('takehomeLoading');
+                        if (loadingDiv) {
+                            loadingDiv.remove();
+                        }
                     } else {
                         console.warn('initTakeHomeTab函数未定义，请检查JavaScript加载');
                         console.log('可用函数:', Object.keys(window).filter(key => typeof window[key] === 'function' && key.includes('TakeHome')));
-                        // 尝试重新加载函数
-                        if (typeof window.initTakeHomeTab === 'undefined') {
-                            console.log('尝试重新定义函数...');
-                            // 这里可以尝试重新定义函数或者等待更长时间
+                        
+                        // 移除加载提示并显示错误信息
+                        const loadingDiv = document.getElementById('takehomeLoading');
+                        if (loadingDiv) {
+                            loadingDiv.innerHTML = `
+                                <div style="text-align:center; padding:40px; color:#dc2626;">
+                                    <div style="font-size:24px; margin-bottom:16px;">⚠️</div>
+                                    <div style="font-size:16px; margin-bottom:8px;">初始化失败</div>
+                                    <div style="font-size:14px; color:#9ca3af;">请刷新页面重试</div>
+                                </div>
+                            `;
                         }
                     }
-                }, 1000); // 增加延迟时间到1秒
+                }, 300); // 减少延迟时间到300毫秒
             } catch (error) {
                 console.error('到手价推演tab初始化失败:', error);
+                
+                // 移除加载提示并显示错误信息
+                const loadingDiv = document.getElementById('takehomeLoading');
+                if (loadingDiv) {
+                    loadingDiv.innerHTML = `
+                        <div style="text-align:center; padding:40px; color:#dc2626;">
+                            <div style="font-size:24px; margin-bottom:16px;">❌</div>
+                            <div style="font-size:16px; margin-bottom:8px;">初始化失败</div>
+                            <div style="font-size:14px; color:#9ca3af;">${error.message}</div>
+                        </div>
+                    `;
+                }
             }
         }
         // 若切到商品清单页，初始化并渲染（不影响其他页逻辑）
@@ -507,7 +548,7 @@ function calculateProfit() {
                 adVAT,
                 platformVAT: platformFee * 0.06 / 1.06,
                 actualPrice: inputs.actualPrice,
-                salesTaxRate: salesTaxRate * 100,
+                salesTaxRate: inputs.salesTaxRate * 100,  // 修复：使用inputs.salesTaxRate，并转换为百分比
                 inputTaxRate: inputs.outputTaxRate * 100  // 商品进项税率，从inputs中获取，转换为百分比
             });
         }
@@ -6836,6 +6877,7 @@ function generateTaxTooltipContent(taxData) {
         inputTaxRate
     } = taxData;
     
+    // 修复：salesTaxRate已经是百分比值（如13），不需要再除以100
     const netPrice = actualPrice / (1 + salesTaxRate / 100);
     
     return `详细税费计算过程
@@ -6923,10 +6965,16 @@ function initTakeHomeTab() {
         }
     });
     
-    // 尝试自动计算一次
+    // 立即尝试自动计算一次，不等待
     try {
-        calculateTakeHomePriceExploration();
-    } catch (_) {}
+        // 使用requestAnimationFrame确保DOM更新完成后再计算
+        requestAnimationFrame(() => {
+            calculateTakeHomePriceExploration();
+        });
+    } catch (error) {
+        console.warn('到手价推演自动计算失败:', error);
+        // 如果自动计算失败，不阻塞界面显示
+    }
 }
 
 /**
@@ -7134,27 +7182,16 @@ function displayTakeHomePriceResults(results, inputs, adRates, targetProfitRates
             </div>
         </div>
         
-        <div style="background:#f0f9ff; border:1px solid #0ea5e9; border-radius:8px; padding:16px; margin-bottom:20px; color:#0c4a6e;">
-            <div style="font-weight:600; margin-bottom:8px;">🎯 推演范围设置</div>
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px; font-size:13px; line-height:1.4;">
-                <div><strong>退货率：</strong>${(inputs.returnRate * 100).toFixed(1)}%</div>
-                <div><strong>付费占比范围：</strong>${(inputs.adRateMin * 100).toFixed(1)}% ~ ${(inputs.adRateMax * 100).toFixed(1)}%</div>
-                <div><strong>目标利润率：</strong>${targetProfitRates.map(r => (r * 100).toFixed(1) + '%').join('、')}</div>
-            </div>
-        </div>
+
     `;
     
     // 只有一个退货率，直接生成结果表格
     const returnRate = inputs.returnRate;
     html += `
-        <div style="margin-bottom:30px; border:1px solid #e5e7eb; border-radius:12px; padding:20px; background:#fff;">
-            <div style="margin-bottom:16px; text-align:center;">
-                <h4 style="margin:0; color:#1e40af; font-size:16px;">
-                    📈 退货率：${(returnRate * 100).toFixed(1)}%
-                </h4>
-            </div>
-            ${generateTakeHomePriceTableHtmlForExploration(results[returnRate], adRates, targetProfitRates, returnRate)}
-        </div>
+        <h4 style="margin:20px 0 16px 0; text-align:center; color:#1e40af; font-size:16px;">
+            📈 推演进货价：¥${inputs.costPrice.toFixed(2)}，预计退货率：${(returnRate * 100).toFixed(1)}%
+        </h4>
+        ${generateTakeHomePriceTableHtmlForExploration(results[returnRate], adRates, targetProfitRates, returnRate)}
     `;
     
     content.innerHTML = html;
@@ -7169,42 +7206,77 @@ function displayTakeHomePriceResults(results, inputs, adRates, targetProfitRates
  * @returns {string} 表格HTML
  */
 function generateTakeHomePriceTableHtmlForExploration(returnRateResults, adRates, targetProfitRates, returnRate) {
-    // 表头：第一行显示目标利润率
+    // 表头：显示目标利润率，每个利润率下显示一个列
     const header = `
         <tr>
-            <th style="border-bottom:1px solid #eee;padding:8px 10px;color:#333;font-weight:600;text-align:center;background:#f8fafc;" colspan="${targetProfitRates.length + 1}">
-                <span style="color:#10b981;font-weight:700;">退货率：${(returnRate * 100).toFixed(1)}%</span>
-            </th>
-        </tr>
-        <tr>
-            <th style="border-bottom:1px solid #eee;padding:8px 10px;color:#666;font-weight:500;text-align:center;background:#f8fafc;">付费占比 \\ 目标利润率</th>
+            <th style="border-bottom:2px solid #e5e7eb;padding:12px 16px;color:#374151;font-weight:600;text-align:center;background:#f8fafc;font-size:14px;min-width:120px;">付费占比 \\ 目标利润率</th>
             ${targetProfitRates.map(rate => 
-                `<th style="border-bottom:1px solid #eee;padding:8px 10px;color:#666;font-weight:500;text-align:center;background:#f8fafc;">${(rate * 100).toFixed(1)}%</th>`
+                `<th style="border-bottom:2px solid #e5e7eb;padding:12px 16px;color:#374151;font-weight:600;text-align:center;background:#f8fafc;font-size:14px;min-width:100px;">${(rate * 100).toFixed(1)}%</th>`
             ).join('')}
         </tr>`;
     
-    // 表格行：每行显示一个付费占比，每列显示对应目标利润率的到手价
+    // 表格行：每行显示一个付费占比，每列显示对应目标利润率的综合信息
     const rows = adRates.map(adRate => {
         // 20%付费占比行高亮显示
         const isHighlighted = Math.abs(adRate - 0.20) < 0.001;
         const rowStyle = isHighlighted ? 'background:linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border:2px solid #f59e0b;' : '';
         
-        const rowHeader = `<td style="padding:8px 10px;text-align:center;border-right:1px solid #f2f2f2;background:#f8fafc;font-weight:500;color:#3b82f6;">${(adRate * 100).toFixed(0)}%</td>`;
+        const rowHeader = `<td style="padding:12px 16px;text-align:center;border-right:2px solid #e5e7eb;background:#f8fafc;font-weight:600;color:#3b82f6;font-size:14px;min-width:120px;">${(adRate * 100).toFixed(0)}%</td>`;
         
         const cells = targetProfitRates.map(targetRate => {
             const takeHomePrice = returnRateResults[adRate][targetRate];
-            const color = takeHomePrice > 0 ? '#16a34a' : '#dc2626';
+            const isPositive = takeHomePrice > 0;
             
-            const tooltip = `目标利润率：${(targetRate * 100).toFixed(1)}%\n付费占比：${(adRate * 100).toFixed(0)}%\n退货率：${(returnRate * 100).toFixed(1)}%\n到手价：¥${takeHomePrice.toFixed(2)}`;
+            // 计算保本ROI和保本广告占比
+            let breakevenROI = '-';
+            let breakevenAdRate = '-';
             
-            return `<td style="padding:8px 10px;text-align:center;border-right:1px solid #f2f2f2;color:${color};font-weight:600;" 
-                data-tooltip="${tooltip.replace(/"/g, '&quot;')}">${isFinite(takeHomePrice) ? ('¥' + takeHomePrice.toFixed(2)) : '-'}</td>`;
+            if (isFinite(takeHomePrice) && takeHomePrice > 0) {
+                try {
+                    // 获取当前输入参数用于计算保本ROI
+                    const currentInputs = {
+                        costPrice: parseFloat(document.getElementById('takehomeCostPrice').value) || 0,
+                        inputTaxRate: (parseFloat(document.getElementById('takehomeInputTaxRate').value) || 0) / 100,
+                        outputTaxRate: (parseFloat(document.getElementById('takehomeOutputTaxRate').value) || 0) / 100,
+                        salesTaxRate: (parseFloat(document.getElementById('takehomeSalesTaxRate').value) || 0) / 100,
+                        platformRate: (parseFloat(document.getElementById('takehomePlatformRate').value) || 0) / 100,
+                        shippingCost: parseFloat(document.getElementById('takehomeShippingCost').value) || 0,
+                        shippingInsurance: parseFloat(document.getElementById('takehomeShippingInsurance').value) || 0,
+                        otherCost: parseFloat(document.getElementById('takehomeOtherCost').value) || 0,
+                        returnRate: returnRate,
+                        finalPrice: takeHomePrice
+                    };
+                    
+                    const roiResult = calculateBreakevenROI(currentInputs);
+                    if (roiResult.feasible && isFinite(roiResult.breakevenROI)) {
+                        breakevenROI = roiResult.breakevenROI === Infinity ? '∞' : roiResult.breakevenROI.toFixed(2);
+                    }
+                    if (roiResult.feasible && isFinite(roiResult.breakevenAdRate)) {
+                        breakevenAdRate = (roiResult.breakevenAdRate * 100).toFixed(1) + '%';
+                    }
+                } catch (error) {
+                    console.warn('计算保本ROI失败:', error);
+                }
+            }
+            
+            const tooltip = `目标利润率：${(targetRate * 100).toFixed(1)}%\n付费占比：${(adRate * 100).toFixed(0)}%\n退货率：${(returnRate * 100).toFixed(1)}%\n到手价：¥${takeHomePrice.toFixed(2)}\n保本ROI：${breakevenROI}\n保本广告占比：${breakevenAdRate}`;
+            
+            // 直接在单元格中显示三个数值，减少嵌套层级
+            const cellContent = isFinite(takeHomePrice) ? 
+                `<span class="price-main">¥${takeHomePrice.toFixed(2)}</span><br>
+                 <span class="roi-info">ROI: ${breakevenROI}</span><br>
+                 <span class="adrate-info">广告: ${breakevenAdRate}</span>` : '-';
+            
+            return `<td class="${isPositive ? 'positive' : 'negative'}" data-tooltip="${tooltip.replace(/"/g, '&quot;')}">
+                ${cellContent}
+            </td>`;
         }).join('');
         
-        return `<tr style="${rowStyle}">${rowHeader}${cells}</tr>`;
+        const rowClass = isHighlighted ? 'highlighted' : '';
+        return `<tr class="${rowClass}">${rowHeader}${cells}</tr>`;
     }).join('');
     
-    return `<table style="border-collapse:separate;border-spacing:0;width:100%;font-size:13px;margin-bottom:20px;">${header}${rows}</table>`;
+    return `<table class="takehome-result-table">${header}${rows}</table>`;
 }
 
 /**
