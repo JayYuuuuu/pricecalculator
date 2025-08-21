@@ -403,9 +403,11 @@ button:hover {
 }
 
 .takehome-section .input-item .input-wrapper {
-    display: flex;
+    display: flex !important; /* 强制使用flex布局 */
+    flex-direction: row !important; /* 强制水平排列 */
     gap: 8px;
     align-items: center;
+    flex-wrap: nowrap !important; /* 强制不换行 */
 }
 
 .takehome-section .input-item .input-wrapper input {
@@ -416,6 +418,7 @@ button:hover {
     border: 1px solid #d1d5db;
     border-radius: 6px;
     font-size: 14px;
+    margin: 0 !important; /* 移除可能的默认边距 */
 }
 
 .takehome-section .input-item .input-wrapper input:focus {
@@ -427,6 +430,26 @@ button:hover {
 /* 重要参数输入框样式 */
 .takehome-section .input-item.input-item-primary {
     position: relative;
+}
+
+/* 到手价推演页面保存按钮强制样式 */
+.takehome-section .input-item .input-wrapper .save-button {
+    display: inline-block !important; /* 强制显示为行内块 */
+    flex-shrink: 0 !important; /* 防止按钮被压缩 */
+    white-space: nowrap !important; /* 防止按钮文字换行 */
+    margin: 0 !important; /* 移除默认边距 */
+    vertical-align: middle !important; /* 垂直居中对齐 */
+}
+
+/* 付费占比设置项特殊样式 */
+.takehome-section .input-item:has(.input-wrapper input[id*="AdRate"]) .input-wrapper {
+    flex-wrap: wrap; /* 允许换行，适应两个输入框 */
+    gap: 8px; /* 设置合适的间距 */
+}
+
+.takehome-section .input-item:has(.input-wrapper input[id*="AdRate"]) .input-wrapper input {
+    flex: 0 0 auto; /* 防止输入框被拉伸 */
+    min-width: 60px; /* 设置合适的最小宽度 */
 }
 
 .takehome-section .input-item.input-item-primary::before {
@@ -563,16 +586,33 @@ button:hover {
     margin: 10px 0;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    -webkit-overflow-scrolling: touch; /* iOS触摸滚动优化 */
+    scrollbar-width: thin; /* Firefox滚动条样式 */
+}
+
+/* 表格滚动提示 */
+.takehome-table-container::before {
+    content: "← 左右滑动查看更多 →";
+    display: none; /* 默认隐藏，在移动端显示 */
+    text-align: center;
+    padding: 8px;
+    background: #f3f4f6;
+    color: #6b7280;
+    font-size: 12px;
+    border-radius: 6px 6px 0 0;
+    border-bottom: 1px solid #e5e7eb;
 }
 
 .takehome-result-table {
     width: 100%;
+    min-width: 600px; /* 设置最小宽度，确保表格内容完整显示 */
     border-collapse: separate;
     border-spacing: 0;
     background: white;
     border-radius: 12px;
     overflow: hidden;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    table-layout: fixed; /* 固定表格布局，提升性能 */
 }
 
 .takehome-result-table th {
@@ -604,6 +644,9 @@ button:hover {
     white-space: nowrap;
     transition: all 0.2s ease;
     line-height: 1.2;
+    word-wrap: break-word; /* 允许长单词换行 */
+    overflow-wrap: break-word; /* 现代浏览器的换行属性 */
+    max-width: 120px; /* 限制最大宽度，防止内容溢出 */
 }
 
 .takehome-result-table td:first-child {
@@ -1554,6 +1597,104 @@ button:hover {
        说明：两种模式（利润/售价）中的详细步骤与公式都放在 .calculation-steps 内
        因此在小屏直接隐藏该容器，保留概览与构成分析，提升移动端可读性 */
     .calculation-steps { display: none !important; }
+
+    /* 移动端：到手价推演页面主要参数设置模块一行显示2列输入框 */
+    .takehome-section .input-row {
+        grid-template-columns: repeat(2, 1fr); /* 强制一行显示2列 */
+        gap: 12px; /* 减小间距，适应小屏幕 */
+    }
+    
+    /* 移动端：付费占比设置项单独占一行（因为它有两个输入框） */
+    .takehome-section .input-item:has(.input-wrapper input[id*="AdRate"]) {
+        grid-column: span 2; /* 跨越两列，单独占一行 */
+    }
+    
+    /* 移动端：到手价推演页面输入框宽度调整 */
+    .takehome-section .input-item .input-wrapper input {
+        min-width: 60px; /* 减小最小宽度 */
+        max-width: 100px; /* 减小最大宽度 */
+        font-size: 13px; /* 稍微减小字体 */
+    }
+    
+    /* 移动端：到手价推演页面标签字体调整 */
+    .takehome-section .input-item label {
+        font-size: 0.85rem; /* 减小标签字体 */
+    }
+    
+    /* 移动端：到手价推演页面保存按钮调整 */
+    .takehome-section .input-item .input-wrapper .save-button {
+        padding: 6px 8px; /* 减小按钮内边距 */
+        font-size: 12px; /* 减小按钮字体 */
+        flex-shrink: 0; /* 防止按钮被压缩 */
+        white-space: nowrap; /* 防止按钮文字换行 */
+    }
+    
+    /* 移动端：确保输入框和按钮在同一行 */
+    .takehome-section .input-item .input-wrapper {
+        display: flex !important; /* 强制使用flex布局 */
+        flex-direction: row !important; /* 强制水平排列 */
+        flex-wrap: nowrap !important; /* 防止换行 */
+        align-items: center !important; /* 垂直居中对齐 */
+        gap: 8px !important; /* 强制设置间距 */
+    }
+    
+    /* 移动端：到手价推演表格滚动优化 */
+    .takehome-table-container {
+        overflow-x: scroll !important; /* 强制启用水平滚动 */
+        -webkit-overflow-scrolling: touch !important; /* iOS触摸滚动优化 */
+        scrollbar-width: thin; /* Firefox滚动条样式 */
+    }
+    
+    .takehome-result-table {
+        min-width: 600px !important; /* 确保表格有足够宽度触发滚动 */
+        table-layout: fixed !important; /* 固定表格布局 */
+    }
+    
+    /* 移动端：表格滚动提示 */
+    .takehome-table-container::before {
+        display: block !important; /* 在移动端显示滚动提示 */
+    }
+    
+    /* 移动端：到手价推演表格文字和间距优化 */
+    .takehome-result-table th {
+        padding: 6px 8px !important; /* 减小头部内边距 */
+        font-size: 12px !important; /* 减小头部字体 */
+        line-height: 1.1 !important; /* 减小行高 */
+    }
+    
+    .takehome-result-table td {
+        padding: 4px 6px !important; /* 减小单元格内边距 */
+        font-size: 11px !important; /* 减小单元格字体 */
+        line-height: 1.1 !important; /* 减小行高 */
+    }
+    
+    /* 移动端：价格单元格内容优化 */
+    .takehome-result-table .price-main {
+        font-size: 14px !important; /* 减小主价格字体 */
+        line-height: 1.1 !important; /* 减小行高 */
+    }
+    
+    .takehome-result-table .roi-info,
+    .takehome-result-table .adrate-info {
+        font-size: 10px !important; /* 减小信息字体 */
+        line-height: 1.1 !important; /* 减小行高 */
+        display: block !important; /* 确保换行显示 */
+    }
+    
+    /* 移动端：表格单元格内容溢出处理 */
+    .takehome-result-table td {
+        word-wrap: break-word !important; /* 允许长单词换行 */
+        overflow-wrap: break-word !important; /* 现代浏览器的换行属性 */
+        max-width: 100px !important; /* 限制最大宽度，防止内容溢出 */
+        white-space: normal !important; /* 移动端允许换行，解决内容连接问题 */
+    }
+    
+    /* 移动端：表格头部也允许换行 */
+    .takehome-result-table th {
+        white-space: normal !important;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1564,6 +1705,82 @@ button:hover {
     /* iOS 防止输入时触发页面缩放：保证 >=16px */
     input { font-size: 16px; }
     .field-hint { font-size: 0.78rem; }
+
+    /* 超小屏：到手价推演页面进一步优化 */
+    .takehome-section .input-row {
+        gap: 8px; /* 进一步减小间距 */
+    }
+    
+    /* 超小屏：付费占比设置项单独占一行 */
+    .takehome-section .input-item:has(.input-wrapper input[id*="AdRate"]) {
+        grid-column: span 2; /* 跨越两列，单独占一行 */
+    }
+    
+    .takehome-section .input-item .input-wrapper input {
+        min-width: 50px; /* 进一步减小最小宽度 */
+        max-width: 80px; /* 进一步减小最大宽度 */
+        padding: 6px 8px; /* 减小内边距 */
+    }
+    
+    .takehome-section .input-item label {
+        font-size: 0.8rem; /* 进一步减小标签字体 */
+    }
+    
+    .takehome-section .input-item .input-wrapper .save-button {
+        padding: 4px 6px; /* 进一步减小按钮内边距 */
+        font-size: 11px; /* 进一步减小按钮字体 */
+        flex-shrink: 0; /* 防止按钮被压缩 */
+        white-space: nowrap; /* 防止按钮文字换行 */
+    }
+    
+    /* 超小屏：确保输入框和按钮在同一行 */
+    .takehome-section .input-item .input-wrapper {
+        display: flex !important; /* 强制使用flex布局 */
+        flex-direction: row !important; /* 强制水平排列 */
+        flex-wrap: nowrap !important; /* 防止换行 */
+        align-items: center !important; /* 垂直居中对齐 */
+        gap: 8px !important; /* 强制设置间距 */
+    }
+    
+    /* 超小屏：到手价推演表格滚动优化 */
+    .takehome-table-container {
+        overflow-x: scroll !important; /* 强制启用水平滚动 */
+        -webkit-overflow-scrolling: touch !important; /* iOS触摸滚动优化 */
+        scrollbar-width: thin; /* Firefox滚动条样式 */
+    }
+    
+    .takehome-result-table {
+        min-width: 600px !important; /* 确保表格有足够宽度触发滚动 */
+        table-layout: fixed !important; /* 固定表格布局 */
+    }
+    
+    /* 超小屏：表格滚动提示 */
+    .takehome-table-container::before {
+        display: block !important; /* 在移动端显示滚动提示 */
+        padding: 6px; /* 减小内边距 */
+        font-size: 11px; /* 减小字体 */
+    }
+    
+    /* 超小屏：到手价推演表格进一步优化 */
+    .takehome-result-table th {
+        padding: 4px 6px !important; /* 进一步减小头部内边距 */
+        font-size: 11px !important; /* 进一步减小头部字体 */
+    }
+    
+    .takehome-result-table td {
+        padding: 3px 4px !important; /* 进一步减小单元格内边距 */
+        font-size: 10px !important; /* 进一步减小单元格字体 */
+    }
+    
+    /* 超小屏：价格单元格内容进一步优化 */
+    .takehome-result-table .price-main {
+        font-size: 12px !important; /* 进一步减小主价格字体 */
+    }
+    
+    .takehome-result-table .roi-info,
+    .takehome-result-table .adrate-info {
+        font-size: 9px !important; /* 进一步减小信息字体 */
+    }
 }
 
 /* 移动端：批量推演弹窗表格适配（覆盖内联样式，提升可读性与可点按性） */
@@ -1591,6 +1808,17 @@ button:hover {
 @media (max-width: 360px) {
     .input-wrapper { flex-wrap: wrap; }
     .save-button { width: 100%; margin-top: 6px; }
+    
+    /* 超小屏：到手价推演页面保存按钮保持在一行 */
+    .takehome-section .input-item .input-wrapper {
+        flex-wrap: nowrap !important; /* 强制不换行 */
+    }
+    
+    .takehome-section .input-item .input-wrapper .save-button {
+        width: auto !important; /* 覆盖全局的100%宽度 */
+        margin-top: 0 !important; /* 覆盖全局的上边距 */
+        flex-shrink: 0; /* 防止按钮被压缩 */
+    }
 }
 
 /* 分享功能已移除 */

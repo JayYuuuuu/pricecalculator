@@ -4771,6 +4771,56 @@ function renderCatalogTable() {
 			showToast && showToast(`商品"${row.name || '未命名'}"已${status}`);
 		});
 	});
+	
+	// 事件：利润推演按钮
+	container.querySelectorAll('button[data-action="profitScenario"]').forEach(btn => {
+		btn.addEventListener('click', (e) => {
+			const tr = e.target.closest('tr'); const index = Number(tr.getAttribute('data-index'));
+			const row = getRowByDisplayIndex(index);
+			if (!row) return;
+			showCatalogProfitScenario(row);
+		});
+	});
+	
+	// 事件：新增/删除/编辑 多档含税售价
+	container.querySelectorAll('button[data-action="addPriceTier"]').forEach(btn => {
+		btn.addEventListener('click', (e) => {
+			const tr = e.target.closest('tr'); const index = Number(tr.getAttribute('data-index')); 
+			const row = getRowByDisplayIndex(index);
+			if (!row) return;
+			
+			if (!Array.isArray(row.salePriceTiers)) row.salePriceTiers = [];
+			row.salePriceTiers.push('');
+			saveCatalogToStorage();
+			renderCatalogTable();
+			updateCatalogStatus();
+		});
+	});
+	container.querySelectorAll('button[data-action="removePriceTier"]').forEach(btn => {
+		btn.addEventListener('click', (e) => {
+			const tr = e.target.closest('tr'); const index = Number(tr.getAttribute('data-index')); 
+			const row = getRowByDisplayIndex(index);
+			if (!row) return;
+			
+			const ti = Number(e.target.getAttribute('data-price-tier-index'));
+			if (Array.isArray(row.salePriceTiers)) row.salePriceTiers.splice(ti,1);
+			const computed = computeRow(row); row.__result = computed.__result; saveCatalogToStorage();
+			renderCatalogTable();
+			updateCatalogStatus();
+		});
+	});
+	container.querySelectorAll('.catalog-price-tier').forEach(inp => {
+		inp.addEventListener('input', (e) => {
+			const tr = e.target.closest('tr'); const index = Number(tr.getAttribute('data-index')); 
+			const row = getRowByDisplayIndex(index);
+			if (!row) return;
+			
+			const ti = Number(e.target.getAttribute('data-price-tier-index'));
+			if (!Array.isArray(row.salePriceTiers)) row.salePriceTiers = [];
+			row.salePriceTiers[ti] = e.target.value;
+			const computed = computeRow(row); row.__result = computed.__result; saveCatalogToStorage(); renderCatalogRow(index); updateCatalogStatus();
+		});
+	});
 }
 
 /**
@@ -4982,14 +5032,14 @@ function showCatalogProfitScenario(row){
 	};
 	
 
-	// 生成到手价推演矩阵HTML
+	// 生成到手价推演矩阵HTML（保持原来表格样式，使用新的精确计算逻辑）
 	const generateTakeHomePriceTableHtml = (costTable) => {
 		const { cost, costIndex } = costTable;
 		
 		// 目标利润率范围：0%、3%、5%、7%、9%、10%、12%、15%
 		const targetProfitRates = [0, 0.03, 0.05, 0.07, 0.09, 0.10, 0.12, 0.15];
 		
-		// 表头：第一行显示目标利润率
+		// 表头：第一行显示目标利润率（保持原来样式）
 		const header = `
 			<tr>
 				<th style="border-bottom:1px solid #eee;padding:8px 10px;color:#333;font-weight:600;text-align:center;background:#f8fafc;" colspan="${targetProfitRates.length + 1}">
@@ -5003,7 +5053,7 @@ function showCatalogProfitScenario(row){
 				).join('')}
 			</tr>`;
 		
-		// 表格行：每行显示一个付费占比，每列显示对应目标利润率的到手价
+		// 表格行：每行显示一个付费占比，每列显示对应目标利润率的到手价（保持原来样式，但使用新数据）
 		const rows = adRates.map(adRate => {
 			// 20%付费占比行高亮显示
 			const isHighlighted = adRate === 0.20;
@@ -5012,11 +5062,18 @@ function showCatalogProfitScenario(row){
 			const rowHeader = `<td style="padding:8px 10px;text-align:center;border-right:1px solid #f2f2f2;background:#f8fafc;font-weight:500;color:#3b82f6;">${(adRate * 100).toFixed(0)}%</td>`;
 			
 			const cells = targetProfitRates.map(targetRate => {
+				// 使用新的精确计算函数计算到手价
 				const takeHomePrice = calculateTakeHomePrice(cost, adRate, targetRate, std);
-				const color = takeHomePrice > 0 ? '#16a34a' : '#dc2626';
 				
-				// 计算对应的利润金额
+				if (isNaN(takeHomePrice) || takeHomePrice <= 0) {
+					return `<td style="padding:8px 10px;text-align:center;border-right:1px solid #f2f2f2;color:#9ca3af;">—</td>`;
+				}
+				
+				// 计算对应的利润金额和保本ROI（使用新逻辑）
 				let profitAmount = 0;
+				let breakevenROI = '-';
+				let breakevenAdRate = '-';
+				
 				if (isFinite(takeHomePrice) && takeHomePrice > 0) {
 					try {
 						// 使用统一的利润计算函数，确保与利润率计算tab结果完全一致
@@ -5036,75 +5093,98 @@ function showCatalogProfitScenario(row){
 						
 						const result = calculateProfitUnified(inputs);
 						profitAmount = result.profit;
-					} catch (_) {
-						profitAmount = 0;
+						
+						// 计算保本ROI
+						const roiResult = calculateBreakevenROI({
+							costPrice: cost,
+							inputTaxRate: std.inputTaxRate,
+							outputTaxRate: std.outputTaxRate,
+							salesTaxRate: std.salesTaxRate,
+							platformRate: std.platformRate,
+							shippingCost: std.shippingCost,
+							shippingInsurance: std.shippingInsurance,
+							otherCost: std.otherCost,
+							returnRate: std.returnRate,
+							finalPrice: takeHomePrice
+						});
+						
+						if (roiResult.feasible && isFinite(roiResult.breakevenROI)) {
+							breakevenROI = roiResult.breakevenROI === Infinity ? '∞' : roiResult.breakevenROI.toFixed(2);
+						}
+						if (roiResult.feasible && isFinite(roiResult.breakevenAdRate)) {
+							breakevenAdRate = (roiResult.breakevenAdRate * 100).toFixed(1) + '%';
+						}
+					} catch (error) {
+						console.warn('计算保本ROI失败:', error);
 					}
 				}
 				
-				const tooltip = `目标利润率：${(targetRate * 100).toFixed(1)}%\n付费占比：${(adRate * 100).toFixed(0)}%\n进货价：¥${cost.toFixed(2)}\n到手价：¥${takeHomePrice.toFixed(2)}\n利润金额：¥${profitAmount.toFixed(2)}`;
+				// 准备详细的计算过程数据
+				const calculationData = {
+					costPrice: cost,
+					inputTaxRate: std.inputTaxRate,
+					outputTaxRate: std.outputTaxRate,
+					salesTaxRate: std.salesTaxRate,
+					platformRate: std.platformRate,
+					shippingCost: std.shippingCost,
+					shippingInsurance: std.shippingInsurance,
+					otherCost: std.otherCost,
+					returnRate: std.returnRate,
+					adRate: adRate,
+					targetRate: targetRate,
+					takeHomePrice: takeHomePrice
+				};
+
+				// 使用原来的tooltip格式，但包含新的计算数据
+				const tooltip = `目标利润率：${(targetRate * 100).toFixed(1)}%\n付费占比：${(adRate * 100).toFixed(0)}%\n进货价：¥${cost.toFixed(2)}\n到手价：¥${takeHomePrice.toFixed(2)}\n利润金额：¥${profitAmount.toFixed(2)}\n保本ROI：${breakevenROI}\n保本广告占比：${breakevenAdRate}`;
 				
-				return `<td style="padding:8px 10px;text-align:center;border-right:1px solid #f2f2f2;color:${color};font-weight:600;" 
-					data-tooltip="${tooltip.replace(/"/g, '&quot;')}">${isFinite(takeHomePrice) ? ('¥' + takeHomePrice.toFixed(2)) : '-'}</td>`;
+				return `<td style="padding:8px 10px;text-align:center;border-right:1px solid #f2f2f2;color:#16a34a;font-weight:600;" 
+					data-tooltip="${tooltip.replace(/"/g, '&quot;')}" data-calculation="${encodeURIComponent(JSON.stringify(calculationData))}">${isFinite(takeHomePrice) ? ('¥' + takeHomePrice.toFixed(2)) : '-'}</td>`;
 			}).join('');
 			
 			return `<tr style="${rowStyle}">${rowHeader}${cells}</tr>`;
 		}).join('');
 		
+		// 保持原来的表格样式
 		return `<table style="border-collapse:separate;border-spacing:0;width:100%;font-size:13px;margin-bottom:20px;">${header}${rows}</table>`;
 	};
 	
-	// 计算到手价的函数
+	// 计算到手价的函数（使用与到手价推演tab完全一致的精确计算逻辑）
 	const calculateTakeHomePrice = (costPrice, adRate, targetProfitRate, params) => {
 		try {
-			// 基于目标利润率和已知参数，反推到手价
-			// 使用迭代法求解：从成本价开始，逐步调整直到达到目标利润率
-			let lowPrice = costPrice;
-			let highPrice = costPrice * 10; // 上限设为成本的10倍
-			let midPrice;
-			let bestPrice = costPrice;
-			let bestDiff = Infinity;
+			// 使用与到手价推演tab完全一致的精确计算函数
+			// 基于目标利润率和已知参数，直接计算到手价（无迭代，精确计算）
 			
-			// 二分查找最优价格
-			for (let i = 0; i < 20; i++) {
-				midPrice = (lowPrice + highPrice) / 2;
-				
-				// 使用统一的利润计算函数，确保与利润率计算tab结果完全一致
-				const inputs = { 
-					costPrice: costPrice, 
-					actualPrice: midPrice, 
-					inputTaxRate: params.inputTaxRate, 
-					outputTaxRate: params.outputTaxRate, 
-					salesTaxRate: params.salesTaxRate, 
-					platformRate: params.platformRate, 
-					shippingCost: params.shippingCost, 
-					shippingInsurance: params.shippingInsurance, 
-					otherCost: params.otherCost, 
-					adRate: adRate, 
-					returnRate: params.returnRate
-				};
-				
-				const result = calculateProfitUnified(inputs);
-				const actualProfitRate = result.profitRate;
-				
-				const diff = Math.abs(actualProfitRate - targetProfitRate);
-				if (diff < bestDiff) {
-					bestDiff = diff;
-					bestPrice = midPrice;
-				}
-				
-				if (Math.abs(actualProfitRate - targetProfitRate) < 0.001) {
-					break; // 精度足够，退出循环
-				}
-				
-				if (actualProfitRate < targetProfitRate) {
-					lowPrice = midPrice;
-				} else {
-					highPrice = midPrice;
-				}
+			// 构建参数对象，与 calculateTheoreticalPrice 函数保持一致
+			const theoreticalParams = {
+				inputTaxRate: params.inputTaxRate,
+				outputTaxRate: params.outputTaxRate,
+				salesTaxRate: params.salesTaxRate,
+				platformRate: params.platformRate,
+				adRate: adRate,
+				returnRate: params.returnRate,
+				shippingCost: params.shippingCost,
+				shippingInsurance: params.shippingInsurance,
+				otherCost: params.otherCost
+			};
+			
+			// 调用精确计算函数，与到手价推演tab使用完全相同的逻辑
+			const takeHomePrice = calculateTheoreticalPrice(costPrice, targetProfitRate, theoreticalParams);
+			
+			// 验证计算结果
+			if (isNaN(takeHomePrice) || takeHomePrice <= 0) {
+				console.warn('精确计算失败，参数:', {
+					costPrice,
+					targetProfitRate,
+					theoreticalParams
+				});
+				return NaN;
 			}
 			
-			return bestPrice;
-		} catch (_) {
+			return takeHomePrice;
+			
+		} catch (error) {
+			console.error('计算到手价错误:', error);
 			return NaN;
 		}
 	};
@@ -5112,7 +5192,7 @@ function showCatalogProfitScenario(row){
 		<div class="pv-mask">
 			<div class="pv-modal">
 				<div class="pv-hd">
-					<div class="pv-title">利润推演 - ${row.name||''}（${row.sku||''}）<span style="color:#6b7280;font-size:0.9em;margin-left:8px;">${row.platform||''}</span><span style="color:#10b981;font-size:0.8em;margin-left:8px;">✓ 已统一计算逻辑</span></div>
+					<div class="pv-title">利润推演 - ${row.name||''}（${row.sku||''}）<span style="color:#6b7280;font-size:0.9em;margin-left:8px;">${row.platform||''}</span><span style="color:#10b981;font-size:0.9em;margin-left:8px;">✓ 已统一计算逻辑</span><span style="color:#3b82f6;font-size:0.9em;margin-left:8px;">✓ 到手价推演已完善</span></div>
 					<div class="pv-tabs" style="display:flex;gap:8px;margin-left:auto;">
 						<button id="profitTabBtn" class="pv-tab-btn active" style="padding:6px 12px;border:1px solid #3b82f6;background:#3b82f6;color:#fff;border-radius:6px;font-size:12px;cursor:pointer;">利润推演</button>
 						<button id="takeHomeTabBtn" class="pv-tab-btn" style="padding:6px 12px;border:1px solid #d1d5db;background:#fff;color:#6b7280;border-radius:6px;font-size:12px;cursor:pointer;">到手价推演</button>
@@ -5134,7 +5214,9 @@ function showCatalogProfitScenario(row){
 					<div style="background:#f0f4ff; border:1px solid #3b82f6; border-radius:8px; padding:12px; margin-bottom:16px; color:#1e40af;">
 						<div style="font-weight:600; margin-bottom:4px;">✅ 计算逻辑已统一</div>
 						<div style="font-size:13px; line-height:1.4;">
-							本弹窗使用与"利润率计算"tab完全一致的计算逻辑，包括进项税抵扣计算方式（0.06/1.06），确保结果完全一致。
+							本弹窗使用与"利润率计算"tab完全一致的计算逻辑，包括进项税抵扣计算方式（0.06/1.06），确保结果完全一致。<br>
+							<strong>新增：</strong>到手价推演功能已完善，使用与"到手价推演"tab完全一致的精确计算逻辑，包括保本ROI和保本广告占比计算。<br>
+							<strong>样式保持：</strong>保持原来的表格样式，确保界面一致性。
 						</div>
 					</div>
 					
@@ -5223,11 +5305,23 @@ function showCatalogProfitScenario(row){
 			}
 			
 			const text = cell.getAttribute('data-tooltip');
-			if (text) showCatalogTooltip(text, e.clientX, e.clientY);
+			if (text) {
+				// 检查是否有详细计算过程数据
+				if (cell.hasAttribute('data-calculation')) {
+					const calculationData = cell.getAttribute('data-calculation');
+					showTakeHomeCalculationTooltip(e, text, calculationData);
+				} else {
+					showCatalogTooltip(text, e.clientX, e.clientY);
+				}
+			}
 		};
 		const onMove = (e) => {
 			const cell = e.target.closest('[data-tooltip]');
-			if (!cell || !container.contains(cell)) return hideCatalogTooltip();
+			if (!cell || !container.contains(cell)) {
+				hideCatalogTooltip();
+				hideTakeHomeCalculationTooltip();
+				return;
+			}
 			
 			// 更新高亮行
 			const row = cell.closest('tr');
@@ -5242,7 +5336,15 @@ function showCatalogProfitScenario(row){
 			}
 			
 			const text = cell.getAttribute('data-tooltip');
-			if (text) showCatalogTooltip(text, e.clientX, e.clientY);
+			if (text) {
+				// 检查是否有详细计算过程数据
+				if (cell.hasAttribute('data-calculation')) {
+					const calculationData = cell.getAttribute('data-calculation');
+					showTakeHomeCalculationTooltip(e, text, calculationData);
+				} else {
+					showCatalogTooltip(text, e.clientX, e.clientY);
+				}
+			}
 		};
 		const onLeave = () => {
 			// 移除行高亮
@@ -5251,6 +5353,7 @@ function showCatalogProfitScenario(row){
 				currentHighlightedRow = null;
 			}
 			hideCatalogTooltip();
+			hideTakeHomeCalculationTooltip();
 		};
 
 		container.addEventListener('mouseover', onOver);
@@ -5259,62 +5362,7 @@ function showCatalogProfitScenario(row){
 		});
 	})();
 }
-	// 新增：利润推演按钮事件
-	function bindCatalogEventListeners() {
-		const container = document.getElementById('catalogTableContainer');
-		if (!container) return;
-		
-		container.querySelectorAll('button[data-action="profitScenario"]').forEach(btn => {
-			btn.addEventListener('click', (e) => {
-				const tr = e.target.closest('tr'); const index = Number(tr.getAttribute('data-index'));
-				const row = getRowByDisplayIndex(index);
-				if (!row) return;
-				showCatalogProfitScenario(row);
-			});
-		});
-		// 事件：新增/删除/编辑 多档含税售价
-		container.querySelectorAll('button[data-action="addPriceTier"]').forEach(btn => {
-			btn.addEventListener('click', (e) => {
-				const tr = e.target.closest('tr'); const index = Number(tr.getAttribute('data-index')); 
-				const row = getRowByDisplayIndex(index);
-				if (!row) return;
-				
-				if (!Array.isArray(row.salePriceTiers)) row.salePriceTiers = [];
-				row.salePriceTiers.push('');
-				saveCatalogToStorage();
-				renderCatalogTable();
-				updateCatalogStatus();
-			});
-		});
-		container.querySelectorAll('button[data-action="removePriceTier"]').forEach(btn => {
-			btn.addEventListener('click', (e) => {
-				const tr = e.target.closest('tr'); const index = Number(tr.getAttribute('data-index')); 
-				const row = getRowByDisplayIndex(index);
-				if (!row) return;
-				
-				const ti = Number(e.target.getAttribute('data-price-tier-index'));
-				if (Array.isArray(row.salePriceTiers)) row.salePriceTiers.splice(ti,1);
-				const computed = computeRow(row); row.__result = computed.__result; saveCatalogToStorage();
-				renderCatalogTable();
-				updateCatalogStatus();
-			});
-		});
-		container.querySelectorAll('.catalog-price-tier').forEach(inp => {
-			inp.addEventListener('input', (e) => {
-				const tr = e.target.closest('tr'); const index = Number(tr.getAttribute('data-index')); 
-				const row = getRowByDisplayIndex(index);
-				if (!row) return;
-				
-				const ti = Number(e.target.getAttribute('data-price-tier-index'));
-				if (!Array.isArray(row.salePriceTiers)) row.salePriceTiers = [];
-				row.salePriceTiers[ti] = e.target.value;
-				const computed = computeRow(row); row.__result = computed.__result; saveCatalogToStorage(); renderCatalogRow(index); updateCatalogStatus();
-			});
-		});
-	}
-	
-	// 调用事件绑定函数
-	bindCatalogEventListeners();
+
 
 function renderCatalogRow(index) {
 	const container = document.getElementById('catalogTableContainer'); const tr = container.querySelector(`tr[data-index="${index}"]`); if (!tr) return;
@@ -8032,8 +8080,8 @@ function generateTakeHomePriceTableHtmlForExploration(returnRateResults, adRates
     }).join('');
     
     return `
-        <div style="background:#fff; border:1px solid #e5e7eb; border-radius:12px; overflow:hidden; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);">
-            <table style="width:100%; border-collapse:collapse; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;" class="takehome-result-table" id="takehomeExplorationTable">
+        <div style="background:#fff; border:1px solid #e5e7eb; border-radius:12px; overflow-x:auto; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);" class="takehome-table-container">
+            <table style="width:100%; min-width:600px; border-collapse:collapse; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;" class="takehome-result-table" id="takehomeExplorationTable">
                 ${header}
                 ${rows}
             </table>
@@ -8391,64 +8439,268 @@ function displayCostPriceResults(results, inputs, adRates, targetProfitRates) {
         });
     }
 
-    // 为表格添加tooltip功能
-    const table = document.getElementById('costExplorationTable');
-    if (table) {
-        // 创建tooltip元素
-        const tooltip = document.createElement('div');
-        tooltip.id = 'cost-exploration-tooltip';
-        Object.assign(tooltip.style, {
-            position: 'fixed',
-            zIndex: '10001',
-            padding: '8px 10px',
-            borderRadius: '8px',
-            background: 'rgba(17,24,39,0.92)',
-            color: '#fff',
-            fontSize: '12px',
-            lineHeight: '1.4',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
-            pointerEvents: 'none',
-            whiteSpace: 'pre',
-            transition: 'opacity .08s ease',
-            opacity: '0',
-            maxWidth: '500px'
-        });
-        document.body.appendChild(tooltip);
+            // 为表格添加tooltip功能
+        const table = document.getElementById('costExplorationTable');
+        if (table) {
+            // 创建tooltip元素，使用与到手价推演相同的样式
+            const tooltip = document.createElement('div');
+            tooltip.id = 'cost-exploration-tooltip';
+            Object.assign(tooltip.style, {
+                position: 'fixed',
+                zIndex: '10002',
+                padding: '12px',
+                borderRadius: '10px',
+                background: 'rgba(255, 255, 255, 0.98)',
+                color: '#1f2937',
+                fontSize: '12px',
+                lineHeight: '1.4',
+                boxShadow: '0 8px 20px rgba(0,0,0,0.15), 0 4px 8px rgba(0,0,0,0.1)',
+                border: '1px solid rgba(0,0,0,0.1)',
+                pointerEvents: 'none',
+                transition: 'opacity .15s ease',
+                opacity: '0',
+                maxWidth: '480px',
+                maxHeight: '60vh',
+                overflowY: 'auto',
+                backdropFilter: 'blur(10px)'
+            });
+            document.body.appendChild(tooltip);
 
-        const showTooltip = (text, x, y) => {
-            // 将换行符转换为HTML换行，并保持格式
-            tooltip.innerHTML = text.replace(/\n/g, '<br>');
-            const offset = 12;
-            tooltip.style.left = `${x + offset}px`;
-            tooltip.style.top = `${y + offset}px`;
-            tooltip.style.opacity = '1';
-        };
+            const showTooltip = (cell, x, y) => {
+                const tooltipText = cell.getAttribute('data-tooltip');
+                if (!tooltipText) return;
+                
+                // 解析tooltip文本并生成HTML内容
+                const tooltipHtml = generateCostPriceTooltipHtml(tooltipText);
+                tooltip.innerHTML = tooltipHtml;
+                
+                // 设置位置
+                const offset = 15;
+                let left = x + offset;
+                let top = y + offset;
+                
+                // 确保浮窗不超出屏幕边界
+                const viewportWidth = window.innerWidth;
+                if (left + 480 > viewportWidth) {
+                    left = x - 480 - offset;
+                }
+                
+                tooltip.style.left = `${left}px`;
+                tooltip.style.top = `${top}px`;
+                tooltip.style.opacity = '1';
+            };
 
-        const hideTooltip = () => {
-            tooltip.style.opacity = '0';
-        };
+            const hideTooltip = () => {
+                tooltip.style.opacity = '0';
+            };
 
-        // 事件委托：mouseover/mousemove/mouseleave
-        const onOver = (e) => {
-            const cell = e.target.closest('td[data-tooltip]');
-            if (!cell || !table.contains(cell)) return;
-            const text = cell.getAttribute('data-tooltip');
-            if (text) showTooltip(text, e.clientX, e.clientY);
-        };
+            // 事件委托：mouseover/mousemove/mouseleave
+            const onOver = (e) => {
+                const cell = e.target.closest('td[data-tooltip]');
+                if (!cell || !table.contains(cell)) return;
+                showTooltip(cell, e.clientX, e.clientY);
+            };
 
-        const onMove = (e) => {
-            const cell = e.target.closest('td[data-tooltip]');
-            if (!cell || !table.contains(cell)) return hideTooltip();
-            const text = cell.getAttribute('data-tooltip');
-            if (text) showTooltip(text, e.clientX, e.clientY);
-        };
+            const onMove = (e) => {
+                const cell = e.target.closest('td[data-tooltip]');
+                if (!cell || !table.contains(cell)) return hideTooltip();
+                showTooltip(cell, e.clientX, e.clientY);
+            };
 
-        const onLeave = () => hideTooltip();
+            const onLeave = () => hideTooltip();
 
-        table.addEventListener('mouseover', onOver);
-        table.addEventListener('mousemove', onMove);
-        table.addEventListener('mouseleave', onLeave);
-    }
+            table.addEventListener('mouseover', onOver);
+            table.addEventListener('mousemove', onMove);
+            table.addEventListener('mouseleave', onLeave);
+        }
+}
+
+/**
+ * 生成成本价推演浮窗HTML内容
+ * @param {string} tooltipText 原始tooltip文本
+ * @returns {string} 格式化的HTML内容
+ */
+function generateCostPriceTooltipHtml(tooltipText) {
+    // 解析tooltip文本，提取关键信息
+    const lines = tooltipText.split('\n');
+    const info = {};
+    
+    // 添加调试信息
+    console.log('解析tooltip文本:', tooltipText);
+    
+    lines.forEach((line, index) => {
+        console.log(`第${index + 1}行: "${line}"`);
+        
+        // 基础参数行 - 包含目标利润率和推演成本价
+        if (line.includes('目标利润率:') && line.includes('推演成本价:')) {
+            const targetProfitPart = line.split('目标利润率:')[1].split('推演成本价:')[0].trim();
+            const costPricePart = line.split('推演成本价:')[1].trim();
+            info.targetProfitRate = targetProfitPart;
+            info.costPrice = costPricePart;
+            console.log('提取推演成本价:', costPricePart); // 添加调试信息
+        }
+        // 付费占比行 - 包含付费占比和开票成本
+        else if (line.includes('付费占比:') && line.includes('开票成本:')) {
+            const adRatePart = line.split('付费占比:')[1].split('开票成本:')[0].trim();
+            const invoiceCostPart = line.split('开票成本:')[1].trim();
+            info.adRate = adRatePart;
+            info.invoiceCost = invoiceCostPart;
+        }
+        // 退货率行 - 包含退货率和总进货成本
+        else if (line.includes('退货率:') && line.includes('总进货成本:')) {
+            const returnRatePart = line.split('退货率:')[1].split('总进货成本:')[0].trim();
+            const totalPurchasePart = line.split('总进货成本:')[1].trim();
+            info.returnRate = returnRatePart;
+            info.totalPurchaseCost = totalPurchasePart;
+        }
+        // 有效销售率行 - 包含有效销售率和商品进项税
+        else if (line.includes('有效销售率:') && line.includes('商品进项税:')) {
+            const effectiveRatePart = line.split('有效销售率:')[1].split('商品进项税:')[0].trim();
+            const purchaseVATPart = line.split('商品进项税:')[1].trim();
+            info.effectiveRate = effectiveRatePart;
+            info.purchaseVAT = purchaseVATPart;
+        }
+        // 固定成本行 - 包含固定成本和计算利润
+        else if (line.includes('固定成本:') && line.includes('计算利润:')) {
+            const fixedCostsPart = line.split('固定成本:')[1].split('计算利润:')[0].trim();
+            const profitPart = line.split('计算利润:')[1].trim();
+            info.fixedCosts = fixedCostsPart;
+            info.profit = profitPart;
+        }
+        // 分摊后成本行 - 包含分摊后成本和利润率
+        else if (line.includes('分摊后成本:') && line.includes('利润率:')) {
+            const allocatedCostsPart = line.split('分摊后成本:')[1].split('利润率:')[0].trim();
+            const profitRatePart = line.split('利润率:')[1].trim();
+            info.allocatedCosts = allocatedCostsPart;
+            info.profitRate = profitRatePart;
+        }
+        // 广告费行 - 包含广告费和目标差异
+        else if (line.includes('广告费:') && line.includes('目标差异:')) {
+            const adCostPart = line.split('广告费:')[1].split('目标差异:')[0].trim();
+            const targetDiffPart = line.split('目标差异:')[1].trim();
+            info.adCost = adCostPart;
+            info.targetDiff = targetDiffPart;
+        }
+        // 分摊广告费行 - 包含分摊广告费和理论到手价
+        else if (line.includes('分摊广告费:') && line.includes('理论到手价:')) {
+            const allocatedAdCostPart = line.split('分摊广告费:')[1].split('理论到手价:')[0].trim();
+            const theoreticalPricePart = line.split('理论到手价:')[1].trim();
+            info.allocatedAdCost = allocatedAdCostPart;
+            info.theoreticalPrice = theoreticalPricePart;
+        }
+        // 平台佣金行 - 包含平台佣金和广告进项抵扣
+        else if (line.includes('平台佣金:') && line.includes('广告进项抵扣:')) {
+            const platformFeePart = line.split('平台佣金:')[1].split('广告进项抵扣:')[0].trim();
+            const adVatCreditPart = line.split('广告进项抵扣:')[1].trim();
+            info.platformFee = platformFeePart;
+            info.adVatCredit = adVatCreditPart;
+        }
+        // 销项税行 - 包含销项税和平台进项抵扣
+        else if (line.includes('销项税:') && line.includes('平台进项抵扣:')) {
+            const outputVATPart = line.split('销项税:')[1].split('平台进项抵扣:')[0].trim();
+            const platformVatCreditPart = line.split('平台进项抵扣:')[1].trim();
+            info.outputVAT = outputVATPart;
+            info.platformVatCredit = platformVatCreditPart;
+            console.log('提取销项税:', outputVATPart, '平台进项抵扣:', platformVatCreditPart); // 添加调试信息
+        }
+        // 实缴增值税行 - 包含实缴增值税和总成本
+        else if (line.includes('实缴增值税:') && line.includes('总成本:')) {
+            const actualVATPart = line.split('实缴增值税:')[1].split('总成本:')[0].trim();
+            const totalCostPart = line.split('总成本:')[1].trim();
+            info.actualVAT = actualVATPart;
+            info.totalCost = totalCostPart;
+        }
+    });
+    
+    // 输出解析结果
+    console.log('解析结果:', info);
+
+                // 生成与到手价推演浮窗样式一致的HTML
+            return `
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.4; max-width: 600px;">
+                    <div style="font-weight: 700; color: #1f2937; margin-bottom: 10px; font-size: 15px;">🧮 成本价推演验证计算</div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                        <!-- 基础参数 -->
+                        <div style="background: #f8fafc; padding: 8px; border-radius: 4px;">
+                            <div style="font-weight: 600; color: #374151; margin-bottom: 4px; font-size: 12px;">📊 基础参数</div>
+                            <div style="font-size: 11px; color: #6b7280;">
+                                目标利润率：${info.targetProfitRate || '—'}<br>
+                                付费占比：${info.adRate || '—'}<br>
+                                退货率：${info.returnRate || '—'}<br>
+                                有效销售率：${info.effectiveRate || '—'}<br>
+                                推演成本价：${info.costPrice || '—'}
+                            </div>
+                        </div>
+
+                        <!-- 成本价计算 -->
+                        <div style="background: #f8fafc; padding: 8px; border-radius: 4px;">
+                            <div style="font-weight: 600; color: #374151; margin-bottom: 4px; font-size: 12px;">💰 成本价计算</div>
+                            <div style="font-size: 11px; color: #6b7280;">
+                                开票成本：${info.invoiceCost || '—'}<br>
+                                总进货成本：${info.totalPurchaseCost || '—'}<br>
+                                商品进项税：${info.purchaseVAT || '—'}<br>
+                                固定成本：${info.fixedCosts || '—'}<br>
+                                分摊后成本：${info.allocatedCosts || '—'}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                        <!-- 销售成本 -->
+                        <div style="background: #f8fafc; padding: 8px; border-radius: 4px;">
+                            <div style="font-weight: 600; color: #374151; margin-bottom: 4px; font-size: 12px;">🔧 销售成本</div>
+                            <div style="font-size: 11px; color: #6b7280;">
+                                广告费：${info.adCost || '—'}<br>
+                                分摊广告费：${info.allocatedAdCost || '—'}<br>
+                                平台佣金：${info.platformFee || '—'}<br>
+                                总成本：${info.totalCost || '—'}
+                            </div>
+                        </div>
+
+                        <!-- 利润验证结果 -->
+                        <div style="background: #f8fafc; padding: 8px; border-radius: 4px;">
+                            <div style="font-weight: 600; color: #374151; margin-bottom: 4px; font-size: 12px;">📈 利润验证结果</div>
+                            <div style="font-size: 11px; color: #6b7280;">
+                                计算利润：${info.profit || '—'}<br>
+                                利润率：${info.profitRate || '—'}<br>
+                                目标差异：${info.targetDiff || '—'}<br>
+                                理论到手价：${info.theoreticalPrice || '—'}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 税费计算详情 -->
+                    <div style="background: #f8fafc; padding: 8px; border-radius: 4px; margin-bottom: 8px;">
+                        <div style="font-weight: 600; color: #374151; margin-bottom: 4px; font-size: 12px;">🧾 税费计算详情</div>
+                        <div style="font-size: 11px; color: #6b7280;">
+                            <div style="margin-bottom: 4px;">
+                                <strong>销项税：</strong>${info.outputVAT || '—'}
+                            </div>
+                            <div style="margin-bottom: 4px;">
+                                <strong>进项税抵扣：</strong><br>
+                                &nbsp;&nbsp;• 商品进项税：${info.purchaseVAT || '—'}<br>
+                                &nbsp;&nbsp;• 广告进项抵扣：${info.adVatCredit || '—'}<br>
+                                &nbsp;&nbsp;• 平台进项抵扣：${info.platformVatCredit || '—'}
+                            </div>
+                            <div style="margin-bottom: 4px;">
+                                <strong>实缴增值税：</strong>${info.actualVAT || '—'}${info.actualVAT && info.theoreticalPrice ? ` <small style="color: #059669;">(占到手价 ${((parseFloat(info.actualVAT.replace('¥', '')) / parseFloat(info.theoreticalPrice.replace('¥', ''))) * 100).toFixed(2)}%)</small>` : ''}<br>
+                                <small style="color: #9ca3af;">(销项税 - 总进项抵扣)</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 计算说明 -->
+                    <div style="background: #e0f2fe; padding: 8px; border-radius: 4px; border-left: 3px solid #0ea5e9;">
+                        <div style="font-size: 11px; color: #0c4a6e; line-height: 1.3;">
+                            <div style="font-weight: 600; margin-bottom: 2px;">💡 计算说明：</div>
+                            <div>• 基于推演成本价，使用正向计算验证目标利润率</div>
+                            <div>• 成本价推演使用闭式解或二分查找算法</div>
+                            <div>• 浮窗显示的是基于推演成本价的正向验证计算</div>
+                        </div>
+                    </div>
+                </div>
+            `;
 }
 
 /**
@@ -8586,8 +8838,8 @@ function generateCostPriceTableHtmlForExploration(results, adRates, targetProfit
     }).join('');
 
     return `
-        <div style="background:#fff; border:1px solid #e5e7eb; border-radius:12px; overflow:hidden; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);">
-            <table style="width:100%; border-collapse:collapse; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;" class="takehome-result-table" id="costExplorationTable">
+        <div style="background:#fff; border:1px solid #e5e7eb; border-radius:12px; overflow-x:auto; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);" class="takehome-table-container">
+            <table style="width:100%; min-width:600px; border-collapse:collapse; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;" class="takehome-result-table" id="costExplorationTable">
                 ${header}
                 ${rows}
             </table>
@@ -9110,6 +9362,16 @@ function hideTakeHomeCalculationTooltip() {
             }
         });
 
+        tooltip.remove();
+    }
+}
+
+/**
+ * 隐藏成本价推演详细计算过程浮窗
+ */
+function hideCostPriceCalculationTooltip() {
+    const tooltip = document.getElementById('cost-exploration-tooltip');
+    if (tooltip) {
         tooltip.remove();
     }
 }

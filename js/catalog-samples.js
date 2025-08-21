@@ -20,7 +20,7 @@ window.CATALOG_SAMPLE_ROWS = [
 	// 色纱棉毛 - 单一售价 + 单一进货价
 	{ name:'色纱棉毛', sku:'HYXY50001', platform:'淘宝', salePrice:89.1, returnRate:'8.89%', costTiers:[44], isMainProduct: true },
 	// 色纱加绒 - 单一售价 + 单一进货价
-	{ name:'色纱加绒', sku:'HYXY60001', platform:'淘宝', salePrice:125.1, returnRate:'12.67%', costTiers:[62], isMainProduct: true },
+	{ name:'色纱加绒', sku:'HYXY60001', platform:'淘宝', salePrice:129, returnRate:'12.67%', costTiers:[62], isMainProduct: true },
 	// 鸿运礼盒 - 单一售价 + 单一进货价
 	{ name:'鸿运礼盒', sku:'HYX2889', platform:'淘宝', salePrice:69.8, returnRate:'6.58%', costTiers:[33], isMainProduct: true },
 	// 鸿运内裤 - 单一售价 + 多档进货价
@@ -98,7 +98,7 @@ window.CATALOG_SAMPLE_ROWS = [
 	// 色纱棉毛 - 单一售价 + 单一进货价
 	{ name:'色纱棉毛', sku:'HYXY50001', platform:'天猫', salePrice:89.1, returnRate:'10.55%', costTiers:[44], isMainProduct: true },
 	// 色纱加绒 - 单一售价 + 单一进货价
-	{ name:'色纱加绒', sku:'HYXY60001', platform:'天猫', salePrice:125.1, returnRate:'11.17%', costTiers:[62], isMainProduct: true },
+	{ name:'色纱加绒', sku:'HYXY60001', platform:'天猫', salePrice:129, returnRate:'11.17%', costTiers:[62], isMainProduct: true },
 	// 鸿运礼盒 - 单一售价 + 单一进货价
 	{ name:'鸿运礼盒', sku:'HYX2889', platform:'天猫', salePrice:69.8, returnRate:'5.92%', costTiers:[33], isMainProduct: true },
 	// 鸿运内裤 - 单一售价 + 多档进货价
