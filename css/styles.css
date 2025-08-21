@@ -2855,7 +2855,7 @@ button:hover {
   
   /* 主体布局 */
   .main-content {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; max-width: 1200px; margin: 0 auto; padding: 0 2rem;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin: 0 auto; padding: 0 2rem; overflow-x: auto !important; 
   }
   
   /* 配置卡片 */
