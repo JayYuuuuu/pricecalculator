@@ -39,23 +39,5 @@ function generateResultHtml({ purchaseCost, salesCost, priceInfo, inputs }) {
                 })()}
             </div>
         </div>
-
-        <div class="section calculation-process">
-            <h3>关键指标</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
-                <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; text-align: center;">
-                    <div style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">含税售价</div>
-                    <div style="font-size: 1.5rem; font-weight: 600; color: #0066cc;">¥${priceInfo.finalPrice.toFixed(2)}</div>
-                </div>
-                <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; text-align: center;">
-                    <div style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">总成本</div>
-                    <div style="font-size: 1.5rem; font-weight: 600; color: #e65100;">¥${totalCost.toFixed(2)}</div>
-                </div>
-                <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; text-align: center;">
-                    <div style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">税费支出</div>
-                    <div style="font-size: 1.5rem; font-weight: 600; color: #e65100;">¥${priceInfo.actualVAT.toFixed(2)}</div>
-                </div>
-            </div>
-        </div>
     `;
 }

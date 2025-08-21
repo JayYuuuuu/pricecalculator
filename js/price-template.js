@@ -41,24 +41,6 @@ function generatePriceResultHtml({ purchaseCost, salesCost, priceInfo, inputs })
                 })()}
             </div>
         </div>
-
-        <div class="section calculation-process">
-            <h3>关键指标</h3>
-            <div class="metrics-grid">
-                <div class="metric-card">
-                    <div class="metric-label">预期利润率</div>
-                    <div class="metric-value profit">${displayProfitRate}%</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-label">预期利润</div>
-                    <div class="metric-value profit">¥${displayProfit.toFixed(2)}</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-label">总成本</div>
-                    <div class="metric-value cost">¥${displayTotalCost.toFixed(2)}</div>
-                </div>
-            </div>
-        </div>
     `;
 }
 
@@ -107,7 +89,7 @@ function generateListPriceHtml({ targetFinalPrice, tiers, results }) {
         }
         
         // 提示优化：满减触发信息用 Chip 展示，维持次要色；金额保持统一格式
-        const offText = item.off ? `<span class="price-chip price-chip-green">减 ¥${Number(item.off).toFixed(2)}</span>${item.thresholdUsed? ` <span class=\"price-chip price-chip-blue\">触发满¥${Number(item.thresholdUsed).toFixed(2)}</span>` : ''}` : '<span class="price-chip price-chip-gray">无</span>';
+        const offText = item.off ? `<span class="price-chip price-chip-green">减 ¥${Number(item.off).toFixed(2)}</span>${item.thresholdUsed? ` <span class="price-chip price-chip-blue">触发满¥${Number(item.thresholdUsed).toFixed(2)}</span>` : ''}` : '<span class="price-chip price-chip-gray">无</span>';
         const isExact = Math.abs((item.finalPrice||0) - targetFinalPrice) < 0.005;
         const statusClass = isExact ? 'status-success' : 'status-warning';
         const statusText = isExact ? '精确匹配' : `偏差 ¥${Math.abs((item.finalPrice||0)-targetFinalPrice).toFixed(2)}`;
