@@ -3943,6 +3943,928 @@ function openPlatformSettingsModal() {
 	panel.querySelector('#platClose').addEventListener('click', ()=>{ try { document.body.removeChild(overlay); } catch(_){} });
 }
 
+// 概览分析弹窗：显示商品清单的关键指标统计
+function openCatalogOverviewModal() {
+	// 获取当前商品数据（使用筛选后的数据或原始数据）
+	const rows = catalogFilterState.filteredRows.length > 0 ? catalogFilterState.filteredRows : (catalogState.rows || []);
+	
+	if (rows.length === 0) {
+		showToast && showToast('暂无商品数据，请先添加商品');
+		return;
+	}
+	
+	// 计算关键指标
+	const overviewData = calculateCatalogOverview(rows);
+	
+	// 创建弹窗
+	const overlay = document.createElement('div');
+	overlay.style.position='fixed'; overlay.style.inset='0'; overlay.style.background='rgba(0,0,0,.35)'; overlay.style.zIndex='9999'; overlay.style.display='flex'; overlay.style.alignItems='center'; overlay.style.justifyContent='center';
+	
+	const panel = document.createElement('div');
+	panel.style.background='#fff'; panel.style.borderRadius='12px'; panel.style.width='800px'; panel.style.maxWidth='94vw'; panel.style.maxHeight='88vh'; panel.style.overflow='auto'; panel.style.boxShadow='0 12px 34px rgba(0,0,0,.18)'; panel.style.padding='20px';
+	
+	// 生成概览内容HTML
+	const overviewHtml = generateOverviewHtml(overviewData);
+	
+	panel.innerHTML = `
+		<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+			<div style="font-weight:700; font-size:18px; color:#111827;">📊 商品清单概览分析</div>
+			<button id="overviewClose" class="batch-modal-btn">关闭</button>
+		</div>
+		<div id="overviewBody">
+			${overviewHtml}
+		</div>
+	`;
+	
+	overlay.appendChild(panel); document.body.appendChild(overlay);
+	
+	// 绑定关闭事件
+	panel.querySelector('#overviewClose').addEventListener('click', ()=>{ 
+		try { document.body.removeChild(overlay); } catch(_){} 
+	});
+	
+	// 添加事件委托，处理指标浮窗
+	setTimeout(() => {
+		const metricCells = panel.querySelectorAll('[data-metric]');
+		metricCells.forEach(cell => {
+			cell.addEventListener('mouseenter', showMetricTooltipFromData);
+			cell.addEventListener('mouseleave', hideMetricTooltip);
+		});
+	}, 100);
+}
+
+// 计算商品清单概览数据
+function calculateCatalogOverview(rows) {
+	const overview = {
+		total: rows.length,
+		platforms: {},
+		overall: {
+			avgMarkupRate: 0,      // 平均加价率
+			avgGrossMargin: 0,     // 平均毛利率
+			avgReturnRate: 0,      // 平均退货率
+			avgBreakevenROI: 0,    // 平均保本ROI
+			avgBreakevenAdRate: 0, // 平均保本广告占比
+			mainProductCount: 0,   // 主推款数量
+			riskProductCount: 0    // 风险商品数量（保本广告占比<21%）
+		}
+	};
+	
+	// 按平台分组统计
+	const platformGroups = {};
+	rows.forEach(row => {
+		const platform = row.platform || '未设置平台';
+		if (!platformGroups[platform]) {
+			platformGroups[platform] = [];
+		}
+		platformGroups[platform].push(row);
+	});
+	
+	// 计算每个平台的指标
+	Object.keys(platformGroups).forEach(platform => {
+		const platformRows = platformGroups[platform];
+		const platformData = calculatePlatformMetrics(platformRows);
+		overview.platforms[platform] = platformData;
+	});
+	
+	// 计算整体指标
+	overview.overall = calculateOverallMetrics(rows);
+	
+	return overview;
+}
+
+// 计算单个平台的指标
+function calculatePlatformMetrics(rows) {
+	const metrics = {
+		count: rows.length,
+		avgMarkupRate: 0,      // 平均加价率
+		avgGrossMargin: 0,     // 平均毛利率
+		avgReturnRate: 0,      // 平均退货率
+		avgBreakevenROI: 0,    // 平均保本ROI
+		avgBreakevenAdRate: 0, // 平均保本广告占比
+		mainProductCount: 0,   // 主推款数量
+		riskProductCount: 0    // 风险商品数量
+	};
+	
+	let validMarkupCount = 0, validMarginCount = 0, validReturnCount = 0;
+	let validROICount = 0, validAdRateCount = 0;
+	
+	rows.forEach(row => {
+		// 统计主推款
+		if (row.isMainProduct) {
+			metrics.mainProductCount++;
+		}
+		
+		// 计算加价率
+		const markupRate = calculateMarkupRate(row);
+		if (isFinite(markupRate) && markupRate > 0) {
+			metrics.avgMarkupRate += markupRate;
+			validMarkupCount++;
+		}
+		
+		// 计算毛利率
+		const grossMargin = calculateGrossMargin(row);
+		if (isFinite(grossMargin)) {
+			metrics.avgGrossMargin += grossMargin;
+			validMarginCount++;
+		}
+		
+		// 统计退货率
+		const returnRate = parseReturnRate(row.returnRate);
+		if (isFinite(returnRate)) {
+			metrics.avgReturnRate += returnRate;
+			validReturnCount++;
+		}
+		
+		// 计算保本ROI
+		const breakevenROI = calculateBreakevenROIForRow(row);
+		if (isFinite(breakevenROI) && breakevenROI > 0) {
+			metrics.avgBreakevenROI += breakevenROI;
+			validROICount++;
+		}
+		
+		// 计算保本广告占比
+		const breakevenAdRate = calculateBreakevenAdRateForRow(row);
+		if (isFinite(breakevenAdRate) && breakevenAdRate > 0) {
+			metrics.avgBreakevenAdRate += breakevenAdRate;
+			validAdRateCount++;
+			
+			// 统计风险商品（保本广告占比<21%）
+			if (breakevenAdRate < 0.21) {
+				metrics.riskProductCount++;
+			}
+		}
+	});
+	
+	// 计算平均值
+	if (validMarkupCount > 0) metrics.avgMarkupRate /= validMarkupCount;
+	if (validMarginCount > 0) metrics.avgGrossMargin /= validMarginCount;
+	if (validReturnCount > 0) metrics.avgReturnRate /= validReturnCount;
+	if (validROICount > 0) metrics.avgBreakevenROI /= validROICount;
+	if (validAdRateCount > 0) metrics.avgBreakevenAdRate /= validAdRateCount;
+	
+	return metrics;
+}
+
+// 计算整体指标
+function calculateOverallMetrics(rows) {
+	const overall = {
+		avgMarkupRate: 0,      // 平均加价率
+		avgGrossMargin: 0,     // 平均毛利率
+		avgReturnRate: 0,      // 平均退货率
+		avgBreakevenROI: 0,    // 平均保本ROI
+		avgBreakevenAdRate: 0, // 平均保本广告占比
+		mainProductCount: 0,   // 主推款数量
+		riskProductCount: 0    // 风险商品数量
+	};
+	
+	let validMarkupCount = 0, validMarginCount = 0, validReturnCount = 0;
+	let validROICount = 0, validAdRateCount = 0;
+	
+	rows.forEach(row => {
+		// 统计主推款
+		if (row.isMainProduct) {
+			overall.mainProductCount++;
+		}
+		
+		// 计算加价率
+		const markupRate = calculateMarkupRate(row);
+		if (isFinite(markupRate) && markupRate > 0) {
+			overall.avgMarkupRate += markupRate;
+			validMarkupCount++;
+		}
+		
+		// 计算毛利率
+		const grossMargin = calculateGrossMargin(row);
+		if (isFinite(grossMargin)) {
+			overall.avgGrossMargin += grossMargin;
+			validMarginCount++;
+		}
+		
+		// 统计退货率
+		const returnRate = parseReturnRate(row.returnRate);
+		if (isFinite(returnRate)) {
+			overall.avgReturnRate += returnRate;
+			validReturnCount++;
+		}
+		
+		// 计算保本ROI
+		const breakevenROI = calculateBreakevenROIForRow(row);
+		if (isFinite(breakevenROI) && breakevenROI > 0) {
+			overall.avgBreakevenROI += breakevenROI;
+			validROICount++;
+		}
+		
+		// 计算保本广告占比
+		const breakevenAdRate = calculateBreakevenAdRateForRow(row);
+		if (isFinite(breakevenAdRate) && breakevenAdRate > 0) {
+			overall.avgBreakevenAdRate += breakevenAdRate;
+			validAdRateCount++;
+			
+			// 统计风险商品（保本广告占比<21%）
+			if (breakevenAdRate < 0.21) {
+				overall.riskProductCount++;
+			}
+		}
+	});
+	
+	// 计算平均值
+	if (validMarkupCount > 0) overall.avgMarkupRate /= validMarkupCount;
+	if (validMarginCount > 0) overall.avgGrossMargin /= validMarginCount;
+	if (validReturnCount > 0) overall.avgReturnRate /= validReturnCount;
+	if (validROICount > 0) overall.avgBreakevenROI /= validROICount;
+	if (validAdRateCount > 0) overall.avgBreakevenAdRate /= validAdRateCount;
+	
+	return overall;
+}
+
+// 计算单个商品的加价率
+function calculateMarkupRate(row) {
+	try {
+		// 获取售价（优先使用多档售价的第一档，否则使用单一售价）
+		let salePrice = 0;
+		if (Array.isArray(row.salePriceTiers) && row.salePriceTiers.length > 0) {
+			salePrice = Number(row.salePriceTiers[0]) || 0;
+		} else {
+			salePrice = Number(row.salePrice) || 0;
+		}
+		
+		// 获取进货价（优先使用多档进货价的第一档，否则使用单一进货价）
+		let costPrice = 0;
+		if (Array.isArray(row.costTiers) && row.costTiers.length > 0) {
+			costPrice = Number(row.costTiers[0]) || 0;
+		} else {
+			costPrice = Number(row.costMin) || Number(row.costMax) || 0;
+		}
+		
+		if (salePrice <= 0 || costPrice <= 0) return NaN;
+		
+		// 加价率 = 售价 / 进货价
+		return salePrice / costPrice;
+	} catch (error) {
+		return NaN;
+	}
+}
+
+// 计算单个商品的毛利率
+function calculateGrossMargin(row) {
+	try {
+		// 获取售价
+		let salePrice = 0;
+		if (Array.isArray(row.salePriceTiers) && row.salePriceTiers.length > 0) {
+			salePrice = Number(row.salePriceTiers[0]) || 0;
+		} else {
+			salePrice = Number(row.salePrice) || 0;
+		}
+		
+		// 获取进货价
+		let costPrice = 0;
+		if (Array.isArray(row.costTiers) && row.costTiers.length > 0) {
+			costPrice = Number(row.costTiers[0]) || 0;
+		} else {
+			costPrice = Number(row.costMin) || Number(row.costMax) || 0;
+		}
+		
+		if (salePrice <= 0 || costPrice <= 0) return NaN;
+		
+		// 毛利率 = (售价 - 进货价) / 售价
+		return (salePrice - costPrice) / salePrice;
+	} catch (error) {
+		return NaN;
+	}
+}
+
+// 解析退货率
+function parseReturnRate(returnRate) {
+	if (returnRate === null || returnRate === undefined || returnRate === '') return NaN;
+	
+	try {
+		if (typeof returnRate === 'string') {
+			const str = returnRate.trim();
+			if (str.includes('%')) {
+				return Number(str.replace('%', '')) / 100;
+			}
+			return Number(str);
+		}
+		return Number(returnRate);
+	}
+	catch (error) {
+		return NaN;
+	}
+}
+
+// 计算单个商品的保本ROI
+function calculateBreakevenROIForRow(row) {
+	try {
+		// 获取售价
+		let salePrice = 0;
+		if (Array.isArray(row.salePriceTiers) && row.salePriceTiers.length > 0) {
+			salePrice = Number(row.salePriceTiers[0]) || 0;
+		} else {
+			salePrice = Number(row.salePrice) || 0;
+		}
+		
+		// 获取进货价
+		let costPrice = 0;
+		if (Array.isArray(row.costTiers) && row.costTiers.length > 0) {
+			costPrice = Number(row.costTiers[0]) || 0;
+		} else {
+			costPrice = Number(row.costMin) || Number(row.costMax) || 0;
+		}
+		
+		// 获取退货率
+		const returnRate = parseReturnRate(row.returnRate);
+		
+		// 获取平台佣金率
+		const platformRate = getPlatformRateByName(row.platform) || 0.055;
+		
+		if (salePrice <= 0 || costPrice <= 0 || !isFinite(returnRate)) return NaN;
+		
+		// 使用系统现有的保本ROI计算函数
+		const roiResult = calculateBreakevenROI({
+			costPrice: costPrice,
+			inputTaxRate: 0.06,        // 默认开票成本6%
+			outputTaxRate: 0.13,       // 默认进项税率13%
+			salesTaxRate: 0.13,        // 默认销项税率13%
+			platformRate: platformRate,
+			shippingCost: 2.8,         // 默认物流成本
+			shippingInsurance: 1.5,    // 默认运费险
+			otherCost: 2.5,            // 默认其他成本
+			returnRate: returnRate,
+			finalPrice: salePrice
+		});
+		
+		return roiResult.breakevenROI;
+	} catch (error) {
+		return NaN;
+	}
+}
+
+// 计算单个商品的保本广告占比
+function calculateBreakevenAdRateForRow(row) {
+	try {
+		// 获取售价
+		let salePrice = 0;
+		if (Array.isArray(row.salePriceTiers) && row.salePriceTiers.length > 0) {
+			salePrice = Number(row.salePriceTiers[0]) || 0;
+		} else {
+			salePrice = Number(row.salePrice) || 0;
+		}
+		
+		// 获取进货价
+		let costPrice = 0;
+		if (Array.isArray(row.costTiers) && row.costTiers.length > 0) {
+			costPrice = Number(row.costTiers[0]) || 0;
+		} else {
+			costPrice = Number(row.costMin) || Number(row.costMax) || 0;
+		}
+		
+		// 获取退货率
+		const returnRate = parseReturnRate(row.returnRate);
+		
+		// 获取平台佣金率
+		const platformRate = getPlatformRateByName(row.platform) || 0.055;
+		
+		if (salePrice <= 0 || costPrice <= 0 || !isFinite(returnRate)) return NaN;
+		
+		// 使用系统现有的保本ROI计算函数
+		const roiResult = calculateBreakevenROI({
+			costPrice: costPrice,
+			inputTaxRate: 0.06,        // 默认开票成本6%
+			outputTaxRate: 0.13,       // 默认进项税率13%
+			salesTaxRate: 0.13,        // 默认销项税率13%
+			platformRate: platformRate,
+			shippingCost: 2.8,         // 默认物流成本
+			shippingInsurance: 1.5,    // 默认运费险
+			otherCost: 2.5,            // 默认其他成本
+			returnRate: returnRate,
+			finalPrice: salePrice
+		});
+		
+		return roiResult.breakevenAdRate;
+	} catch (error) {
+		return NaN;
+	}
+}
+
+// 生成概览HTML内容
+function generateOverviewHtml(overviewData) {
+	const { total, platforms, overall } = overviewData;
+	
+	// 生成整体概览
+	const overallHtml = `
+		<div style="margin-bottom:24px; padding:16px; background:#f8fafc; border:1px solid #e5e7eb; border-radius:8px;">
+			<h3 style="margin:0 0 16px 0; color:#111827; font-size:16px; font-weight:600;">📈 整体概览</h3>
+			<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px;">
+				<div style="text-align:center; padding:12px; background:#fff; border:1px solid #e5e7eb; border-radius:6px;">
+					<div style="font-size:24px; font-weight:700; color:#059669;">${total}</div>
+					<div style="font-size:12px; color:#6b7280;">商品总数</div>
+				</div>
+				<div style="text-align:center; padding:12px; background:#fff; border:1px solid #e5e7eb; border-radius:6px;">
+					<div style="font-size:24px; font-weight:700; color:#2563eb;">${overall.mainProductCount}</div>
+					<div style="font-size:12px; color:#6b7280;">主推款数量</div>
+				</div>
+				<div style="text-align:center; padding:12px; background:#fff; border:1px solid #e5e7eb; border-radius:6px;">
+					<div style="font-size:24px; font-weight:700; color:#dc2626;">${overall.riskProductCount}</div>
+					<div style="font-size:12px; color:#6b7280;">风险商品数量</div>
+				</div>
+			</div>
+		</div>
+	`;
+	
+	// 生成关键指标表格
+	const metricsHtml = `
+		<div style="margin-bottom:24px;">
+			<h3 style="margin:0 0 16px 0; color:#111827; font-size:16px; font-weight:600;">📊 关键指标统计</h3>
+			<div style="overflow-x:auto;">
+				<table style="width:100%; border-collapse:collapse; border:1px solid #e5e7eb; border-radius:6px; overflow:hidden;">
+					<thead>
+						<tr style="background:#f9fafb;">
+							<th style="padding:12px; text-align:left; border-bottom:1px solid #e5e7eb; font-weight:600; color:#374151;">指标</th>
+							<th style="padding:12px; text-align:center; border-bottom:1px solid #e5e7eb; font-weight:600; color:#374151;">整体平均</th>
+							${Object.keys(platforms).map(platform => 
+								`<th style="padding:12px; text-align:center; border-bottom:1px solid #e5e7eb; font-weight:600; color:#374151;">${platform}</th>`
+							).join('')}
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td style="padding:12px; border-bottom:1px solid #f3f4f6; font-weight:500; color:#374151;">平均加价率</td>
+							<td style="padding:12px; text-align:center; border-bottom:1px solid #f3f4f6; color:#059669; font-weight:600; cursor:help;" 
+								data-metric="markup" data-scope="overall" data-overview='${JSON.stringify(overall)}'>${formatMarkupRate(overall.avgMarkupRate)}</td>
+							${Object.keys(platforms).map(platform => 
+								`<td style="padding:12px; text-align:center; border-bottom:1px solid #f3f4f6; color:#059669; font-weight:600; cursor:help;" 
+									data-metric="markup" data-scope="${platform}" data-overview='${JSON.stringify(platforms[platform])}'>${formatMarkupRate(platforms[platform].avgMarkupRate)}</td>`
+							).join('')}
+						</tr>
+						<tr>
+							<td style="padding:12px; border-bottom:1px solid #f3f4f6; font-weight:500; color:#374151;">平均毛利率</td>
+							<td style="padding:12px; text-align:center; border-bottom:1px solid #f3f4f6; color:#2563eb; font-weight:600; cursor:help;" 
+								data-metric="gross" data-scope="overall" data-overview='${JSON.stringify(overall)}'>${formatPercentage(overall.avgGrossMargin)}</td>
+							${Object.keys(platforms).map(platform => 
+								`<td style="padding:12px; text-align:center; border-bottom:1px solid #f3f4f6; color:#2563eb; font-weight:600; cursor:help;" 
+									data-metric="gross" data-scope="${platform}" data-overview='${JSON.stringify(platforms[platform])}'>${formatPercentage(platforms[platform].avgGrossMargin)}</td>`
+							).join('')}
+						</tr>
+						<tr>
+							<td style="padding:12px; border-bottom:1px solid #f3f4f6; font-weight:500; color:#374151;">平均退货率</td>
+							<td style="padding:12px; text-align:center; border-bottom:1px solid #f3f4f6; color:#7c3aed; font-weight:600; cursor:help;" 
+								data-metric="return" data-scope="overall" data-overview='${JSON.stringify(overall)}'>${formatPercentage(overall.avgReturnRate)}</td>
+							${Object.keys(platforms).map(platform => 
+								`<td style="padding:12px; text-align:center; border-bottom:1px solid #f3f4f6; color:#7c3aed; font-weight:600; cursor:help;" 
+									data-metric="return" data-scope="${platform}" data-overview='${JSON.stringify(platforms[platform])}'>${formatPercentage(platforms[platform].avgReturnRate)}</td>`
+							).join('')}
+						</tr>
+						<tr>
+							<td style="padding:12px; border-bottom:1px solid #f3f4f6; font-weight:500; color:#374151;">平均保本ROI</td>
+							<td style="padding:12px; text-align:center; border-bottom:1px solid #f3f4f6; color:#ea580c; font-weight:600; cursor:help;" 
+								data-metric="roi" data-scope="overall" data-overview='${JSON.stringify(overall)}'>${formatROI(overall.avgBreakevenROI)}</td>
+							${Object.keys(platforms).map(platform => 
+								`<td style="padding:12px; text-align:center; border-bottom:1px solid #f3f4f6; color:#ea580c; font-weight:600; cursor:help;" 
+									data-metric="roi" data-scope="${platform}" data-overview='${JSON.stringify(platforms[platform])}'>${formatROI(platforms[platform].avgBreakevenROI)}</td>`
+							).join('')}
+						</tr>
+						<tr>
+							<td style="padding:12px; border-bottom:1px solid #f3f4f6; font-weight:500; color:#374151;">平均保本广告占比</td>
+							<td style="padding:12px; text-align:center; border-bottom:1px solid #f3f4f6; color:#dc2626; font-weight:600; cursor:help;" 
+								data-metric="adrate" data-scope="overall" data-overview='${JSON.stringify(overall)}'>${formatPercentage(overall.avgBreakevenAdRate)}</td>
+							${Object.keys(platforms).map(platform => 
+								`<td style="padding:12px; text-align:center; border-bottom:1px solid #f3f4f6; color:#dc2626; font-weight:600; cursor:help;" 
+									data-metric="adrate" data-scope="${platform}" data-overview='${JSON.stringify(platforms[platform])}'>${formatPercentage(platforms[platform].avgBreakevenAdRate)}</td>`
+							).join('')}
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	`;
+	
+	// 生成平台详情
+	const platformDetailsHtml = `
+		<div>
+			<h3 style="margin:0 0 16px 0; color:#111827; font-size:16px; font-weight:600;">🏪 平台详情</h3>
+			<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:16px;">
+				${Object.keys(platforms).map(platform => {
+					const data = platforms[platform];
+					return `
+						<div style="padding:16px; background:#f8fafc; border:1px solid #e5e7eb; border-radius:8px;">
+							<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+								<h4 style="margin:0; color:#111827; font-size:14px; font-weight:600;">${platform}</h4>
+								<span style="padding:4px 8px; background:#dbeafe; color:#1e40af; border-radius:12px; font-size:12px; font-weight:500;">${data.count}个商品</span>
+							</div>
+							<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:12px;">
+								<div>
+									<span style="color:#6b7280;">主推款：</span>
+									<span style="color:#059669; font-weight:600;">${data.mainProductCount}</span>
+								</div>
+								<div>
+									<span style="color:#6b7280;">风险商品：</span>
+									<span style="color:#dc2626; font-weight:600;">${data.riskProductCount}</span>
+								</div>
+								<div>
+									<span style="color:#6b7280;">加价率：</span>
+									<span style="color:#059669; font-weight:600;">${formatMarkupRate(data.avgMarkupRate)}</span>
+								</div>
+								<div>
+									<span style="color:#6b7280;">毛利率：</span>
+									<span style="color:#2563eb; font-weight:600;">${formatPercentage(data.avgGrossMargin)}</span>
+								</div>
+								<div>
+									<span style="color:#6b7280;">退货率：</span>
+									<span style="color:#7c3aed; font-weight:600;">${formatPercentage(data.avgReturnRate)}</span>
+								</div>
+								<div>
+									<span style="color:#6b7280;">保本ROI：</span>
+									<span style="color:#ea580c; font-weight:600;">${formatROI(data.avgBreakevenROI)}</span>
+								</div>
+							</div>
+						</div>
+					`;
+				}).join('')}
+			</div>
+		</div>
+	`;
+	
+	return overallHtml + metricsHtml + platformDetailsHtml;
+}
+
+// 格式化加价率
+function formatMarkupRate(rate) {
+	if (!isFinite(rate) || rate <= 0) return '-';
+	return rate.toFixed(2) + '倍';
+}
+
+// 格式化百分比
+function formatPercentage(rate) {
+	if (!isFinite(rate)) return '-';
+	return (rate * 100).toFixed(2) + '%';
+}
+
+// 格式化ROI
+function formatROI(roi) {
+	if (!isFinite(roi) || roi <= 0) return '-';
+	if (roi === Infinity) return '∞';
+	return roi.toFixed(2);
+}
+
+// 显示指标计算过程浮窗
+function showMetricTooltip(event, metricType, scope, data) {
+	// 移除已存在的浮窗
+	hideMetricTooltip();
+	
+	// 解析数据（处理HTML转义）
+	let parsedData;
+	try {
+		parsedData = JSON.parse(data.replace(/&quot;/g, '"'));
+	} catch (error) {
+		console.error('解析指标数据失败:', error);
+		return;
+	}
+	
+	// 根据指标类型生成不同的计算过程说明
+	let tooltipContent = '';
+	let tooltipTitle = '';
+	
+	if (metricType === 'markup') {
+		tooltipTitle = '平均加价率计算过程';
+		tooltipContent = `平均加价率 = 所有商品加价率的总和 ÷ 有效商品数量
+
+计算逻辑：
+• 加价率 = 售价 ÷ 进货价
+• 优先使用多档售价的第一档，否则使用单一售价
+• 优先使用多档进货价的第一档，否则使用单一进货价
+• 过滤掉售价或进货价无效的商品
+
+当前数据：
+• 有效商品数量：${parsedData.count || '未知'}
+• 平均加价率：${formatMarkupRate(parsedData.avgMarkupRate)}
+• 计算范围：${scope === 'overall' ? '整体' : scope}`;
+	} else if (metricType === 'gross') {
+		tooltipTitle = '平均毛利率计算过程';
+		tooltipContent = `平均毛利率 = 所有商品毛利率的总和 ÷ 有效商品数量
+
+计算逻辑：
+• 毛利率 = (售价 - 进货价) ÷ 售价 × 100%
+• 优先使用多档售价的第一档，否则使用单一售价
+• 优先使用多档进货价的第一档，否则使用单一进货价
+• 过滤掉售价或进货价无效的商品
+
+当前数据：
+• 有效商品数量：${parsedData.count || '未知'}
+• 平均毛利率：${formatPercentage(parsedData.avgGrossMargin)}
+• 计算范围：${scope === 'overall' ? '整体' : scope}`;
+	} else if (metricType === 'return') {
+		tooltipTitle = '平均退货率计算过程';
+		tooltipContent = `平均退货率 = 所有商品退货率的总和 ÷ 有效商品数量
+
+计算逻辑：
+• 退货率支持多种格式：百分比字符串（如"12%"）、小数（如0.12）、数值（如12）
+• 系统自动统一转换为小数格式进行计算
+• 过滤掉退货率无效的商品
+
+当前数据：
+• 有效商品数量：${parsedData.count || '未知'}
+• 平均退货率：${formatPercentage(parsedData.avgReturnRate)}
+• 计算范围：${scope === 'overall' ? '整体' : scope}`;
+	} else if (metricType === 'roi') {
+		tooltipTitle = '平均保本ROI计算过程';
+		tooltipContent = `平均保本ROI = 所有商品保本ROI的总和 ÷ 有效商品数量
+
+计算逻辑：
+• 使用系统现有的保本ROI计算函数
+• 默认参数：开票成本6%、进项税率13%、销项税率13%
+• 物流成本2.8元/单、运费险1.5元/单、其他成本2.5元/单
+• 平台佣金率根据平台名称自动获取
+• 过滤掉计算结果无效的商品
+
+当前数据：
+• 有效商品数量：${parsedData.count || '未知'}
+• 平均保本ROI：${formatROI(parsedData.avgBreakevenROI)}
+• 计算范围：${scope === 'overall' ? '整体' : scope}`;
+	} else if (metricType === 'adrate') {
+		tooltipTitle = '平均保本广告占比计算过程';
+		tooltipContent = `平均保本广告占比 = 所有商品保本广告占比的总和 ÷ 有效商品数量
+
+计算逻辑：
+• 使用系统现有的保本ROI计算逻辑
+• 默认参数：开票成本6%、进项税率13%、销项税率13%
+• 物流成本2.8元/单、运费险1.5元/单、其他成本2.5元/单
+• 平台佣金率根据平台名称自动获取
+• 过滤掉计算结果无效的商品
+• 风险识别：保本广告占比 < 21% 的商品标记为风险商品
+
+当前数据：
+• 有效商品数量：${parsedData.count || '未知'}
+• 平均保本广告占比：${formatPercentage(parsedData.avgBreakevenAdRate)}
+• 风险商品数量：${parsedData.riskProductCount || 0}
+• 计算范围：${scope === 'overall' ? '整体' : scope}`;
+	}
+	
+	// 创建浮窗元素
+	const tooltip = document.createElement('div');
+	tooltip.id = 'metric-tooltip';
+	
+	// 设置浮窗样式
+	Object.assign(tooltip.style, {
+		position: 'fixed',
+		zIndex: '10002',
+		padding: '12px 16px',
+		borderRadius: '8px',
+		background: 'rgba(17,24,39,0.95)',
+		color: '#fff',
+		fontSize: '13px',
+		lineHeight: '1.5',
+		boxShadow: '0 8px 25px rgba(0,0,0,0.3)',
+		pointerEvents: 'none',
+		whiteSpace: 'pre-line',
+		transition: 'opacity .15s ease',
+		opacity: '0',
+		maxWidth: '450px',
+		border: '1px solid rgba(255,255,255,0.1)'
+	});
+	
+	// 设置浮窗内容
+	tooltip.innerHTML = `${tooltipTitle}
+
+${tooltipContent}`;
+	
+	// 添加到页面
+	document.body.appendChild(tooltip);
+	
+	// 显示浮窗并设置位置
+	displayMetricTooltip(event, tooltip);
+	
+	// 为当前元素添加鼠标移动事件，实现跟随鼠标移动
+	const currentElement = event.currentTarget;
+	
+	// 鼠标移动事件（更新浮层位置）
+	const mousemoveHandler = (e) => {
+		updateMetricTooltipPosition(e, tooltip);
+	};
+	
+	// 鼠标离开事件
+	const mouseleaveHandler = () => {
+		hideMetricTooltip();
+		// 清理事件监听器
+		currentElement.removeEventListener('mousemove', mousemoveHandler);
+		currentElement.removeEventListener('mouseleave', mouseleaveHandler);
+	};
+	
+	// 添加事件监听器
+	currentElement.addEventListener('mousemove', mousemoveHandler);
+	currentElement.addEventListener('mouseleave', mouseleaveHandler);
+}
+
+// 从data属性读取数据并显示浮窗（新版本）
+function showMetricTooltipFromData(event) {
+	const target = event.currentTarget;
+	const metricType = target.getAttribute('data-metric');
+	const scope = target.getAttribute('data-scope');
+	const overviewData = target.getAttribute('data-overview');
+	
+	if (!metricType || !scope || !overviewData) {
+		console.error('缺少必要的data属性:', { metricType, scope, overviewData });
+		return;
+	}
+	
+	// 移除已存在的浮窗
+	hideMetricTooltip();
+	
+	// 解析数据
+	let parsedData;
+	try {
+		parsedData = JSON.parse(overviewData);
+	} catch (error) {
+		console.error('解析指标数据失败:', error);
+		return;
+	}
+	
+	// 根据指标类型生成不同的计算过程说明
+	let tooltipContent = '';
+	let tooltipTitle = '';
+	
+	if (metricType === 'markup') {
+		tooltipTitle = '平均加价率计算过程';
+		tooltipContent = `平均加价率 = 所有商品加价率的总和 ÷ 有效商品数量
+
+计算逻辑：
+• 加价率 = 售价 ÷ 进货价
+• 优先使用多档售价的第一档，否则使用单一售价
+• 优先使用多档进货价的第一档，否则使用单一进货价
+• 过滤掉售价或进货价无效的商品
+
+当前数据：
+• 有效商品数量：${parsedData.count || '未知'}
+• 平均加价率：${formatMarkupRate(parsedData.avgMarkupRate)}
+• 计算范围：${scope === 'overall' ? '整体' : scope}`;
+	} else if (metricType === 'gross') {
+		tooltipTitle = '平均毛利率计算过程';
+		tooltipContent = `平均毛利率 = 所有商品毛利率的总和 ÷ 有效商品数量
+
+计算逻辑：
+• 毛利率 = (售价 - 进货价) ÷ 售价 × 100%
+• 优先使用多档售价的第一档，否则使用单一售价
+• 优先使用多档进货价的第一档，否则使用单一进货价
+• 过滤掉售价或进货价无效的商品
+
+当前数据：
+• 有效商品数量：${parsedData.count || '未知'}
+• 平均毛利率：${formatPercentage(parsedData.avgGrossMargin)}
+• 计算范围：${scope === 'overall' ? '整体' : scope}`;
+	} else if (metricType === 'return') {
+		tooltipTitle = '平均退货率计算过程';
+		tooltipContent = `平均退货率 = 所有商品退货率的总和 ÷ 有效商品数量
+
+计算逻辑：
+• 退货率支持多种格式：百分比字符串（如"12%"）、小数（如0.12）、数值（如12）
+• 系统自动统一转换为小数格式进行计算
+• 过滤掉退货率无效的商品
+
+当前数据：
+• 有效商品数量：${parsedData.count || '未知'}
+• 平均退货率：${formatPercentage(parsedData.avgReturnRate)}
+• 计算范围：${scope === 'overall' ? '整体' : scope}`;
+	} else if (metricType === 'roi') {
+		tooltipTitle = '平均保本ROI计算过程';
+		tooltipContent = `平均保本ROI = 所有商品保本ROI的总和 ÷ 有效商品数量
+
+计算逻辑：
+• 使用系统现有的保本ROI计算函数
+• 默认参数：开票成本6%、进项税率13%、销项税率13%
+• 物流成本2.8元/单、运费险1.5元/单、其他成本2.5元/单
+• 平台佣金率根据平台名称自动获取
+• 过滤掉计算结果无效的商品
+
+当前数据：
+• 有效商品数量：${parsedData.count || '未知'}
+• 平均保本ROI：${formatROI(parsedData.avgBreakevenROI)}
+• 计算范围：${scope === 'overall' ? '整体' : scope}`;
+	} else if (metricType === 'adrate') {
+		tooltipTitle = '平均保本广告占比计算过程';
+		tooltipContent = `平均保本广告占比 = 所有商品保本广告占比的总和 ÷ 有效商品数量
+
+计算逻辑：
+• 使用系统现有的保本ROI计算逻辑
+• 默认参数：开票成本6%、进项税率13%、销项税率13%
+• 物流成本2.8元/单、运费险1.5元/单、其他成本2.5元/单
+• 平台佣金率根据平台名称自动获取
+• 过滤掉计算结果无效的商品
+• 风险识别：保本广告占比 < 21% 的商品标记为风险商品
+
+当前数据：
+• 有效商品数量：${parsedData.count || '未知'}
+• 平均保本广告占比：${formatPercentage(parsedData.avgBreakevenAdRate)}
+• 风险商品数量：${parsedData.riskProductCount || 0}
+• 计算范围：${scope === 'overall' ? '整体' : scope}`;
+	}
+	
+	// 创建浮窗元素
+	const tooltip = document.createElement('div');
+	tooltip.id = 'metric-tooltip';
+	
+	// 设置浮窗样式
+	Object.assign(tooltip.style, {
+		position: 'fixed',
+		zIndex: '10002',
+		padding: '12px 16px',
+		borderRadius: '8px',
+		background: 'rgba(17,24,39,0.95)',
+		color: '#fff',
+		fontSize: '13px',
+		lineHeight: '1.5',
+		boxShadow: '0 8px 25px rgba(0,0,0,0.3)',
+		pointerEvents: 'none',
+		whiteSpace: 'pre-line',
+		transition: 'opacity .15s ease',
+		opacity: '0',
+		maxWidth: '450px',
+		border: '1px solid rgba(255,255,255,0.1)'
+	});
+	
+	// 设置浮窗内容
+	tooltip.innerHTML = `${tooltipTitle}
+
+${tooltipContent}`;
+	
+	// 添加到页面
+	document.body.appendChild(tooltip);
+	
+	// 显示浮窗并设置位置
+	displayMetricTooltip(event, tooltip);
+	
+	// 为当前元素添加鼠标移动事件，实现跟随鼠标移动
+	const currentElement = event.currentTarget;
+	
+	// 鼠标移动事件（更新浮层位置）
+	const mousemoveHandler = (e) => {
+		updateMetricTooltipPosition(e, tooltip);
+	};
+	
+	// 鼠标离开事件
+	const mouseleaveHandler = () => {
+		hideMetricTooltip();
+		// 清理事件监听器
+		currentElement.removeEventListener('mousemove', mousemoveHandler);
+		currentElement.removeEventListener('mouseleave', mouseleaveHandler);
+	};
+	
+	// 添加事件监听器
+	currentElement.addEventListener('mousemove', mousemoveHandler);
+	currentElement.addEventListener('mouseleave', mouseleaveHandler);
+}
+
+// 隐藏指标计算过程浮窗
+function hideMetricTooltip() {
+	const tooltip = document.getElementById('metric-tooltip');
+	if (tooltip) {
+		tooltip.remove();
+	}
+}
+
+// 显示指标浮窗并设置初始位置
+function displayMetricTooltip(event, tooltip) {
+	// 设置初始位置
+	updateMetricTooltipPosition(event, tooltip);
+	
+	// 显示浮窗
+	setTimeout(() => {
+		tooltip.style.opacity = '1';
+	}, 10);
+}
+
+// 更新指标浮窗位置
+function updateMetricTooltipPosition(event, tooltip) {
+	const rect = tooltip.getBoundingClientRect();
+	const viewportWidth = window.innerWidth;
+	const viewportHeight = window.innerHeight;
+	
+	// 计算最佳位置（避免超出视口）
+	let left = event.clientX + 15;
+	let top = event.clientY - rect.height - 10;
+	
+	// 如果上方空间不足，显示在下方
+	if (top < 10) {
+		top = event.clientY + 15;
+	}
+	
+	// 如果右侧空间不足，显示在左侧
+	if (left + rect.width > viewportWidth - 20) {
+		left = event.clientX - rect.width - 15;
+	}
+	
+	// 确保不超出左边界
+	if (left < 10) {
+		left = 10;
+	}
+	
+	// 确保不超出下边界
+	if (top + rect.height > viewportHeight - 20) {
+		top = viewportHeight - rect.height - 20;
+	}
+	
+	tooltip.style.left = left + 'px';
+	tooltip.style.top = top + 'px';
+}
+
 // 解析百分比为[0,1]
 function parsePercent(val) {
 	if (val === null || val === undefined) return NaN;
@@ -6774,6 +7696,10 @@ function initCatalogTab() {
 	if (btnExport) btnExport.addEventListener('click', exportCatalogToCSV);
 	if (btnDelete) btnDelete.addEventListener('click', () => { const container = document.getElementById('catalogTableContainer'); const checks = Array.from(container.querySelectorAll('.catalog-check')); const remain = []; checks.forEach(cb => { const tr = cb.closest('tr'); const idx = Number(tr.getAttribute('data-index')); if (!cb.checked) remain.push(catalogState.rows[idx]); }); catalogState.rows = remain; renderCatalogTable(); updateCatalogStatus(); saveCatalogToStorage(); updatePlatformFilterOptions(); });
 	if (btnRecompute) btnRecompute.addEventListener('click', recomputeAllCatalogRows);
+	
+	// 概览分析按钮事件绑定
+	const btnOverview = document.getElementById('btnCatalogOverview');
+	if (btnOverview) btnOverview.addEventListener('click', openCatalogOverviewModal);
 	if (btnExamples) btnExamples.addEventListener('click', () => {
 		// 密码验证弹窗
 		const overlay = document.createElement('div');
