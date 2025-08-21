@@ -1687,7 +1687,7 @@ function calculateListPrice() {
                 panel.style.zIndex = '10002';
                 panel.style.fontSize = '12px';
                 panel.style.lineHeight = '1.5';
-                panel.innerHTML = `<div style=\"display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;\"><div style=\"font-weight:600;\">标价 <b>¥ ${S.toFixed(2)}</b></div><button id=\"lpClose\" aria-label=\"关闭\" style=\"border:none;background:rgba(255,255,255,0.12);color:#fff;border-radius:6px;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;font-size:16px;line-height:1;\">×</button></div>${html}`;
+                panel.innerHTML = `<div class="panel-header"><div class="panel-title">标价 <b>¥ ${S.toFixed(2)}</b></div><button id="lpClose" aria-label="关闭" class="panel-close-btn">×</button></div>${html}`;
                 const mask = document.createElement('div');
                 mask.style.position = 'fixed'; mask.style.left = '0'; mask.style.top = '0'; mask.style.right = '0'; mask.style.bottom = '0';
                 mask.style.background = 'rgba(0,0,0,0.35)'; mask.style.zIndex = '10001';
@@ -1710,16 +1710,12 @@ function addTierRow() {
     if (!list) return;
     const row = document.createElement('div');
     row.className = 'tier-row';
-    row.style.display = 'flex';
-    row.style.alignItems = 'center';
-    row.style.gap = '8px';
-    row.style.flexWrap = 'wrap';
-    row.innerHTML = '<span style="color:#666; font-size:0.9rem;">满</span>'+
-                    '<input type="number" class="tier-threshold" value="0" step="0.01" style="width:120px;max-width:100%;">'+
-                    '<span style="color:#666; font-size:0.9rem;">减</span>'+
-                    '<input type="number" class="tier-off" value="0" step="0.01" style="width:120px;max-width:100%;">'+
-                    '<button type="button" class="save-button" onclick="saveInputs()" style="margin:0;">保存</button>'+
-                    '<button type="button" class="batch-modal-btn" onclick="removeTierRow(this)" style="margin:0;">删除</button>';
+    row.innerHTML = '<span>满</span>'+
+                    '<input type="number" class="tier-threshold" value="0" step="0.01">'+
+                    '<span>减</span>'+
+                    '<input type="number" class="tier-off" value="0" step="0.01">'+
+                    '<button type="button" class="save-button" onclick="saveInputs()">保存</button>'+
+                    '<button type="button" class="batch-modal-btn" onclick="removeTierRow(this)">删除</button>';
     list.appendChild(row);
     
     // 为新添加的满减输入框绑定实时计算事件
@@ -1783,10 +1779,6 @@ function addDiscountRate() {
 
     const row = document.createElement('div');
     row.className = 'discount-rate-row';
-    row.style.display = 'flex';
-    row.style.alignItems = 'center';
-    row.style.gap = '8px';
-    row.style.flexWrap = 'wrap';
 
     // 计算默认值：基于现有档位递增
     const existingValues = Array.from(existingRates)
@@ -1795,11 +1787,11 @@ function addDiscountRate() {
     const lastValue = existingValues.length > 0 ? Math.max(...existingValues) : 10;
     const defaultValue = Math.min(lastValue + 2, 95); // 默认递增2%，最大95%
 
-    row.innerHTML = '<span style="color:#666; font-size:0.9rem;">立减</span>' +
-                    '<input type="number" class="discount-rate-input" value="' + defaultValue + '" step="1" min="0" max="95" style="width:80px;text-align:center;">' +
-                    '<span style="color:#666; font-size:0.9rem;">%</span>' +
-                    '<button type="button" class="save-button" onclick="saveInputs()" style="margin:0;">保存</button>' +
-                    '<button type="button" class="batch-modal-btn" onclick="removeDiscountRate(this)" style="margin:0;">删除</button>';
+    row.innerHTML = '<span>立减</span>' +
+                    '<input type="number" class="discount-rate-input" value="' + defaultValue + '" step="1" min="0" max="95">' +
+                    '<span>%</span>' +
+                    '<button type="button" class="save-button" onclick="saveInputs()">保存</button>' +
+                    '<button type="button" class="batch-modal-btn" onclick="removeDiscountRate(this)">删除</button>';
 
     container.appendChild(row);
 
@@ -1854,16 +1846,12 @@ function initDiscountRates() {
     // 创建默认的10%立减档位
     const row = document.createElement('div');
     row.className = 'discount-rate-row';
-    row.style.display = 'flex';
-    row.style.alignItems = 'center';
-    row.style.gap = '8px';
-    row.style.flexWrap = 'wrap';
 
-    row.innerHTML = '<span style="color:#666; font-size:0.9rem;">立减</span>' +
-                    '<input type="number" class="discount-rate-input" value="10" step="1" min="0" max="95" style="width:80px;text-align:center;">' +
-                    '<span style="color:#666; font-size:0.9rem;">%</span>' +
-                    '<button type="button" class="save-button" onclick="saveInputs()" style="margin:0;">保存</button>' +
-                    '<button type="button" class="batch-modal-btn" onclick="removeDiscountRate(this)" style="margin:0;">删除</button>';
+    row.innerHTML = '<span>立减</span>' +
+                    '<input type="number" class="discount-rate-input" value="10" step="1" min="0" max="95">' +
+                    '<span>%</span>' +
+                    '<button type="button" class="save-button" onclick="saveInputs()">保存</button>' +
+                    '<button type="button" class="batch-modal-btn" onclick="removeDiscountRate(this)">删除</button>';
 
     container.appendChild(row);
 
@@ -1901,18 +1889,14 @@ function addTargetPrice() {
     
     const row = document.createElement('div');
     row.className = 'target-price-row';
-    row.style.display = 'flex';
-    row.style.alignItems = 'center';
-    row.style.gap = '8px';
-    row.style.flexWrap = 'wrap';
-    
+
     // 计算默认值：基于上一个价格递增
     const existingPrices = Array.from(list.querySelectorAll('.target-price-input'))
         .map(input => parseFloat(input.value))
         .filter(price => isFinite(price) && price > 0);
     const lastPrice = existingPrices.length > 0 ? Math.max(...existingPrices) : 59;
     const defaultPrice = lastPrice + 10; // 默认递增10元
-    
+
     row.innerHTML = '<div class="price-input-group">' +
                     '<input type="number" class="target-price-input" value="' + defaultPrice + '" step="0.01" placeholder="输入目标到手价">' +
                     '<button class="save-btn" onclick="saveInputs()">' +

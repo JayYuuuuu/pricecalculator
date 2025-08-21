@@ -16,10 +16,10 @@ function generatePriceResultHtml({ purchaseCost, salesCost, priceInfo, inputs })
             <div class="price-label">建议含税售价</div>
             <div class="price-value">¥ ${priceInfo.finalPrice.toFixed(2)}</div>
             <div class="price-hint">此价格已考虑所有成本、税费和目标利润</div>
-            <div class="price-hint" style="font-size: 0.85rem; color: #666; margin-top: 0.5rem;">
+            <div class="price-hint">
                 利润率说明：系统已把预计的退货损失（如退不回的运费、广告费）提前摊入有效订单成本，确保实际利润率接近目标
             </div>
-            <div class="price-hint" style="font-size: 0.85rem; color: #2ea44f; margin-top: 0.25rem;">
+            <div class="price-hint highlight">
                 保本ROI（有效GMV÷广告费）：${(function(){
                     try{
                         const roiRes = calculateBreakevenROI({
@@ -44,18 +44,18 @@ function generatePriceResultHtml({ purchaseCost, salesCost, priceInfo, inputs })
 
         <div class="section calculation-process">
             <h3>关键指标</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
-                <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; text-align: center;">
-                    <div style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">预期利润率</div>
-                    <div style="font-size: 1.5rem; font-weight: 600; color: #2ea44f;">${displayProfitRate}%</div>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-label">预期利润率</div>
+                    <div class="metric-value profit">${displayProfitRate}%</div>
                 </div>
-                <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; text-align: center;">
-                    <div style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">预期利润</div>
-                    <div style="font-size: 1.5rem; font-weight: 600; color: #2ea44f;">¥${displayProfit.toFixed(2)}</div>
+                <div class="metric-card">
+                    <div class="metric-label">预期利润</div>
+                    <div class="metric-value profit">¥${displayProfit.toFixed(2)}</div>
                 </div>
-                <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; text-align: center;">
-                    <div style="color: #666; font-size: 0.9rem; margin-bottom: 0.5rem;">总成本</div>
-                    <div style="font-size: 1.5rem; font-weight: 600; color: #e65100;">¥${displayTotalCost.toFixed(2)}</div>
+                <div class="metric-card">
+                    <div class="metric-label">总成本</div>
+                    <div class="metric-value cost">¥${displayTotalCost.toFixed(2)}</div>
                 </div>
             </div>
         </div>
@@ -68,14 +68,14 @@ function generateListPriceHtml({ targetFinalPrice, tiers, results }) {
     const sorted = results.slice().sort((a,b)=>a.r-b.r);
 
     const tierSummary = tiers && tiers.length ? (
-        '<div style="font-size:0.9rem;color:#666;margin-top:6px;">满减档位：'
+        '<div class="tier-summary">满减档位：'
         + tiers
             .slice()
             .sort((a,b)=>a.threshold-b.threshold)
             .map(t=>`满${Number(t.threshold).toFixed(2)}减${Number(t.off).toFixed(2)}`)
             .join('，')
         + '</div>'
-    ) : '<div style="font-size:0.9rem;color:#666;margin-top:6px;">未设置满减，按无满减计算</div>';
+    ) : '<div class="tier-summary">未设置满减，按无满减计算</div>';
 
     // 生成卡片形式的标价建议
     const priceCards = sorted.map(item => {
@@ -162,9 +162,14 @@ function generateBatchListPriceHtml({ allResults, tiers }) {
             const rPct = (item.r*100).toFixed(0) + '%';
             if (!isFinite(item.price)) {
                 return `
-                    <div style="background:#fee; border:1px solid #fcc; border-radius:8px; padding:1rem; margin:0.5rem 0;">
-                        <div style="color:#c33; font-weight:600;">❌ ${rPct}立减</div>
-                        <div style="color:#666; font-size:0.9rem;">无法计算建议标价</div>
+                    <div class="result-item error">
+                        <div class="result-header">
+                            <div class="discount-rate">❌ ${rPct}立减</div>
+                            <div class="status error">参数无解</div>
+                        </div>
+                        <div class="price-grid">
+                            <div class="price-label">无法计算建议标价</div>
+                        </div>
                     </div>
                 `;
             }
@@ -181,11 +186,11 @@ function generateBatchListPriceHtml({ allResults, tiers }) {
                         </div>
                     </div>
                     <div class="price-grid">
-                        <div style="text-align:center;">
+                        <div class="price-cell">
                             <div class="price-label">建议标价</div>
                             <div class="price-value green">¥${Number(item.price).toFixed(2)}</div>
                         </div>
-                        <div style="text-align:center;">
+                        <div class="price-cell">
                             <div class="price-label">实际到手价</div>
                             <div class="price-value orange">¥${Number(item.finalPrice).toFixed(2)}</div>
                         </div>
