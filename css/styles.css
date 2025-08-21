@@ -835,7 +835,7 @@ button:hover {
 
 @media (max-width: 479px) {
     .takehome-section .input-row {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
         gap: 12px;
     }
     
@@ -3014,53 +3014,247 @@ button:hover {
     border: 2px solid #cbd5e1; border-radius: 15px; padding: 1.5rem; text-align: center; color: #475569; font-size: 1rem; font-weight: 600; margin-top: 1rem;
   }
 
-/* === 标价计算：移动端堆叠与防溢出 === */
-@media (max-width: 768px) {
-  /* 三大模块所在的主容器改为单列堆叠 */
-  .main-content { 
-    grid-template-columns: 1fr; 
-    gap: 1rem; 
-    padding: 0 1rem; 
-  }
-
-  /* 模块卡片在小屏缩小内边距与圆角，保证视觉一致且不拥挤 */
-  .config-card, 
-  .result-card, 
-  .target-result-section { 
-    padding: 1rem; 
-    border-radius: 12px; 
-    max-width: 100%;
-  }
-
-  /* 页头在小屏的尺寸调整 */
-  .page-header { 
-    padding: 1.5rem 1rem; 
-    border-radius: 12px; 
-  }
-  .page-title { font-size: 2rem; }
-  .page-subtitle { font-size: 1rem; }
-
-  /* 输入与按钮在小屏的舒适尺寸 */
-  .target-price-input { 
-    font-size: 1.6rem; 
-    padding: 1rem; 
-  }
-  .save-btn { width: 52px; height: 52px; }
-
-  /* 结果区的网格在小屏改为单列，避免压缩 */
-  .price-grid { grid-template-columns: 1fr; }
-
-  /* 保证所有块级内容不因固定宽度撑出屏幕 */
-  .config-card *,
-  .result-card *,
-  .target-result-section * { 
-    max-width: 100%; 
-    box-sizing: border-box; 
-  }
+@media (max-width: 999px) and (min-width: 768px) {
+    .takehome-section .input-row {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+    }
 }
 
-/* 超小屏进一步压缩（可选）：< 400px 设备优化 */
-@media (max-width: 400px) {
-  .page-title { font-size: 1.6rem; }
-  .target-price-input { font-size: 1.4rem; }
+/* iPad专用媒体查询：优化主要参数设置模块在iPad屏幕上的显示 */
+/* 覆盖iPad Air (768px-1024px) 和 iPad Pro (1024px-1366px) */
+@media (min-width: 768px) and (max-width: 1366px) {
+    /* 到手价推演页面主要参数设置模块：iPad上一行显示3列输入框 */
+    .takehome-section .input-row {
+        grid-template-columns: repeat(3, 1fr) !important; /* 强制一行显示3列 */
+        gap: 14px; /* 适当减小间距，适应iPad屏幕 */
+    }
+    
+    /* 利润计算页面费用参数设置模块：iPad上一行显示3列输入框 */
+    .profit-fees-section .input-row {
+        grid-template-columns: repeat(3, 1fr) !important; /* 强制一行显示3列 */
+        gap: 14px; /* 适当减小间距，适应iPad屏幕 */
+    }
+    
+    /* iPad上输入框宽度优化 */
+    .takehome-section .input-item .input-wrapper input,
+    .profit-fees-section .input-item .input-wrapper input {
+        min-width: 70px; /* 减小最小宽度，适应iPad屏幕 */
+        max-width: 100px; /* 减小最大宽度，防止溢出 */
+        font-size: 13px; /* 稍微减小字体，节省空间 */
+    }
+    
+    /* iPad上标签字体优化 */
+    .takehome-section .input-item label,
+    .profit-fees-section .input-item label {
+        font-size: 0.9rem; /* 减小标签字体，节省垂直空间 */
+        line-height: 1.2; /* 减小行高 */
+    }
+    
+    /* iPad上保存按钮优化 */
+    .takehome-section .input-item .input-wrapper .save-button,
+    .profit-fees-section .input-item .input-wrapper .save-button {
+        padding: 6px 10px; /* 减小按钮内边距 */
+        font-size: 12px; /* 减小按钮字体 */
+        flex-shrink: 0; /* 防止按钮被压缩 */
+        white-space: nowrap; /* 防止按钮文字换行 */
+    }
+    
+    /* iPad上付费占比设置项特殊处理：跨越3列，单独占一行 */
+    .takehome-section .input-item:has(.input-wrapper input[id*="AdRate"]) {
+        grid-column: span 3 !important; /* 跨越3列，单独占一行 */
+    }
+    
+    /* iPad上付费占比输入框宽度调整 */
+    .takehome-section .input-item:has(.input-wrapper input[id*="AdRate"]) .input-wrapper input {
+        width: 80px; /* 固定宽度，确保两个输入框能正常显示 */
+        min-width: 80px;
+        max-width: 80px;
+    }
+    
+    /* iPad上section内边距优化 */
+    .takehome-section,
+    .profit-fees-section {
+        padding: 16px; /* 减小内边距，为内容留出更多空间 */
+    }
+    
+    /* iPad上输入行间距优化 */
+    .takehome-section .input-row,
+    .profit-fees-section .input-row {
+        margin-bottom: 14px; /* 减小行间距 */
+    }
+    
+    /* iPad上确保输入框和按钮在同一行 */
+    .takehome-section .input-item .input-wrapper,
+    .profit-fees-section .input-item .input-wrapper {
+        display: flex !important; /* 强制使用flex布局 */
+        flex-direction: row !important; /* 强制水平排列 */
+        flex-wrap: nowrap !important; /* 防止换行 */
+        align-items: center !important; /* 垂直居中对齐 */
+        gap: 8px !important; /* 强制设置间距 */
+    }
+}
+
+/* iPad Pro专用媒体查询：为更大屏幕提供更优化的布局 */
+@media (min-width: 1024px) and (max-width: 1366px) {
+    /* iPad Pro上可以显示更多列，充分利用1366px的宽度 */
+    .takehome-section .input-row,
+    .profit-fees-section .input-row {
+        grid-template-columns: repeat(4, 1fr) !important; /* iPad Pro上一行显示4列 */
+        gap: 16px; /* 增加间距，提升视觉效果 */
+    }
+    
+    /* iPad Pro上输入框宽度优化 */
+    .takehome-section .input-item .input-wrapper input,
+    .profit-fees-section .input-item .input-wrapper input {
+        min-width: 80px; /* 增加最小宽度 */
+        max-width: 120px; /* 增加最大宽度 */
+        font-size: 14px; /* 恢复正常字体大小 */
+    }
+    
+    /* iPad Pro上标签字体优化 */
+    .takehome-section .input-item label,
+    .profit-fees-section .input-item label {
+        font-size: 0.95rem; /* 恢复正常字体大小 */
+        line-height: 1.3; /* 恢复正常行高 */
+    }
+    
+    /* iPad Pro上付费占比设置项特殊处理：跨越4列，单独占一行 */
+    .takehome-section .input-item:has(.input-wrapper input[id*="AdRate"]) {
+        grid-column: span 4 !important; /* 跨越4列，单独占一行 */
+    }
+    
+    /* iPad Pro上付费占比输入框宽度调整 */
+    .takehome-section .input-item:has(.input-wrapper input[id*="AdRate"]) .input-wrapper input {
+        width: 90px; /* 增加宽度，适应更大的屏幕 */
+        min-width: 90px;
+        max-width: 90px;
+    }
+    
+    /* iPad Pro上section内边距优化 */
+    .takehome-section,
+    .profit-fees-section {
+        padding: 20px; /* 恢复正常内边距 */
+    }
+    
+    /* iPad Pro上输入行间距优化 */
+    .takehome-section .input-row,
+    .profit-fees-section .input-row {
+        margin-bottom: 16px; /* 恢复正常行间距 */
+    }
+}
+
+/* iPad竖屏模式专用优化：针对1024px宽度进行特殊处理 */
+/* 使用更精确的iPad竖屏检测 */
+@media (min-width: 1024px) and (max-width: 1024px) {
+    /* iPad竖屏模式下，一行显示3列，避免过于拥挤 */
+    .takehome-section .input-row,
+    .profit-fees-section .input-row {
+        grid-template-columns: repeat(3, 1fr) !important; /* 竖屏模式下一行显示3列 */
+        gap: 18px; /* 增加列间距，提升视觉效果 */
+    }
+    
+    /* 竖屏模式下输入框宽度优化 */
+    .takehome-section .input-item .input-wrapper input,
+    .profit-fees-section .input-item .input-wrapper input {
+        min-width: 85px; /* 适中的最小宽度 */
+        max-width: 110px; /* 适中的最大宽度 */
+        font-size: 13px; /* 稍微减小字体，节省空间 */
+    }
+    
+    /* 竖屏模式下标签字体优化 */
+    .takehome-section .input-item label,
+    .profit-fees-section .input-item label {
+        font-size: 0.9rem; /* 减小标签字体，节省空间 */
+        line-height: 1.2; /* 减小行高 */
+    }
+    
+    /* 竖屏模式下付费占比设置项特殊处理：跨越3列，单独占一行 */
+    .takehome-section .input-item:has(.input-wrapper input[id*="AdRate"]) {
+        grid-column: span 3 !important; /* 跨越3列，单独占一行 */
+    }
+    
+    /* 竖屏模式下付费占比输入框宽度调整 */
+    .takehome-section .input-item:has(.input-wrapper input[id*="AdRate"]) .input-wrapper input {
+        width: 85px; /* 适中的宽度 */
+        min-width: 85px;
+        max-width: 85px;
+    }
+    
+    /* 竖屏模式下section内边距优化 */
+    .takehome-section,
+    .profit-fees-section {
+        padding: 18px; /* 适中的内边距 */
+    }
+    
+    /* 竖屏模式下输入行间距优化 */
+    .takehome-section .input-row,
+    .profit-fees-section .input-row {
+        margin-bottom: 18px; /* 适中的行间距 */
+    }
+    
+    /* 竖屏模式下确保右侧有足够的边距 */
+    .takehome-section,
+    .profit-fees-section {
+        margin-right: 12px; /* 右侧边距，防止内容贴边 */
+    }
+    
+    /* 竖屏模式下输入项容器优化 */
+    .takehome-section .input-item,
+    .profit-fees-section .input-item {
+        padding: 8px; /* 减小内边距，为内容留出更多空间 */
+    }
+    
+    /* 竖屏模式下输入框和按钮的间距优化 */
+    .takehome-section .input-item .input-wrapper,
+    .profit-fees-section .input-item .input-wrapper {
+        gap: 10px; /* 适中的间距 */
+    }
+}
+
+/* 额外的iPad 1024px宽度优化：确保在1024px宽度下有更好的布局 */
+@media (min-width: 1024px) and (max-width: 1024px) {
+    /* 强制在1024px宽度下使用3列布局，避免4列过于拥挤 */
+    .takehome-section .input-row,
+    .profit-fees-section .input-row {
+        grid-template-columns: repeat(3, 1fr) !important; /* 强制3列布局 */
+        gap: 20px; /* 增加列间距，提升视觉效果 */
+    }
+    
+    /* 确保容器有足够的右边距 */
+    .takehome-section,
+    .profit-fees-section {
+        margin-right: 16px; /* 增加右侧边距 */
+        padding-right: 24px; /* 增加右侧内边距 */
+    }
+    
+    /* 输入框宽度进一步优化 */
+    .takehome-section .input-item .input-wrapper input,
+    .profit-fees-section .input-item .input-wrapper input {
+        min-width: 90px; /* 增加最小宽度 */
+        max-width: 115px; /* 增加最大宽度 */
+    }
+    
+    /* 付费占比设置项跨越3列 */
+    .takehome-section .input-item:has(.input-wrapper input[id*="AdRate"]) {
+        grid-column: span 3 !important; /* 跨越3列 */
+    }
+    
+    /* 付费占比输入框宽度调整 */
+    .takehome-section .input-item:has(.input-wrapper input[id*="AdRate"]) .input-wrapper input {
+        width: 90px; /* 适中的宽度 */
+        min-width: 90px;
+        max-width: 90px;
+    }
+}
+
+@media (max-width: 767px) and (min-width: 480px) {
+    .takehome-section .input-row {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 14px;
+    }
+    
+    .takehome-section {
+        padding: 16px;
+    }
 }
