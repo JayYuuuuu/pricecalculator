@@ -8249,12 +8249,13 @@ function displayCostPriceResults(results, inputs, adRates, targetProfitRates) {
             whiteSpace: 'pre',
             transition: 'opacity .08s ease',
             opacity: '0',
-            maxWidth: '300px'
+            maxWidth: '500px'
         });
         document.body.appendChild(tooltip);
 
         const showTooltip = (text, x, y) => {
-            tooltip.textContent = text;
+            // 将换行符转换为HTML换行，并保持格式
+            tooltip.innerHTML = text.replace(/\n/g, '<br>');
             const offset = 12;
             tooltip.style.left = `${x + offset}px`;
             tooltip.style.top = `${y + offset}px`;
@@ -8380,18 +8381,37 @@ function generateCostPriceTableHtmlForExploration(results, adRates, targetProfit
                 calculatedTakeHomePrice = '计算错误';
             }
 
+            // 计算详细的验证过程数据
+            const invoiceCost = costPrice * inputs.inputTaxRate;
+            const totalPurchaseCost = costPrice + invoiceCost;
+            const purchaseVAT = costPrice * inputs.outputTaxRate;
+            const effectiveRate = 1 - inputs.returnRate;
+            const fixedCosts = (inputs.shippingCost + inputs.shippingInsurance + inputs.otherCost) / effectiveRate;
+            const adCost = inputs.takeHomePrice * adRate;
+            const adCostEffective = adCost / effectiveRate;
+            const platformFee = inputs.takeHomePrice * inputs.platformRate;
+            const VAT_RATE = 0.06;
+            const adVatCredit = adCostEffective * (VAT_RATE / (1 + VAT_RATE));
+            const platformVatCredit = platformFee * (VAT_RATE / (1 + VAT_RATE));
+            const outputVAT = (inputs.takeHomePrice / (1 + inputs.salesTaxRate)) * inputs.salesTaxRate;
+            const actualVAT = outputVAT - purchaseVAT - adVatCredit - platformVatCredit;
+            const totalCost = totalPurchaseCost + platformFee + adCostEffective + fixedCosts + actualVAT;
+
             const tooltip = `=== 成本价验证计算 ===\n\n` +
-                `📊 当前参数：\n` +
-                `• 目标利润率：${(targetProfitRate * 100).toFixed(1)}%\n` +
-                `• 付费占比：${(adRate * 100).toFixed(0)}%\n` +
-                `• 退货率：${(returnRate * 100).toFixed(1)}%\n\n` +
-                `💰 成本价计算：\n` +
-                `• 推演成本价：¥${costPrice.toFixed(2)}\n` +
-                `• 对应的到手价：${calculatedTakeHomePrice}\n\n` +
-                `📈 利润验证：\n` +
-                `• 计算利润：¥${verificationResult.profit.toFixed(2)}\n` +
-                `• 利润率：${(verificationResult.profitRate * 100).toFixed(2)}%\n` +
-                `• 目标差异：${((verificationResult.profitRate - targetProfitRate) * 100).toFixed(3)}%`;
+                `📊 基础参数                    💰 成本价计算\n` +
+                `目标利润率: ${(targetProfitRate * 100).toFixed(1)}%          推演成本价: ¥${costPrice.toFixed(2)}\n` +
+                `付费占比: ${(adRate * 100).toFixed(0)}%                   开票成本: ¥${invoiceCost.toFixed(2)}\n` +
+                `退货率: ${(returnRate * 100).toFixed(1)}%                 总进货成本: ¥${totalPurchaseCost.toFixed(2)}\n` +
+                `有效销售率: ${(effectiveRate * 100).toFixed(1)}%           商品进项税: ¥${purchaseVAT.toFixed(2)}\n\n` +
+                `🔧 成本分摊计算                📈 利润验证结果\n` +
+                `固定成本: ¥${(inputs.shippingCost + inputs.shippingInsurance + inputs.otherCost).toFixed(2)}        计算利润: ¥${verificationResult.profit.toFixed(2)}\n` +
+                `分摊后成本: ¥${fixedCosts.toFixed(2)}                   利润率: ${(verificationResult.profitRate * 100).toFixed(2)}%\n` +
+                `广告费: ¥${adCost.toFixed(2)}                         目标差异: ${((verificationResult.profitRate - targetProfitRate) * 100).toFixed(3)}%\n` +
+                `分摊广告费: ¥${adCostEffective.toFixed(2)}             理论到手价: ${calculatedTakeHomePrice}\n\n` +
+                `💳 税费计算详情\n` +
+                `平台佣金: ¥${platformFee.toFixed(2)}    广告进项抵扣: ¥${adVatCredit.toFixed(2)}\n` +
+                `销项税: ¥${outputVAT.toFixed(2)}       平台进项抵扣: ¥${platformVatCredit.toFixed(2)}\n` +
+                `实缴增值税: ¥${actualVAT.toFixed(2)}    总成本: ¥${totalCost.toFixed(2)}`;
 
             return `<td style="padding:12px 16px;text-align:center;font-size:13px;font-weight:500;${cellStyle}" data-tooltip="${tooltip.replace(/"/g, '&quot;')}">
                 <div class="price-main" style="font-size:16px; font-weight:700; color:#059669; margin-bottom:2px;">¥${costPrice.toFixed(2)}</div>
