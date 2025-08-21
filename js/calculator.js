@@ -3869,6 +3869,7 @@ function autoSaveTargetPrice(value) {
  * - dirty: 是否有未保存更改
  * - lastImportBackup: 最近一次导入前的备份（支持一次撤销）
  * 说明：行对象字段与CSV表头一致；结果列缓存到 `__result` 字段
+ * - 新增：支持主推款标识，主推款商品会有特殊视觉标识和筛选功能
  */
 const catalogState = {
 	rows: [],
@@ -4212,7 +4213,7 @@ function renderCatalogTable() {
 	const rows = catalogFilterState.filteredRows.length > 0 ? catalogFilterState.filteredRows : (catalogState.rows || []);
 	const thead = '<thead><tr>'+
 		'<th style="width:36px; text-align:center;"><input id="catalogCheckAll" type="checkbox"></th>'+
-		'<th style="width:120px;">商品名称</th><th style="width:100px;">货号</th><th style="width:80px;">平台</th><th class="lp-col-right" style="width:80px;">含税售价P</th><th class="lp-col-right" style="width:180px;">含税售价（多档）</th>'+
+		'<th style="width:120px;">商品名称</th><th style="width:100px;">货号</th><th style="width:80px;">平台</th><th class="lp-col-center" style="width:80px;">主推款</th><th class="lp-col-right" style="width:80px;">含税售价P</th><th class="lp-col-right" style="width:180px;">含税售价（多档）</th>'+
 		'<th class="lp-col-right" style="width:140px;">进货价（多档）</th><th class="lp-col-right" style="width:70px;">退货率 <button id="returnRateToggle" type="button" title="点击隐藏/显示退货率列" style="margin-left:4px; width:16px; height:16px; line-height:16px; padding:0; display:inline-flex; align-items:center; justify-content:center; border-radius:4px; background:#f3f4f6; color:#6b7280; font-weight:700; white-space:nowrap; border:none; cursor:pointer; font-size:12px;">👁</button></th>'+
 		'<th class="lp-col-right" style="width:100px; white-space:nowrap;">保本ROI</th><th class="lp-col-right" style="width:120px; white-space:nowrap;">保本广告占比</th>'+
 		'<th class="lp-col-right" style="width:100px; white-space:nowrap;">利润率(20%付费)</th>'+
@@ -4226,7 +4227,7 @@ function renderCatalogTable() {
 		let width = '80px';
 		if (key === 'name') width = '120px';      // 商品名称稍宽
 		if (key === 'sku') width = '100px';       // SKU适中
-		if (key === 'platform') width = '120px';   // 平台名称
+		if (key === 'platform') width = '70px';   // 平台名称
 		if (key === 'salePrice') width = '80px';  // 售价
 		if (key === 'returnRate') width = '70px'; // 退货率
 		// 已移除"付费占比"作为输入列
@@ -4297,6 +4298,19 @@ function renderCatalogTable() {
 		}
 		return `<div style="display:flex; flex-direction:column; align-items:flex-start; gap:4px;"><div style="display:flex; align-items:center; gap:8px;"><button type="button" class="catalog-tier-add" data-action="addTier" title="新增一档" aria-label="新增一档" style="width:24px; height:24px; line-height:24px; padding:0; display:inline-flex; align-items:center; justify-content:center; border-radius:8px; background:#bfdbfe; color:#2563eb; font-weight:700; white-space:nowrap; box-shadow:0 1px 3px rgba(0,0,0,0.1); margin-right:4px;">+</button><div>${items}</div></div>${mismatch?`<div style=\"color:#e11d48; font-size:12px;\">与"含税售价（多档）"档数不一致</div>`:''}</div>`;
 	}
+	
+	// 生成主推款切换按钮
+	function buildMainProductToggle(row, index) {
+		const isMainProduct = row.isMainProduct || false;
+		const mainProductStyle = isMainProduct ? 
+			'background:#10b981; color:#fff; border-color:#059669;' : 
+			'background:#f3f4f6; color:#6b7280; border-color:#d1d5db;';
+		const mainProductIcon = isMainProduct ? '⭐' : '☆';
+		const mainProductTitle = isMainProduct ? '点击取消主推款' : '点击设为主推款';
+		
+		return `<button type="button" class="catalog-main-product-toggle" data-index="${index}" data-action="toggleMainProduct" title="${mainProductTitle}" style="width:32px; height:32px; border-radius:6px; border:2px solid; ${mainProductStyle} font-size:16px; cursor:pointer; transition:all 0.2s ease; display:flex; align-items:center; justify-content:center;">${mainProductIcon}</button>`;
+	}
+	
 	// 生成"含税售价（多档）"编辑区 HTML
 	function buildPriceTiers(row) {
 		const tiers = Array.isArray(row.salePriceTiers) ? row.salePriceTiers : [];
@@ -4345,6 +4359,7 @@ function renderCatalogTable() {
 			`<td>${buildCellInput(row,'name','text','名称')}<div class=\"catalog-error\" style=\"color:#e11d48; font-size:12px; margin-top:4px; display:none;\"></div></td>`+
 			`<td>${buildCellInput(row,'sku','text','SKU')}</td>`+
 			`<td>${buildCellInput(row,'platform','text','平台')}</td>`+
+			`<td class=\"lp-col-center\">${buildMainProductToggle(row, idx)}</td>`+
 			`<td class=\"lp-col-right\">${buildCellInput(row,'salePrice','number','P')}</td>`+
 			`<td class=\"lp-col-right\">${buildPriceTiers(row)}</td>`+
 			`<td class=\"lp-col-right\">${buildCostTiers(row)}</td>`+
@@ -4735,6 +4750,50 @@ function renderCatalogTable() {
 			showPriceCheckModal(row);
 		});
 	});
+	
+	// 事件：主推款切换
+	container.querySelectorAll('button[data-action="toggleMainProduct"]').forEach(btn => {
+		btn.addEventListener('click', (e) => {
+			const tr = e.target.closest('tr'); const index = Number(tr.getAttribute('data-index'));
+			const row = getRowByDisplayIndex(index);
+			if (!row) return;
+			
+			// 切换主推款状态
+			row.isMainProduct = !row.isMainProduct;
+			
+			// 保存数据并只更新主推款按钮状态
+			saveCatalogToStorage();
+			updateMainProductButton(tr, row);
+			updateCatalogStatus();
+			
+			// 显示提示
+			const status = row.isMainProduct ? '设为主推款' : '取消主推款';
+			showToast && showToast(`商品"${row.name || '未命名'}"已${status}`);
+		});
+	});
+}
+
+/**
+ * 更新主推款按钮状态（不重新计算数据）
+ * @param {HTMLElement} tr - 表格行元素
+ * @param {Object} row - 行数据对象
+ */
+function updateMainProductButton(tr, row) {
+	const mainProductCell = tr.querySelector('td:nth-child(5)'); // 主推款列是第5列
+	if (mainProductCell) {
+		const isMainProduct = row.isMainProduct || false;
+		
+		// 更新按钮样式和图标，但保持事件绑定
+		const button = mainProductCell.querySelector('.catalog-main-product-toggle');
+		if (button) {
+			button.style.background = isMainProduct ? '#10b981' : '#f3f4f6';
+			button.style.color = isMainProduct ? '#fff' : '#6b7280';
+			button.style.borderColor = isMainProduct ? '#059669' : '#d1d5db';
+			button.innerHTML = isMainProduct ? '⭐' : '☆';
+			button.title = isMainProduct ? '点击取消主推款' : '点击设为主推款';
+		}
+	}
+}
 
 /**
  * 商品清单-利润推演弹窗
@@ -5201,55 +5260,61 @@ function showCatalogProfitScenario(row){
 	})();
 }
 	// 新增：利润推演按钮事件
-	container.querySelectorAll('button[data-action="profitScenario"]').forEach(btn => {
-		btn.addEventListener('click', (e) => {
-			const tr = e.target.closest('tr'); const index = Number(tr.getAttribute('data-index'));
-			const row = getRowByDisplayIndex(index);
-			if (!row) return;
-			showCatalogProfitScenario(row);
+	function bindCatalogEventListeners() {
+		const container = document.getElementById('catalogTableContainer');
+		if (!container) return;
+		
+		container.querySelectorAll('button[data-action="profitScenario"]').forEach(btn => {
+			btn.addEventListener('click', (e) => {
+				const tr = e.target.closest('tr'); const index = Number(tr.getAttribute('data-index'));
+				const row = getRowByDisplayIndex(index);
+				if (!row) return;
+				showCatalogProfitScenario(row);
+			});
 		});
-	});
-	// 事件：新增/删除/编辑 多档含税售价
-	container.querySelectorAll('button[data-action="addPriceTier"]').forEach(btn => {
-		btn.addEventListener('click', (e) => {
-			const tr = e.target.closest('tr'); const index = Number(tr.getAttribute('data-index')); 
-			const row = getRowByDisplayIndex(index);
-			if (!row) return;
-			
-			if (!Array.isArray(row.salePriceTiers)) row.salePriceTiers = [];
-			row.salePriceTiers.push('');
-			saveCatalogToStorage();
-			renderCatalogTable();
-			updateCatalogStatus();
+		// 事件：新增/删除/编辑 多档含税售价
+		container.querySelectorAll('button[data-action="addPriceTier"]').forEach(btn => {
+			btn.addEventListener('click', (e) => {
+				const tr = e.target.closest('tr'); const index = Number(tr.getAttribute('data-index')); 
+				const row = getRowByDisplayIndex(index);
+				if (!row) return;
+				
+				if (!Array.isArray(row.salePriceTiers)) row.salePriceTiers = [];
+				row.salePriceTiers.push('');
+				saveCatalogToStorage();
+				renderCatalogTable();
+				updateCatalogStatus();
+			});
 		});
-	});
-	container.querySelectorAll('button[data-action="removePriceTier"]').forEach(btn => {
-		btn.addEventListener('click', (e) => {
-			const tr = e.target.closest('tr'); const index = Number(tr.getAttribute('data-index')); 
-			const row = getRowByDisplayIndex(index);
-			if (!row) return;
-			
-			const ti = Number(e.target.getAttribute('data-price-tier-index'));
-			if (Array.isArray(row.salePriceTiers)) row.salePriceTiers.splice(ti,1);
-			const computed = computeRow(row); row.__result = computed.__result; saveCatalogToStorage();
-			renderCatalogTable();
-			updateCatalogStatus();
+		container.querySelectorAll('button[data-action="removePriceTier"]').forEach(btn => {
+			btn.addEventListener('click', (e) => {
+				const tr = e.target.closest('tr'); const index = Number(tr.getAttribute('data-index')); 
+				const row = getRowByDisplayIndex(index);
+				if (!row) return;
+				
+				const ti = Number(e.target.getAttribute('data-price-tier-index'));
+				if (Array.isArray(row.salePriceTiers)) row.salePriceTiers.splice(ti,1);
+				const computed = computeRow(row); row.__result = computed.__result; saveCatalogToStorage();
+				renderCatalogTable();
+				updateCatalogStatus();
+			});
 		});
-	});
-	container.querySelectorAll('.catalog-price-tier').forEach(inp => {
-		inp.addEventListener('input', (e) => {
-			const tr = e.target.closest('tr'); const index = Number(tr.getAttribute('data-index')); 
-			const row = getRowByDisplayIndex(index);
-			if (!row) return;
-			
-			const ti = Number(e.target.getAttribute('data-price-tier-index'));
-			if (!Array.isArray(row.salePriceTiers)) row.salePriceTiers = [];
-			row.salePriceTiers[ti] = e.target.value;
-			const computed = computeRow(row); row.__result = computed.__result; saveCatalogToStorage(); renderCatalogRow(index); updateCatalogStatus();
+		container.querySelectorAll('.catalog-price-tier').forEach(inp => {
+			inp.addEventListener('input', (e) => {
+				const tr = e.target.closest('tr'); const index = Number(tr.getAttribute('data-index')); 
+				const row = getRowByDisplayIndex(index);
+				if (!row) return;
+				
+				const ti = Number(e.target.getAttribute('data-price-tier-index'));
+				if (!Array.isArray(row.salePriceTiers)) row.salePriceTiers = [];
+				row.salePriceTiers[ti] = e.target.value;
+				const computed = computeRow(row); row.__result = computed.__result; saveCatalogToStorage(); renderCatalogRow(index); updateCatalogStatus();
+			});
 		});
-	});
-	updateCatalogStatus();
-}
+	}
+	
+	// 调用事件绑定函数
+	bindCatalogEventListeners();
 
 function renderCatalogRow(index) {
 	const container = document.getElementById('catalogTableContainer'); const tr = container.querySelector(`tr[data-index="${index}"]`); if (!tr) return;
@@ -5333,6 +5398,27 @@ function renderCatalogRow(index) {
 			}
 		}
 	}
+	// 更新主推款按钮状态
+	const mainProductCell = tds[4]; // 主推款列是第5列（索引4）
+	if (mainProductCell) {
+		const isMainProduct = row.isMainProduct || false;
+		const mainProductStyle = isMainProduct ? 
+			'background:#10b981; color:#fff; border-color:#059669;' : 
+			'background:#f3f4f6; color:#6b7280; border-color:#d1d5db;';
+		const mainProductIcon = isMainProduct ? '⭐' : '☆';
+		const mainProductTitle = isMainProduct ? '点击取消主推款' : '点击设为主推款';
+		
+		// 更新按钮样式和图标，但保持事件绑定
+		const button = mainProductCell.querySelector('.catalog-main-product-toggle');
+		if (button) {
+			button.style.background = isMainProduct ? '#10b981' : '#f3f4f6';
+			button.style.color = isMainProduct ? '#fff' : '#6b7280';
+			button.style.borderColor = isMainProduct ? '#059669' : '#d1d5db';
+			button.innerHTML = mainProductIcon;
+			button.title = mainProductTitle;
+		}
+	}
+	
 	// 在不打断输入焦点的前提下显示错误提示：不重建单元格内容，仅更新占位容器
 	const nameCell = tds[1];
 	if (nameCell) {
@@ -5576,6 +5662,28 @@ function renderCatalogRow(index) {
 	.pv-pill.good{background:#16a34a;color:#fff}
 	.pv-pill.warn{background:#f59e0b;color:#111}
 	.pv-pill.bad{background:#ef4444;color:#fff}
+	
+	/* 主推款样式 */
+	.catalog-main-product-toggle {
+		transition: all 0.2s ease;
+	}
+	.catalog-main-product-toggle:hover {
+		transform: scale(1.1);
+		box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+	}
+	.catalog-main-product-toggle:active {
+		transform: scale(0.95);
+	}
+	
+	/* 主推款行高亮 */
+	tr[data-index] .catalog-main-product-toggle[style*="background:#10b981"] {
+		animation: main-product-glow 2s ease-in-out infinite alternate;
+	}
+	
+	@keyframes main-product-glow {
+		from { box-shadow: 0 0 5px rgba(16, 185, 129, 0.5); }
+		to { box-shadow: 0 0 15px rgba(16, 185, 129, 0.8); }
+	}
 	`;
 	document.head.appendChild(style);
 })();
@@ -5817,6 +5925,7 @@ let catalogFilterState = {
 	returnRateMin: '',
 	returnRateMax: '',
 	dangerFilter: false, // 新增：保本广告占比低于21%风险商品筛选
+	mainProductFilter: false, // 新增：主推款筛选
 	sortBy: '',
 	sortOrder: 'asc',
 	filteredRows: []
@@ -5829,6 +5938,7 @@ function clearCatalogFilterInputs() {
 	const returnRateMin = document.getElementById('catalogReturnRateMin');
 	const returnRateMax = document.getElementById('catalogReturnRateMax');
 	const dangerFilter = document.getElementById('catalogDangerFilter');
+	const mainProductFilter = document.getElementById('catalogMainProductFilter');
 	const sortBy = document.getElementById('catalogSortBy');
 	const sortOrder = document.getElementById('catalogSortOrder');
 	
@@ -5837,6 +5947,7 @@ function clearCatalogFilterInputs() {
 	if (returnRateMin) returnRateMin.value = '';
 	if (returnRateMax) returnRateMax.value = '';
 	if (dangerFilter) dangerFilter.checked = false;
+	if (mainProductFilter) mainProductFilter.checked = false;
 	if (sortBy) sortBy.value = '';
 	if (sortOrder) sortOrder.value = 'asc';
 }
@@ -5848,6 +5959,7 @@ function clearFullscreenFilterInputs() {
 	const fullscreenReturnRateMin = document.getElementById('catalogFullscreenReturnRateMin');
 	const fullscreenReturnRateMax = document.getElementById('catalogFullscreenReturnRateMax');
 	const fullscreenDangerFilter = document.getElementById('catalogFullscreenDangerFilter');
+	const fullscreenMainProductFilter = document.getElementById('catalogFullscreenMainProductFilter');
 	const fullscreenSortBy = document.getElementById('catalogFullscreenSortBy');
 	const fullscreenSortOrder = document.getElementById('catalogFullscreenSortOrder');
 	
@@ -5856,6 +5968,7 @@ function clearFullscreenFilterInputs() {
 	if (fullscreenReturnRateMin) fullscreenReturnRateMin.value = '';
 	if (fullscreenReturnRateMax) fullscreenReturnRateMax.value = '';
 	if (fullscreenDangerFilter) fullscreenDangerFilter.checked = false;
+	if (fullscreenMainProductFilter) fullscreenMainProductFilter.checked = false;
 	if (fullscreenSortBy) fullscreenSortBy.value = '';
 	if (fullscreenSortOrder) fullscreenSortOrder.value = 'asc';
 }
@@ -5867,6 +5980,7 @@ function applyCatalogFilters() {
 	const returnRateMin = parseFloat(document.getElementById('catalogReturnRateMin').value) || 0;
 	const returnRateMax = parseFloat(document.getElementById('catalogReturnRateMax').value) || 100;
 	const dangerFilter = document.getElementById('catalogDangerFilter').checked;
+	const mainProductFilter = document.getElementById('catalogMainProductFilter').checked;
 	const sortBy = document.getElementById('catalogSortBy').value;
 	const sortOrder = document.getElementById('catalogSortOrder').value;
 	
@@ -5877,6 +5991,7 @@ function applyCatalogFilters() {
 		returnRateMin,
 		returnRateMax,
 		dangerFilter,
+		mainProductFilter,
 		sortBy,
 		sortOrder
 	};
@@ -5951,6 +6066,13 @@ function applyCatalogFilters() {
 			if (!hasDanger) return false;
 		}
 		
+		// 主推款筛选
+		if (mainProductFilter) {
+			if (!row.isMainProduct) {
+				return false;
+			}
+		}
+		
 		return true;
 	});
 	
@@ -6005,6 +6127,7 @@ function clearCatalogFilters() {
 	document.getElementById('catalogReturnRateMin').value = '';
 	document.getElementById('catalogReturnRateMax').value = '';
 	document.getElementById('catalogDangerFilter').checked = false;
+	document.getElementById('catalogMainProductFilter').checked = false;
 	document.getElementById('catalogSortBy').value = '';
 	document.getElementById('catalogSortOrder').value = 'asc';
 	
@@ -6014,6 +6137,7 @@ function clearCatalogFilters() {
 		returnRateMin: '',
 		returnRateMax: '',
 		dangerFilter: false,
+		mainProductFilter: false,
 		sortBy: '',
 		sortOrder: 'asc',
 		filteredRows: []
@@ -6061,7 +6185,7 @@ function updateCatalogStatus() {
 	});
 
 	// 显示筛选状态
-	if (catalogFilterState.searchText || catalogFilterState.platform || catalogFilterState.returnRateMin || catalogFilterState.returnRateMax || catalogFilterState.dangerFilter || catalogFilterState.sortBy) {
+	if (catalogFilterState.searchText || catalogFilterState.platform || catalogFilterState.returnRateMin || catalogFilterState.returnRateMax || catalogFilterState.dangerFilter || catalogFilterState.mainProductFilter || catalogFilterState.sortBy) {
 		if (err > 0) {
 			el.innerHTML = `共 ${allRows.length} 条，筛选后 ${filteredRows.length} 条，
 				<span style="background:#dc2626; color:white; padding:2px 6px; border-radius:12px; font-weight:600; animation:pulse-error 2s infinite;" title="${errorMessages.slice(0, 5).join('\n')}">
@@ -6264,7 +6388,7 @@ function recomputeAllCatalogRows() {
 
 function exportCatalogToCSV() {
 	// 新版模板：导出中文表头；多档成本/售价以分号分隔（例如："19;29;39"）
-	const header = '商品名称,货号,平台,含税售价P,含税售价（多档）,退货率,进货价（多档）';
+	const header = '商品名称,货号,平台,主推款,含税售价P,含税售价（多档）,退货率,进货价（多档）';
 	const rows = catalogState.rows || [];
 	const toPercent = (v) => { const p = parsePercent(v); return isFinite(p) ? (p*100).toFixed(2)+'%' : ''; };
 	const toMoney = (v) => { const n = Number(v); return isFinite(n) ? n.toFixed(2) : ''; };
@@ -6286,6 +6410,7 @@ function exportCatalogToCSV() {
 		(r.name||''),
 		(r.sku||''),
 		(r.platform||''),
+		(r.isMainProduct ? '是' : '否'),
 		toMoney(r.salePrice),
 		toPriceTiers(r),
 		toPercent(r.returnRate),
@@ -6409,6 +6534,7 @@ async function importCatalogFromFile(file) {
 			case 'name': case '商品名称': return 'name';
 			case 'sku': case '货号': return 'sku';
 			case 'platform': case '平台': return 'platform';
+			case 'isMainProduct': case '主推款': return 'isMainProduct';
 			case 'salePrice': case '含税售价P': return 'salePrice';
 			case 'salePriceTiers': case '含税售价（多档）': return 'salePriceTiers';
 			case 'returnRate': case '退货率': return 'returnRate';
@@ -6444,6 +6570,14 @@ async function importCatalogFromFile(file) {
 			const get = (k)=>{ const j=idx(k); return j>=0 ? cells[j] : ''; };
 			if (isNew) {
 				const row = { name:get('name'), sku:get('sku'), platform:get('platform') };
+				
+				// 解析主推款字段
+				const mainProductValue = get('isMainProduct');
+				if (mainProductValue) {
+					row.isMainProduct = mainProductValue === '是' || mainProductValue === 'true' || mainProductValue === '1' || mainProductValue === 'Y' || mainProductValue === 'y';
+				} else {
+					row.isMainProduct = false;
+				}
 				const salePrice = Number(get('salePrice'));
 				if (!row.name || !row.sku || !row.platform) throw new Error('name/sku/platform 必填');
 				
@@ -6550,6 +6684,7 @@ async function importCatalogFromFile(file) {
 		returnRateMin: '',
 		returnRateMax: '',
 		dangerFilter: false,
+		mainProductFilter: false,
 		sortBy: '',
 		sortOrder: 'asc',
 		filteredRows: []
@@ -6579,7 +6714,7 @@ function initCatalogTab() {
 	const btnFullscreen = document.getElementById('btnCatalogFullscreen');
 	if (btnAdd) btnAdd.addEventListener('click', () => { 
 		// 添加新行到数据中
-		catalogState.rows.unshift({ name:'', sku:'', platform:'', salePrice:'', returnRate:'', costMin:'', costMax:'' }); 
+		catalogState.rows.unshift({ name:'', sku:'', platform:'', salePrice:'', returnRate:'', costMin:'', costMax:'', isMainProduct: false }); 
 		
 		// 清除筛选状态，确保新行能够显示
 		catalogFilterState = {
@@ -6588,6 +6723,7 @@ function initCatalogTab() {
 			returnRateMin: '',
 			returnRateMax: '',
 			dangerFilter: false,
+			mainProductFilter: false,
 			sortBy: '',
 			sortOrder: 'asc',
 			filteredRows: []
@@ -6688,6 +6824,7 @@ function initCatalogTab() {
 					returnRateMin: '',
 					returnRateMax: '',
 					dangerFilter: false,
+					mainProductFilter: false,
 					sortBy: '',
 					sortOrder: 'asc',
 					filteredRows: []
@@ -6742,6 +6879,7 @@ function initCatalogTab() {
 			returnRateMin: '',
 			returnRateMax: '',
 			dangerFilter: false,
+			mainProductFilter: false,
 			sortBy: '',
 			sortOrder: 'asc',
 			filteredRows: []
@@ -6798,7 +6936,7 @@ function initCatalogTab() {
 					if (recomputeBtn) recomputeBtn.addEventListener('click', recomputeAllCatalogRows);
 			if (addRowBtn) addRowBtn.addEventListener('click', () => { 
 				// 添加新行到数据中
-				catalogState.rows.unshift({ name:'', sku:'', platform:'', salePrice:'', returnRate:'', costMin:'', costMax:'' }); 
+				catalogState.rows.unshift({ name:'', sku:'', platform:'', salePrice:'', returnRate:'', costMin:'', costMax:'', isMainProduct: false }); 
 				
 				// 清除筛选状态，确保新行能够显示
 				catalogFilterState = {
@@ -6873,6 +7011,12 @@ function initCatalogTab() {
 		dangerFilter.addEventListener('change', applyCatalogFilters);
 	}
 	
+	// 主推款筛选变化时自动应用
+	const mainProductFilter = document.getElementById('catalogMainProductFilter');
+	if (mainProductFilter) {
+		mainProductFilter.addEventListener('change', applyCatalogFilters);
+	}
+	
 	// 排序变化时自动应用
 	if (sortBy) {
 		sortBy.addEventListener('change', applyCatalogFilters);
@@ -6936,6 +7080,12 @@ function initCatalogTab() {
 	const fullscreenDangerFilter = document.getElementById('catalogFullscreenDangerFilter');
 	if (fullscreenDangerFilter) {
 		fullscreenDangerFilter.addEventListener('change', () => applyFullscreenFilters());
+	}
+	
+	// 全屏主推款筛选变化时自动应用
+	const fullscreenMainProductFilter = document.getElementById('catalogFullscreenMainProductFilter');
+	if (fullscreenMainProductFilter) {
+		fullscreenMainProductFilter.addEventListener('change', () => applyFullscreenFilters());
 	}
 	
 	// 全屏排序变化时自动应用
@@ -7091,6 +7241,7 @@ function applyFullscreenFilters() {
 	const returnRateMin = parseFloat(document.getElementById('catalogFullscreenReturnRateMin').value) || 0;
 	const returnRateMax = parseFloat(document.getElementById('catalogFullscreenReturnRateMax').value) || 100;
 	const dangerFilter = document.getElementById('catalogFullscreenDangerFilter').checked;
+	const mainProductFilter = document.getElementById('catalogFullscreenMainProductFilter').checked;
 	const sortBy = document.getElementById('catalogFullscreenSortBy').value;
 	const sortOrder = document.getElementById('catalogFullscreenSortOrder').value;
 	
@@ -7101,6 +7252,7 @@ function applyFullscreenFilters() {
 		returnRateMin,
 		returnRateMax,
 		dangerFilter,
+		mainProductFilter,
 		sortBy,
 		sortOrder,
 		filteredRows: []
@@ -7176,6 +7328,13 @@ function applyFullscreenFilters() {
 			if (!hasDanger) return false;
 		}
 		
+		// 主推款筛选
+		if (mainProductFilter) {
+			if (!row.isMainProduct) {
+				return false;
+			}
+		}
+		
 		return true;
 	});
 	// 应用排序
@@ -7231,6 +7390,7 @@ function clearFullscreenFilters() {
 	document.getElementById('catalogFullscreenReturnRateMin').value = '';
 	document.getElementById('catalogFullscreenReturnRateMax').value = '';
 	document.getElementById('catalogFullscreenDangerFilter').checked = false;
+	document.getElementById('catalogFullscreenMainProductFilter').checked = false;
 	document.getElementById('catalogFullscreenSortBy').value = '';
 	document.getElementById('catalogFullscreenSortOrder').value = 'asc';
 	
@@ -7239,6 +7399,8 @@ function clearFullscreenFilters() {
 		platform: '',
 		returnRateMin: '',
 		returnRateMax: '',
+		dangerFilter: false,
+		mainProductFilter: false,
 		sortBy: '',
 		sortOrder: 'asc',
 		filteredRows: []
