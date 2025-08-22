@@ -7363,11 +7363,119 @@ function showCatalogProfitScenario(row){
 function renderCatalogRow(index) {
 	const container = document.getElementById('catalogTableContainer'); const tr = container.querySelector(`tr[data-index="${index}"]`); if (!tr) return;
 	const row = getRowByDisplayIndex(index); if (!row) return; const res = row.__result || {}; const tds = tr.querySelectorAll('td');
+	
+	// 保护措施：确保退货率输入框不会在行重算时丢失
+	const RETURN_RATE_COL = 8; // 退货率列索引
+	const returnRateCell = tds[RETURN_RATE_COL];
+	if (returnRateCell && !returnRateCell.querySelector('input[data-key="returnRate"]')) {
+		// 如果退货率输入框丢失，重新创建它
+		const buildCellInput = (row, key, type, placeholder) => { 
+			const val = row[key] ?? ''; 
+			const cls='catalog-input'; 
+			let width = '70px'; // 退货率输入框宽度
+			
+			// 退货率字段特殊处理：手动输入，验证是否包含%符号
+			if (key === 'returnRate') {
+				const displayValue = (() => {
+					if (val === undefined || val === null || val === '') return '';
+					const num = Number(val);
+					if (isFinite(num)) {
+						// 如果是小数值（0-1之间），转换为百分比显示
+						if (num >= 0 && num <= 1) {
+							return (num * 100).toFixed(2) + '%';
+						}
+						// 如果已经是百分比数值（>1），直接显示
+						return num.toFixed(2) + '%';
+					}
+					// 如果已经是字符串格式（如"12%"），直接显示
+					return String(val);
+				})();
+				return `<input data-key="${key}" class="${cls}" type="text" value="${displayValue}" placeholder="请输入百分比，如：12%" style="width:${width};" title="请输入百分比格式，如：12%">`;
+			}
+			return `<input data-key="${key}" class="${cls}" type="${type}" value="${val === undefined ? '' : String(val)}" placeholder="${placeholder||''}" style="width:${width};">`;
+		};
+		
+		returnRateCell.innerHTML = buildCellInput(row, 'returnRate', 'text', '请输入百分比，如：12%');
+		
+		// 重新绑定事件监听器
+		const newInput = returnRateCell.querySelector('input[data-key="returnRate"]');
+		if (newInput) {
+			newInput.addEventListener('input', (e) => {
+				const el = e.target;
+				const tr = el.closest('tr'); const index = Number(tr.getAttribute('data-index'));
+				const key = el.getAttribute('data-key'); let value = el.value; 
+				
+				// 修复：根据筛选状态获取正确的行数据
+				const row = getRowByDisplayIndex(index);
+				if (!row) return;
+				
+				// 退货率字段特殊处理：手动输入，验证是否包含%符号
+				if (key === 'returnRate') {
+					// 验证退货率格式：必须包含%符号
+					if (value && !value.includes('%')) {
+						// 如果没有%符号，显示错误提示并高亮输入框
+						el.style.borderColor = '#dc2626';
+						el.style.backgroundColor = '#fef2f2';
+						el.style.animation = 'pulse-error 0.6s ease-in-out';
+						
+						// 显示错误提示
+						showToast && showToast('退货率必须包含%符号，如：12%');
+						
+						// 恢复输入框样式（延迟恢复）
+						setTimeout(() => {
+							el.style.borderColor = '';
+							el.style.backgroundColor = '';
+							el.style.animation = '';
+						}, 2000);
+						
+						// 不更新数据，等待用户修正
+						return;
+					}
+					
+					// 验证通过，恢复输入框样式
+					el.style.borderColor = '';
+					el.style.backgroundColor = '';
+					el.style.animation = '';
+					
+					// 使用 parsePercent 函数解析输入值，确保存储为小数值
+					const parsedValue = parsePercent(value);
+					if (isFinite(parsedValue)) {
+						value = parsedValue; // 存储为小数值
+					} else {
+						// 如果解析失败，显示错误提示
+						el.style.borderColor = '#dc2626';
+						el.style.backgroundColor = '#fef2f2';
+						el.style.animation = 'pulse-error 0.6s ease-in-out';
+						
+						showToast && showToast('退货率格式错误，请输入正确的百分比格式，如：12%');
+						
+						// 恢复输入框样式（延迟恢复）
+						setTimeout(() => {
+							el.style.borderColor = '';
+							el.style.backgroundColor = '';
+							el.style.animation = '';
+						}, 2000);
+						
+						// 不更新数据，等待用户修正
+						return;
+					}
+				}
+				
+				row[key] = value; 
+				// 立即计算缓存，但仅更新行展示的非输入单元格，避免重建输入框
+				const computed = computeRow(row); row.__result = computed.__result; saveCatalogToStorage();
+				// 使用 120ms 节流合并频繁输入，降低 render 频率，且仅调用 renderCatalogRow（不会重建输入框）
+				let inputDebounceTimer = null;
+				clearTimeout(inputDebounceTimer);
+				inputDebounceTimer = setTimeout(() => { renderCatalogRow(index); updateCatalogStatus(); }, 120);
+			});
+		}
+	}
 	const fmt = (v, asPercent, asMoney, clampZero) => {
 		const show = (x) => { if (!isFinite(x)) return '-'; if (asPercent) { if (clampZero && x<=0) return '0%'; return (x*100).toFixed(2)+'%'; } return asMoney?('¥ '+Number(x).toFixed(2)):Number(x).toFixed(2); };
 		if (v && typeof v==='object' && 'min' in v) return `${show(v.min)} ~ ${show(v.max)}`; return show(v);
 	};
-	const ROI_COL = 8, AD_COL = 9, PROFIT_COL = 10; // 新索引：添加利润率列后
+	const ROI_COL = 9, AD_COL = 10, PROFIT_COL = 11; // 正确的列索引：退货率在第8列，ROI在第9列
 	if (Array.isArray(res.list)) {
 		if (tds[ROI_COL]) tds[ROI_COL].innerHTML = res.list.map(x=>`<div style="margin:2px 0;">${isFinite(x.breakevenROI)? Number(x.breakevenROI).toFixed(2) : '∞'}</div>`).join('');
 		if (tds[AD_COL]) tds[AD_COL].innerHTML = res.list.map(x=>{ 
