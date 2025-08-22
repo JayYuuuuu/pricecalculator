@@ -4101,11 +4101,148 @@ function calculatePlatformMetrics(rows) {
 		if (isFinite(breakevenAdRate) && breakevenAdRate > 0) {
 			metrics.avgBreakevenAdRate += breakevenAdRate;
 			validAdRateCount++;
+		}
+		
+		// 统计风险商品（与商品清单表格筛选逻辑保持一致）
+		const isRiskProduct = (() => {
+			// 检查是否有任何一档的保本广告占比 < 21%
+			const salePriceTiers = Array.isArray(row.salePriceTiers) ? row.salePriceTiers.filter(v => isFinite(Number(v)) && Number(v) > 0).map(Number) : [];
+			const costTiers = Array.isArray(row.costTiers) ? row.costTiers.filter(v => isFinite(Number(v)) && Number(v) >= 0).map(Number) : [];
 			
-			// 统计风险商品（保本广告占比<21%）
-			if (breakevenAdRate < 0.21) {
-				metrics.riskProductCount++;
+			// 如果没有多档数据，使用单一数据
+			if (salePriceTiers.length === 0 && costTiers.length === 0) {
+				const salePrice = Number(row.salePrice) || 0;
+				const costPrice = Number(row.costMin) || Number(row.costMax) || 0;
+				if (salePrice <= 0 || costPrice <= 0) return false;
+				
+				const returnRate = parseReturnRate(row.returnRate);
+				const platformRate = (() => {
+					const rate = getPlatformRateByName(row.platform);
+					return isFinite(rate) ? rate : 0.055;
+				})();
+				
+				const globals = getGlobalDefaultsForCatalog();
+				const roiResult = calculateBreakevenROI({
+					costPrice: costPrice,
+					inputTaxRate: globals.inputTaxRate,
+					outputTaxRate: globals.outputTaxRate,
+					salesTaxRate: globals.salesTaxRate,
+					platformRate: platformRate,
+					shippingCost: globals.shippingCost,
+					shippingInsurance: globals.shippingInsurance,
+					otherCost: globals.otherCost,
+					returnRate: returnRate,
+					finalPrice: salePrice
+				});
+				
+				return isFinite(roiResult.breakevenAdRate) && roiResult.breakevenAdRate > 0 && roiResult.breakevenAdRate < 0.21;
 			}
+			
+			// 处理多档情况：检查是否有任何一档 < 21%
+			if (salePriceTiers.length > 0 && costTiers.length > 0) {
+				// 多档售价 + 多档成本：1:1配对检查
+				const minLength = Math.min(salePriceTiers.length, costTiers.length);
+				for (let i = 0; i < minLength; i++) {
+					const salePrice = salePriceTiers[i];
+					const costPrice = costTiers[i];
+					
+					if (salePrice > 0 && costPrice >= 0) {
+						const returnRate = parseReturnRate(row.returnRate);
+						const platformRate = (() => {
+							const rate = getPlatformRateByName(row.platform);
+							return isFinite(rate) ? rate : 0.055;
+						})();
+						
+						const globals = getGlobalDefaultsForCatalog();
+						const roiResult = calculateBreakevenROI({
+							costPrice: costPrice,
+							inputTaxRate: globals.inputTaxRate,
+							outputTaxRate: globals.outputTaxRate,
+							salesTaxRate: globals.salesTaxRate,
+							platformRate: platformRate,
+							shippingCost: globals.shippingCost,
+							shippingInsurance: globals.shippingInsurance,
+							otherCost: globals.otherCost,
+							returnRate: returnRate,
+							finalPrice: salePrice
+						});
+						
+						if (isFinite(roiResult.breakevenAdRate) && roiResult.breakevenAdRate > 0 && roiResult.breakevenAdRate < 0.21) {
+							return true; // 发现风险档位
+						}
+					}
+				}
+			} else if (salePriceTiers.length > 0) {
+				// 只有多档售价：使用第一个成本价检查所有售价档位
+				const costPrice = Number(row.costMin) || Number(row.costMax) || 0;
+				if (costPrice > 0) {
+					for (const salePrice of salePriceTiers) {
+						if (salePrice > 0) {
+							const returnRate = parseReturnRate(row.returnRate);
+							const platformRate = (() => {
+								const rate = getPlatformRateByName(row.platform);
+								return isFinite(rate) ? rate : 0.055;
+							})();
+							
+							const globals = getGlobalDefaultsForCatalog();
+							const roiResult = calculateBreakevenROI({
+								costPrice: costPrice,
+								inputTaxRate: globals.inputTaxRate,
+								outputTaxRate: globals.outputTaxRate,
+								salesTaxRate: globals.salesTaxRate,
+								platformRate: platformRate,
+								shippingCost: globals.shippingCost,
+								shippingInsurance: globals.shippingInsurance,
+								otherCost: globals.otherCost,
+								returnRate: returnRate,
+								finalPrice: salePrice
+							});
+							
+							if (isFinite(roiResult.breakevenAdRate) && roiResult.breakevenAdRate > 0 && roiResult.breakevenAdRate < 0.21) {
+								return true; // 发现风险档位
+							}
+						}
+					}
+				}
+			} else if (costTiers.length > 0) {
+				// 只有多档成本：使用第一个售价检查所有成本档位
+				const salePrice = Number(row.salePrice) || 0;
+				if (salePrice > 0) {
+					for (const costPrice of costTiers) {
+						if (costPrice >= 0) {
+							const returnRate = parseReturnRate(row.returnRate);
+							const platformRate = (() => {
+								const rate = getPlatformRateByName(row.platform);
+								return isFinite(rate) ? rate : 0.055;
+							})();
+							
+							const globals = getGlobalDefaultsForCatalog();
+							const roiResult = calculateBreakevenROI({
+								costPrice: costPrice,
+								inputTaxRate: globals.inputTaxRate,
+								outputTaxRate: globals.outputTaxRate,
+								salesTaxRate: globals.salesTaxRate,
+								platformRate: platformRate,
+								shippingCost: globals.shippingCost,
+								shippingInsurance: globals.shippingInsurance,
+								otherCost: globals.otherCost,
+								returnRate: returnRate,
+								finalPrice: salePrice
+							});
+							
+							if (isFinite(roiResult.breakevenAdRate) && roiResult.breakevenAdRate > 0 && roiResult.breakevenAdRate < 0.21) {
+								return true; // 发现风险档位
+							}
+						}
+					}
+				}
+			}
+			
+			return false; // 没有发现风险档位
+		})();
+		
+		if (isRiskProduct) {
+			metrics.riskProductCount++;
 		}
 	});
 	
@@ -4174,11 +4311,148 @@ function calculateOverallMetrics(rows) {
 		if (isFinite(breakevenAdRate) && breakevenAdRate > 0) {
 			overall.avgBreakevenAdRate += breakevenAdRate;
 			validAdRateCount++;
+		}
+		
+		// 统计风险商品（与商品清单表格筛选逻辑保持一致）
+		const isRiskProduct = (() => {
+			// 检查是否有任何一档的保本广告占比 < 21%
+			const salePriceTiers = Array.isArray(row.salePriceTiers) ? row.salePriceTiers.filter(v => isFinite(Number(v)) && Number(v) > 0).map(Number) : [];
+			const costTiers = Array.isArray(row.costTiers) ? row.costTiers.filter(v => isFinite(Number(v)) && Number(v) >= 0).map(Number) : [];
 			
-			// 统计风险商品（保本广告占比<21%）
-			if (breakevenAdRate < 0.21) {
-				overall.riskProductCount++;
+			// 如果没有多档数据，使用单一数据
+			if (salePriceTiers.length === 0 && costTiers.length === 0) {
+				const salePrice = Number(row.salePrice) || 0;
+				const costPrice = Number(row.costMin) || Number(row.costMax) || 0;
+				if (salePrice <= 0 || costPrice <= 0) return false;
+				
+				const returnRate = parseReturnRate(row.returnRate);
+				const platformRate = (() => {
+					const rate = getPlatformRateByName(row.platform);
+					return isFinite(rate) ? rate : 0.055;
+				})();
+				
+				const globals = getGlobalDefaultsForCatalog();
+				const roiResult = calculateBreakevenROI({
+					costPrice: costPrice,
+					inputTaxRate: globals.inputTaxRate,
+					outputTaxRate: globals.outputTaxRate,
+					salesTaxRate: globals.salesTaxRate,
+					platformRate: platformRate,
+					shippingCost: globals.shippingCost,
+					shippingInsurance: globals.shippingInsurance,
+					otherCost: globals.otherCost,
+					returnRate: returnRate,
+					finalPrice: salePrice
+				});
+				
+				return isFinite(roiResult.breakevenAdRate) && roiResult.breakevenAdRate > 0 && roiResult.breakevenAdRate < 0.21;
 			}
+			
+			// 处理多档情况：检查是否有任何一档 < 21%
+			if (salePriceTiers.length > 0 && costTiers.length > 0) {
+				// 多档售价 + 多档成本：1:1配对检查
+				const minLength = Math.min(salePriceTiers.length, costTiers.length);
+				for (let i = 0; i < minLength; i++) {
+					const salePrice = salePriceTiers[i];
+					const costPrice = costTiers[i];
+					
+					if (salePrice > 0 && costPrice >= 0) {
+						const returnRate = parseReturnRate(row.returnRate);
+						const platformRate = (() => {
+							const rate = getPlatformRateByName(row.platform);
+							return isFinite(rate) ? rate : 0.055;
+						})();
+						
+						const globals = getGlobalDefaultsForCatalog();
+						const roiResult = calculateBreakevenROI({
+							costPrice: costPrice,
+							inputTaxRate: globals.inputTaxRate,
+							outputTaxRate: globals.outputTaxRate,
+							salesTaxRate: globals.salesTaxRate,
+							platformRate: platformRate,
+							shippingCost: globals.shippingCost,
+							shippingInsurance: globals.shippingInsurance,
+							otherCost: globals.otherCost,
+							returnRate: returnRate,
+							finalPrice: salePrice
+						});
+						
+						if (isFinite(roiResult.breakevenAdRate) && roiResult.breakevenAdRate > 0 && roiResult.breakevenAdRate < 0.21) {
+							return true; // 发现风险档位
+						}
+					}
+				}
+			} else if (salePriceTiers.length > 0) {
+				// 只有多档售价：使用第一个成本价检查所有售价档位
+				const costPrice = Number(row.costMin) || Number(row.costMax) || 0;
+				if (costPrice > 0) {
+					for (const salePrice of salePriceTiers) {
+						if (salePrice > 0) {
+							const returnRate = parseReturnRate(row.returnRate);
+							const platformRate = (() => {
+								const rate = getPlatformRateByName(row.platform);
+								return isFinite(rate) ? rate : 0.055;
+							})();
+							
+							const globals = getGlobalDefaultsForCatalog();
+							const roiResult = calculateBreakevenROI({
+								costPrice: costPrice,
+								inputTaxRate: globals.inputTaxRate,
+								outputTaxRate: globals.outputTaxRate,
+								salesTaxRate: globals.salesTaxRate,
+								platformRate: platformRate,
+								shippingCost: globals.shippingCost,
+								shippingInsurance: globals.shippingInsurance,
+								otherCost: globals.otherCost,
+								returnRate: returnRate,
+								finalPrice: salePrice
+							});
+							
+							if (isFinite(roiResult.breakevenAdRate) && roiResult.breakevenAdRate > 0 && roiResult.breakevenAdRate < 0.21) {
+								return true; // 发现风险档位
+							}
+						}
+					}
+				}
+			} else if (costTiers.length > 0) {
+				// 只有多档成本：使用第一个售价检查所有成本档位
+				const salePrice = Number(row.salePrice) || 0;
+				if (salePrice > 0) {
+					for (const costPrice of costTiers) {
+						if (costPrice >= 0) {
+							const returnRate = parseReturnRate(row.returnRate);
+							const platformRate = (() => {
+								const rate = getPlatformRateByName(row.platform);
+								return isFinite(rate) ? rate : 0.055;
+							})();
+							
+							const globals = getGlobalDefaultsForCatalog();
+							const roiResult = calculateBreakevenROI({
+								costPrice: costPrice,
+								inputTaxRate: globals.inputTaxRate,
+								outputTaxRate: globals.outputTaxRate,
+								salesTaxRate: globals.salesTaxRate,
+								platformRate: platformRate,
+								shippingCost: globals.shippingCost,
+								shippingInsurance: globals.shippingInsurance,
+								otherCost: globals.otherCost,
+								returnRate: returnRate,
+								finalPrice: salePrice
+						});
+						
+							if (isFinite(roiResult.breakevenAdRate) && roiResult.breakevenAdRate > 0 && roiResult.breakevenAdRate < 0.21) {
+								return true; // 发现风险档位
+							}
+						}
+					}
+				}
+			}
+			
+			return false; // 没有发现风险档位
+		})();
+		
+		if (isRiskProduct) {
+			overall.riskProductCount++;
 		}
 	});
 	
@@ -4280,24 +4554,9 @@ function parseReturnRate(returnRate) {
 // 计算单个商品的保本ROI
 function calculateBreakevenROIForRow(row) {
 	try {
-		// 获取售价
-		let salePrice = 0;
-		if (Array.isArray(row.salePriceTiers) && row.salePriceTiers.length > 0) {
-			salePrice = Number(row.salePriceTiers[0]) || 0;
-		} else {
-			salePrice = Number(row.salePrice) || 0;
-		}
-		
-		// 获取进货价
-		let costPrice = 0;
-		if (Array.isArray(row.costTiers) && row.costTiers.length > 0) {
-			costPrice = Number(row.costTiers[0]) || 0;
-		} else {
-			costPrice = Number(row.costMin) || Number(row.costMax) || 0;
-		}
-		
 		// 获取退货率
 		const returnRate = parseReturnRate(row.returnRate);
+		if (!isFinite(returnRate)) return NaN;
 		
 		// 获取平台佣金率
 		const platformRate = (() => {
@@ -4308,26 +4567,123 @@ function calculateBreakevenROIForRow(row) {
 		// 调试信息：显示平台佣金率获取过程
 		console.log(`[概览计算ROI] 商品: ${row.name || row.sku}, 平台: ${row.platform}, 获取佣金率: ${platformRate}, 默认值: 0.055`);
 		
-		if (salePrice <= 0 || costPrice <= 0 || !isFinite(returnRate)) return NaN;
-		
 		// 获取系统全局参数（与其他功能保持一致）
 		const globals = getGlobalDefaultsForCatalog();
 		
-		// 使用系统现有的保本ROI计算函数（参数来源与主页面完全一致）
-		const roiResult = calculateBreakevenROI({
-			costPrice: costPrice,
-			inputTaxRate: globals.inputTaxRate,        // 使用系统设置的开票成本率
-			outputTaxRate: globals.outputTaxRate,      // 使用系统设置的进项税率
-			salesTaxRate: globals.salesTaxRate,        // 使用系统设置的销项税率
-			platformRate: platformRate,                // 使用平台特定佣金率
-			shippingCost: globals.shippingCost,        // 使用系统设置的物流成本
-			shippingInsurance: globals.shippingInsurance, // 使用系统设置的运费险
-			otherCost: globals.otherCost,              // 使用系统设置的其他成本
-			returnRate: returnRate,
-			finalPrice: salePrice
-		});
+		// 处理多档成本和多档售价的情况
+		const salePriceTiers = Array.isArray(row.salePriceTiers) ? row.salePriceTiers.filter(v => isFinite(Number(v)) && Number(v) > 0).map(Number) : [];
+		const costTiers = Array.isArray(row.costTiers) ? row.costTiers.filter(v => isFinite(Number(v)) && Number(v) >= 0).map(Number) : [];
 		
-		return roiResult.breakevenROI;
+		// 如果没有多档数据，使用单一数据
+		if (salePriceTiers.length === 0 && costTiers.length === 0) {
+			const salePrice = Number(row.salePrice) || 0;
+			const costPrice = Number(row.costMin) || Number(row.costMax) || 0;
+			
+			if (salePrice <= 0 || costPrice <= 0) return NaN;
+			
+			const roiResult = calculateBreakevenROI({
+				costPrice: costPrice,
+				inputTaxRate: globals.inputTaxRate,
+				outputTaxRate: globals.outputTaxRate,
+				salesTaxRate: globals.salesTaxRate,
+				platformRate: platformRate,
+				shippingCost: globals.shippingCost,
+				shippingInsurance: globals.shippingInsurance,
+				otherCost: globals.otherCost,
+				returnRate: returnRate,
+				finalPrice: salePrice
+			});
+			
+			return roiResult.breakevenROI;
+		}
+		
+		// 处理多档情况：1:1配对计算
+		let totalROI = 0;
+		let validCount = 0;
+		
+		if (salePriceTiers.length > 0 && costTiers.length > 0) {
+			// 多档售价 + 多档成本：1:1配对计算
+			const minLength = Math.min(salePriceTiers.length, costTiers.length);
+			for (let i = 0; i < minLength; i++) {
+				const salePrice = salePriceTiers[i];
+				const costPrice = costTiers[i];
+				
+				if (salePrice > 0 && costPrice >= 0) {
+					const roiResult = calculateBreakevenROI({
+						costPrice: costPrice,
+						inputTaxRate: globals.inputTaxRate,
+						outputTaxRate: globals.outputTaxRate,
+						salesTaxRate: globals.salesTaxRate,
+						platformRate: platformRate,
+						shippingCost: globals.shippingCost,
+						shippingInsurance: globals.shippingInsurance,
+						otherCost: globals.otherCost,
+						returnRate: returnRate,
+						finalPrice: salePrice
+					});
+					
+					if (isFinite(roiResult.breakevenROI) && roiResult.breakevenROI > 0) {
+						totalROI += roiResult.breakevenROI;
+						validCount++;
+					}
+				}
+			}
+		} else if (salePriceTiers.length > 0) {
+			// 只有多档售价：使用第一个成本价
+			const costPrice = Number(row.costMin) || Number(row.costMax) || 0;
+			if (costPrice > 0) {
+				for (const salePrice of salePriceTiers) {
+					if (salePrice > 0) {
+						const roiResult = calculateBreakevenROI({
+							costPrice: costPrice,
+							inputTaxRate: globals.inputTaxRate,
+							outputTaxRate: globals.outputTaxRate,
+							salesTaxRate: globals.salesTaxRate,
+							platformRate: platformRate,
+							shippingCost: globals.shippingCost,
+							shippingInsurance: globals.shippingInsurance,
+							otherCost: globals.otherCost,
+							returnRate: returnRate,
+							finalPrice: salePrice
+						});
+						
+						if (isFinite(roiResult.breakevenROI) && roiResult.breakevenROI > 0) {
+							totalROI += roiResult.breakevenROI;
+							validCount++;
+						}
+					}
+				}
+			}
+		} else if (costTiers.length > 0) {
+			// 只有多档成本：使用第一个售价
+			const salePrice = Number(row.salePrice) || 0;
+			if (salePrice > 0) {
+				for (const costPrice of costTiers) {
+					if (costPrice >= 0) {
+						const roiResult = calculateBreakevenROI({
+							costPrice: costPrice,
+							inputTaxRate: globals.inputTaxRate,
+							outputTaxRate: globals.outputTaxRate,
+							salesTaxRate: globals.salesTaxRate,
+							platformRate: platformRate,
+							shippingCost: globals.shippingCost,
+							shippingInsurance: globals.shippingInsurance,
+							otherCost: globals.otherCost,
+							returnRate: returnRate,
+							finalPrice: salePrice
+						});
+						
+						if (isFinite(roiResult.breakevenROI) && roiResult.breakevenROI > 0) {
+							totalROI += roiResult.breakevenROI;
+							validCount++;
+						}
+					}
+				}
+			}
+		}
+		
+		// 返回平均值
+		return validCount > 0 ? totalROI / validCount : NaN;
 	} catch (error) {
 		return NaN;
 	}
@@ -4336,24 +4692,9 @@ function calculateBreakevenROIForRow(row) {
 // 计算单个商品的保本广告占比
 function calculateBreakevenAdRateForRow(row) {
 	try {
-		// 获取售价
-		let salePrice = 0;
-		if (Array.isArray(row.salePriceTiers) && row.salePriceTiers.length > 0) {
-			salePrice = Number(row.salePriceTiers[0]) || 0;
-		} else {
-			salePrice = Number(row.salePrice) || 0;
-		}
-		
-		// 获取进货价
-		let costPrice = 0;
-		if (Array.isArray(row.costTiers) && row.costTiers.length > 0) {
-			costPrice = Number(row.costTiers[0]) || 0;
-		} else {
-			costPrice = Number(row.costMin) || Number(row.costMax) || 0;
-		}
-		
 		// 获取退货率
 		const returnRate = parseReturnRate(row.returnRate);
+		if (!isFinite(returnRate)) return NaN;
 		
 		// 获取平台佣金率
 		const platformRate = (() => {
@@ -4364,26 +4705,123 @@ function calculateBreakevenAdRateForRow(row) {
 		// 调试信息：显示平台佣金率获取过程
 		console.log(`[概览计算] 商品: ${row.name || row.sku}, 平台: ${row.platform}, 获取佣金率: ${platformRate}, 默认值: 0.055`);
 		
-		if (salePrice <= 0 || costPrice <= 0 || !isFinite(returnRate)) return NaN;
-		
 		// 获取系统全局参数（与其他功能保持一致）
 		const globals = getGlobalDefaultsForCatalog();
 		
-		// 使用系统现有的保本ROI计算函数（参数来源与主页面完全一致）
-		const roiResult = calculateBreakevenROI({
-			costPrice: costPrice,
-			inputTaxRate: globals.inputTaxRate,        // 使用系统设置的开票成本率
-			outputTaxRate: globals.outputTaxRate,      // 使用系统设置的进项税率
-			salesTaxRate: globals.salesTaxRate,        // 使用系统设置的销项税率
-			platformRate: platformRate,                // 使用平台特定佣金率
-			shippingCost: globals.shippingCost,        // 使用系统设置的物流成本
-			shippingInsurance: globals.shippingInsurance, // 使用系统设置的运费险
-			otherCost: globals.otherCost,              // 使用系统设置的其他成本
-			returnRate: returnRate,
-			finalPrice: salePrice
-		});
+		// 处理多档成本和多档售价的情况
+		const salePriceTiers = Array.isArray(row.salePriceTiers) ? row.salePriceTiers.filter(v => isFinite(Number(v)) && Number(v) > 0).map(Number) : [];
+		const costTiers = Array.isArray(row.costTiers) ? row.costTiers.filter(v => isFinite(Number(v)) && Number(v) >= 0).map(Number) : [];
 		
-		return roiResult.breakevenAdRate;
+		// 如果没有多档数据，使用单一数据
+		if (salePriceTiers.length === 0 && costTiers.length === 0) {
+			const salePrice = Number(row.salePrice) || 0;
+			const costPrice = Number(row.costMin) || Number(row.costMax) || 0;
+			
+			if (salePrice <= 0 || costPrice <= 0) return NaN;
+			
+			const roiResult = calculateBreakevenROI({
+				costPrice: costPrice,
+				inputTaxRate: globals.inputTaxRate,
+				outputTaxRate: globals.outputTaxRate,
+				salesTaxRate: globals.salesTaxRate,
+				platformRate: platformRate,
+				shippingCost: globals.shippingCost,
+				shippingInsurance: globals.shippingInsurance,
+				otherCost: globals.otherCost,
+				returnRate: returnRate,
+				finalPrice: salePrice
+			});
+			
+			return roiResult.breakevenAdRate;
+		}
+		
+		// 处理多档情况：1:1配对计算
+		let totalAdRate = 0;
+		let validCount = 0;
+		
+		if (salePriceTiers.length > 0 && costTiers.length > 0) {
+			// 多档售价 + 多档成本：1:1配对计算
+			const minLength = Math.min(salePriceTiers.length, costTiers.length);
+			for (let i = 0; i < minLength; i++) {
+				const salePrice = salePriceTiers[i];
+				const costPrice = costTiers[i];
+				
+				if (salePrice > 0 && costPrice >= 0) {
+					const roiResult = calculateBreakevenROI({
+						costPrice: costPrice,
+						inputTaxRate: globals.inputTaxRate,
+						outputTaxRate: globals.outputTaxRate,
+						salesTaxRate: globals.salesTaxRate,
+						platformRate: platformRate,
+						shippingCost: globals.shippingCost,
+						shippingInsurance: globals.shippingInsurance,
+						otherCost: globals.otherCost,
+						returnRate: returnRate,
+						finalPrice: salePrice
+					});
+					
+					if (isFinite(roiResult.breakevenAdRate) && roiResult.breakevenAdRate > 0) {
+						totalAdRate += roiResult.breakevenAdRate;
+						validCount++;
+					}
+				}
+			}
+		} else if (salePriceTiers.length > 0) {
+			// 只有多档售价：使用第一个成本价
+			const costPrice = Number(row.costMin) || Number(row.costMax) || 0;
+			if (costPrice > 0) {
+				for (const salePrice of salePriceTiers) {
+					if (salePrice > 0) {
+						const roiResult = calculateBreakevenROI({
+							costPrice: costPrice,
+							inputTaxRate: globals.inputTaxRate,
+							outputTaxRate: globals.outputTaxRate,
+							salesTaxRate: globals.salesTaxRate,
+							platformRate: platformRate,
+							shippingCost: globals.shippingCost,
+							shippingInsurance: globals.shippingInsurance,
+							otherCost: globals.otherCost,
+							returnRate: returnRate,
+							finalPrice: salePrice
+						});
+						
+						if (isFinite(roiResult.breakevenAdRate) && roiResult.breakevenAdRate > 0) {
+							totalAdRate += roiResult.breakevenAdRate;
+							validCount++;
+						}
+					}
+				}
+			}
+		} else if (costTiers.length > 0) {
+			// 只有多档成本：使用第一个售价
+			const salePrice = Number(row.salePrice) || 0;
+			if (salePrice > 0) {
+				for (const costPrice of costTiers) {
+					if (costPrice >= 0) {
+						const roiResult = calculateBreakevenROI({
+							costPrice: costPrice,
+							inputTaxRate: globals.inputTaxRate,
+							outputTaxRate: globals.outputTaxRate,
+							salesTaxRate: globals.salesTaxRate,
+							platformRate: platformRate,
+							shippingCost: globals.shippingCost,
+							shippingInsurance: globals.shippingInsurance,
+							otherCost: globals.otherCost,
+							returnRate: returnRate,
+							finalPrice: salePrice
+						});
+						
+						if (isFinite(roiResult.breakevenAdRate) && roiResult.breakevenAdRate > 0) {
+							totalAdRate += roiResult.breakevenAdRate;
+							validCount++;
+						}
+					}
+				}
+			}
+		}
+		
+		// 返回平均值
+		return validCount > 0 ? totalAdRate / validCount : NaN;
 	} catch (error) {
 		return NaN;
 	}
@@ -4451,7 +4889,6 @@ function generateOverviewHtml(overviewData) {
 					 onmouseout="this.style.backgroundColor='#fff'">
 					<div style="font-size:24px; font-weight:700; color:#dc2626;">${overall.riskProductCount}</div>
 					<div style="font-size:12px; color:#6b7280;">风险商品数量</div>
-					<div style="font-size:10px; color:#9ca3af; margin-top:4px;">点击查看详情</div>
 				</div>
 			</div>
 		</div>
@@ -4605,8 +5042,145 @@ function showRiskProductsDetail() {
 	// 筛选出风险商品
 	const riskProducts = [];
 	rows.forEach((row, index) => {
-		const breakevenAdRate = calculateBreakevenAdRateForRow(row);
-		if (isFinite(breakevenAdRate) && breakevenAdRate > 0 && breakevenAdRate < 0.21) {
+		// 检查是否有任何一档的保本广告占比 < 21%
+		const isRiskProduct = (() => {
+			// 检查是否有任何一档的保本广告占比 < 21%
+			const salePriceTiers = Array.isArray(row.salePriceTiers) ? row.salePriceTiers.filter(v => isFinite(Number(v)) && Number(v) > 0).map(Number) : [];
+			const costTiers = Array.isArray(row.costTiers) ? row.costTiers.filter(v => isFinite(Number(v)) && Number(v) >= 0).map(Number) : [];
+			
+			// 如果没有多档数据，使用单一数据
+			if (salePriceTiers.length === 0 && costTiers.length === 0) {
+				const salePrice = Number(row.salePrice) || 0;
+				const costPrice = Number(row.costMin) || Number(row.costMax) || 0;
+				if (salePrice <= 0 || costPrice <= 0) return false;
+				
+				const returnRate = parseReturnRate(row.returnRate);
+				const platformRate = (() => {
+					const rate = getPlatformRateByName(row.platform);
+					return isFinite(rate) ? rate : 0.055;
+				})();
+				
+				const globals = getGlobalDefaultsForCatalog();
+				const roiResult = calculateBreakevenROI({
+					costPrice: costPrice,
+					inputTaxRate: globals.inputTaxRate,
+					outputTaxRate: globals.outputTaxRate,
+					salesTaxRate: globals.salesTaxRate,
+					platformRate: platformRate,
+					shippingCost: globals.shippingCost,
+					shippingInsurance: globals.shippingInsurance,
+					otherCost: globals.otherCost,
+					returnRate: returnRate,
+					finalPrice: salePrice
+				});
+				
+				return isFinite(roiResult.breakevenAdRate) && roiResult.breakevenAdRate > 0 && roiResult.breakevenAdRate < 0.21;
+			}
+			
+			// 处理多档情况：检查是否有任何一档 < 21%
+			if (salePriceTiers.length > 0 && costTiers.length > 0) {
+				// 多档售价 + 多档成本：1:1配对检查
+				const minLength = Math.min(salePriceTiers.length, costTiers.length);
+				for (let i = 0; i < minLength; i++) {
+					const salePrice = salePriceTiers[i];
+					const costPrice = costTiers[i];
+					
+					if (salePrice > 0 && costPrice >= 0) {
+						const returnRate = parseReturnRate(row.returnRate);
+						const platformRate = (() => {
+							const rate = getPlatformRateByName(row.platform);
+							return isFinite(rate) ? rate : 0.055;
+						})();
+						
+						const globals = getGlobalDefaultsForCatalog();
+						const roiResult = calculateBreakevenROI({
+							costPrice: costPrice,
+							inputTaxRate: globals.inputTaxRate,
+							outputTaxRate: globals.outputTaxRate,
+							salesTaxRate: globals.salesTaxRate,
+							platformRate: platformRate,
+							shippingCost: globals.shippingCost,
+							shippingInsurance: globals.shippingInsurance,
+							otherCost: globals.otherCost,
+							returnRate: returnRate,
+							finalPrice: salePrice
+						});
+						
+						if (isFinite(roiResult.breakevenAdRate) && roiResult.breakevenAdRate > 0 && roiResult.breakevenAdRate < 0.21) {
+							return true; // 发现风险档位
+						}
+					}
+				}
+			} else if (salePriceTiers.length > 0) {
+				// 只有多档售价：使用第一个成本价检查所有售价档位
+				const costPrice = Number(row.costMin) || Number(row.costMax) || 0;
+				if (costPrice > 0) {
+					for (const salePrice of salePriceTiers) {
+						if (salePrice > 0) {
+							const returnRate = parseReturnRate(row.returnRate);
+							const platformRate = (() => {
+								const rate = getPlatformRateByName(row.platform);
+								return isFinite(rate) ? rate : 0.055;
+							})();
+							
+							const globals = getGlobalDefaultsForCatalog();
+							const roiResult = calculateBreakevenROI({
+								costPrice: costPrice,
+								inputTaxRate: globals.inputTaxRate,
+								outputTaxRate: globals.outputTaxRate,
+								salesTaxRate: globals.salesTaxRate,
+								platformRate: platformRate,
+								shippingCost: globals.shippingCost,
+								shippingInsurance: globals.shippingInsurance,
+								otherCost: globals.otherCost,
+								returnRate: returnRate,
+								finalPrice: salePrice
+							});
+							
+							if (isFinite(roiResult.breakevenAdRate) && roiResult.breakevenAdRate > 0 && roiResult.breakevenAdRate < 0.21) {
+								return true; // 发现风险档位
+							}
+						}
+					}
+				}
+			} else if (costTiers.length > 0) {
+				// 只有多档成本：使用第一个售价检查所有成本档位
+				const salePrice = Number(row.salePrice) || 0;
+				if (salePrice > 0) {
+					for (const costPrice of costTiers) {
+						if (costPrice >= 0) {
+							const returnRate = parseReturnRate(row.returnRate);
+							const platformRate = (() => {
+								const rate = getPlatformRateByName(row.platform);
+								return isFinite(rate) ? rate : 0.055;
+							})();
+							
+							const globals = getGlobalDefaultsForCatalog();
+							const roiResult = calculateBreakevenROI({
+								costPrice: costPrice,
+								inputTaxRate: globals.inputTaxRate,
+								outputTaxRate: globals.outputTaxRate,
+								salesTaxRate: globals.salesTaxRate,
+								platformRate: platformRate,
+								shippingCost: globals.shippingCost,
+								shippingInsurance: globals.shippingInsurance,
+								otherCost: globals.otherCost,
+								returnRate: returnRate,
+								finalPrice: salePrice
+							});
+							
+							if (isFinite(roiResult.breakevenAdRate) && roiResult.breakevenAdRate > 0 && roiResult.breakevenAdRate < 0.21) {
+								return true; // 发现风险档位
+							}
+						}
+					}
+				}
+			}
+			
+			return false; // 没有发现风险档位
+		})();
+		
+		if (isRiskProduct) {
 			// 获取商品基本信息
 			const productName = row.productName || row.name || `商品${index + 1}`;
 			const platform = row.platform || '未设置平台';
@@ -4624,10 +5198,195 @@ function showRiskProductsDetail() {
 				costPrice = Number(row.costMin) || Number(row.costMax) || 0;
 			}
 			
-			// 计算其他指标
-			const markupRate = calculateMarkupRate(row);
-			const grossMargin = calculateGrossMargin(row);
+			// 收集每档的详细信息并计算平均值
+			const tierDetails = [];
+			const salePriceTiers = Array.isArray(row.salePriceTiers) ? row.salePriceTiers.filter(v => isFinite(Number(v)) && Number(v) > 0).map(Number) : [];
+			const costTiers = Array.isArray(row.costTiers) ? row.costTiers.filter(v => isFinite(Number(v)) && Number(v) >= 0).map(Number) : [];
+			
+			// 计算平均售价和平均成本价
+			let avgSalePrice = 0, avgCostPrice = 0;
+			let validSalePriceCount = 0, validCostPriceCount = 0;
+			
+			if (salePriceTiers.length > 0 || costTiers.length > 0) {
+				// 处理多档情况
+				if (salePriceTiers.length > 0 && costTiers.length > 0) {
+					// 多档售价 + 多档成本：1:1配对
+					const minLength = Math.min(salePriceTiers.length, costTiers.length);
+					for (let i = 0; i < minLength; i++) {
+						const salePrice = salePriceTiers[i];
+						const costPrice = costTiers[i];
+						
+						if (salePrice > 0 && costPrice >= 0) {
+							// 累加用于计算平均值
+							avgSalePrice += salePrice;
+							avgCostPrice += costPrice;
+							validSalePriceCount++;
+							validCostPriceCount++;
+							
+							const returnRate = parseReturnRate(row.returnRate);
+							const platformRate = (() => {
+								const rate = getPlatformRateByName(row.platform);
+								return isFinite(rate) ? rate : 0.055;
+							})();
+							
+							const globals = getGlobalDefaultsForCatalog();
+							const roiResult = calculateBreakevenROI({
+								costPrice: costPrice,
+								inputTaxRate: globals.inputTaxRate,
+								outputTaxRate: globals.outputTaxRate,
+								salesTaxRate: globals.salesTaxRate,
+								platformRate: platformRate,
+								shippingCost: globals.shippingCost,
+								shippingInsurance: globals.shippingInsurance,
+								otherCost: globals.otherCost,
+								returnRate: returnRate,
+								finalPrice: salePrice
+							});
+							
+							tierDetails.push({
+								tierIndex: i + 1,
+								salePrice: salePrice,
+								costPrice: costPrice,
+								breakevenAdRate: roiResult.breakevenAdRate,
+								breakevenROI: roiResult.breakevenROI,
+								isRisk: isFinite(roiResult.breakevenAdRate) && roiResult.breakevenAdRate > 0 && roiResult.breakevenAdRate < 0.21
+							});
+						}
+					}
+				} else if (salePriceTiers.length > 0) {
+					// 只有多档售价：使用第一个成本价
+					const costPrice = Number(row.costMin) || Number(row.costMax) || 0;
+					if (costPrice > 0) {
+						for (let i = 0; i < salePriceTiers.length; i++) {
+							const salePrice = salePriceTiers[i];
+							if (salePrice > 0) {
+								// 累加售价用于计算平均值
+								avgSalePrice += salePrice;
+								validSalePriceCount++;
+								
+								const returnRate = parseReturnRate(row.returnRate);
+								const platformRate = (() => {
+									const rate = getPlatformRateByName(row.platform);
+									return isFinite(rate) ? rate : 0.055;
+								})();
+								
+								const globals = getGlobalDefaultsForCatalog();
+								const roiResult = calculateBreakevenROI({
+									costPrice: costPrice,
+									inputTaxRate: globals.inputTaxRate,
+									outputTaxRate: globals.outputTaxRate,
+									salesTaxRate: globals.salesTaxRate,
+									platformRate: platformRate,
+									shippingCost: globals.shippingCost,
+									shippingInsurance: globals.shippingInsurance,
+									otherCost: globals.otherCost,
+									returnRate: returnRate,
+									finalPrice: salePrice
+								});
+								
+								tierDetails.push({
+									tierIndex: i + 1,
+									salePrice: salePrice,
+									costPrice: costPrice,
+									breakevenAdRate: roiResult.breakevenAdRate,
+									breakevenROI: roiResult.breakevenROI,
+									isRisk: isFinite(roiResult.breakevenAdRate) && roiResult.breakevenAdRate > 0 && roiResult.breakevenAdRate < 0.21
+								});
+							}
+						}
+						// 成本价只有一个值，直接使用
+						avgCostPrice = costPrice;
+						validCostPriceCount = 1;
+					}
+				} else if (costTiers.length > 0) {
+					// 只有多档成本：使用第一个售价
+					const salePrice = Number(row.salePrice) || 0;
+					if (salePrice > 0) {
+						for (let i = 0; i < costTiers.length; i++) {
+							const costPrice = costTiers[i];
+							if (costPrice >= 0) {
+								// 累加成本价用于计算平均值
+								avgCostPrice += costPrice;
+								validCostPriceCount++;
+								
+								const returnRate = parseReturnRate(row.returnRate);
+								const platformRate = (() => {
+									const rate = getPlatformRateByName(row.platform);
+									return isFinite(rate) ? rate : 0.055;
+								})();
+								
+								const globals = getGlobalDefaultsForCatalog();
+								const roiResult = calculateBreakevenROI({
+									costPrice: costPrice,
+									inputTaxRate: globals.inputTaxRate,
+									outputTaxRate: globals.outputTaxRate,
+									salesTaxRate: globals.salesTaxRate,
+									platformRate: platformRate,
+									shippingCost: globals.shippingCost,
+									shippingInsurance: globals.shippingInsurance,
+									otherCost: globals.otherCost,
+									returnRate: returnRate,
+									finalPrice: salePrice
+								});
+								
+								tierDetails.push({
+									tierIndex: i + 1,
+									salePrice: salePrice,
+									costPrice: costPrice,
+									breakevenAdRate: roiResult.breakevenAdRate,
+									breakevenROI: roiResult.breakevenROI,
+									isRisk: isFinite(roiResult.breakevenAdRate) && roiResult.breakevenAdRate > 0 && roiResult.breakevenAdRate < 0.21
+								});
+							}
+						}
+						// 售价只有一个值，直接使用
+						avgSalePrice = salePrice;
+						validSalePriceCount = 1;
+					}
+				}
+			} else {
+				// 单一数据
+				const returnRate = parseReturnRate(row.returnRate);
+				const platformRate = (() => {
+					const rate = getPlatformRateByName(row.platform);
+					return isFinite(rate) ? rate : 0.055;
+				})();
+				
+				const globals = getGlobalDefaultsForCatalog();
+				const roiResult = calculateBreakevenROI({
+					costPrice: costPrice,
+					inputTaxRate: globals.inputTaxRate,
+					outputTaxRate: globals.outputTaxRate,
+					salesTaxRate: globals.salesTaxRate,
+					platformRate: platformRate,
+					shippingCost: globals.shippingCost,
+					shippingInsurance: globals.shippingInsurance,
+					otherCost: globals.otherCost,
+					returnRate: returnRate,
+					finalPrice: salePrice
+				});
+				
+				tierDetails.push({
+					tierIndex: 1,
+					salePrice: salePrice,
+					costPrice: costPrice,
+					breakevenAdRate: roiResult.breakevenAdRate,
+					breakevenROI: roiResult.breakevenROI,
+					isRisk: isFinite(roiResult.breakevenAdRate) && roiResult.breakevenAdRate > 0 && roiResult.breakevenAdRate < 0.21
+				});
+			}
+			
+			// 计算平均值
+			const finalSalePrice = validSalePriceCount > 0 ? avgSalePrice / validSalePriceCount : 0;
+			const finalCostPrice = validCostPriceCount > 0 ? avgCostPrice / validCostPriceCount : 0;
+			
+			// 基于平均值计算其他指标
+			const markupRate = finalSalePrice > 0 && finalCostPrice > 0 ? finalSalePrice / finalCostPrice : 0;
+			const grossMargin = finalSalePrice > 0 && finalCostPrice > 0 ? (finalSalePrice - finalCostPrice) / finalSalePrice : 0;
 			const returnRate = parseReturnRate(row.returnRate);
+			
+			// 计算保本广告占比（用于显示风险等级）
+			const breakevenAdRate = calculateBreakevenAdRateForRow(row);
 			
 			// 确定风险等级和描述
 			let riskLevel = '';
@@ -4646,15 +5405,16 @@ function showRiskProductsDetail() {
 			riskProducts.push({
 				productName,
 				platform,
-				salePrice,
-				costPrice,
+				salePrice: finalSalePrice,
+				costPrice: finalCostPrice,
 				markupRate,
 				grossMargin,
 				returnRate,
 				breakevenAdRate,
 				riskLevel,
 				riskDescription,
-				rowIndex: index
+				rowIndex: index,
+				tierDetails: tierDetails
 			});
 		}
 	});
@@ -4700,27 +5460,53 @@ function showRiskProductsDetail() {
 			<div style="margin-bottom:12px; padding:12px; background:#fff; border-radius:6px;">
 				<div style="font-weight:600; color:#dc2626; margin-bottom:8px;">⚠️ 风险分析</div>
 				<div style="color:#374151; font-size:13px; line-height:1.4;">
-					<div><strong>保本广告占比：</strong><span style="color:#dc2626; font-weight:600;">${formatPercentage(product.breakevenAdRate)}</span></div>
+					<div><strong>整体保本广告占比：</strong><span style="color:#dc2626; font-weight:600;">${formatPercentage(product.breakevenAdRate)}</span></div>
 					<div style="margin-top:4px; color:#6b7280;">${product.riskDescription}</div>
 				</div>
 			</div>
 			
+			${product.tierDetails && product.tierDetails.length > 0 ? `
+			<div style="margin-bottom:12px; padding:12px; background:#f0f9ff; border-radius:6px; border-left:3px solid #0ea5e9;">
+				<div style="font-weight:600; color:#0ea5e9; margin-bottom:8px;">📊 档位详细分析</div>
+				<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:8px;">
+					${product.tierDetails.map(tier => `
+						<div style="padding:8px; background:#fff; border-radius:4px; border:1px solid ${tier.isRisk ? '#fecaca' : '#d1fae5'}; ${tier.isRisk ? 'background:#fef2f2;' : 'background:#f0fdf4;'}">
+							<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+								<span style="font-weight:600; color:#374151;">第${tier.tierIndex}档</span>
+								<span style="padding:2px 6px; background:${tier.isRisk ? '#dc2626' : '#059669'}; color:white; border-radius:8px; font-size:11px; font-weight:600;">${tier.isRisk ? '风险' : '安全'}</span>
+							</div>
+							<div style="font-size:12px; color:#6b7280; line-height:1.3;">
+								<div>售价：<span style="color:#059669; font-weight:600;">¥${tier.salePrice.toFixed(2)}</span></div>
+								<div>成本：<span style="color:#059669; font-weight:600;">¥${tier.costPrice.toFixed(2)}</span></div>
+								<div>保本广告占比：<span style="color:${tier.isRisk ? '#dc2626' : '#059669'}; font-weight:600;">${formatPercentage(tier.breakevenAdRate)}</span></div>
+								<div>保本ROI：<span style="color:#7c3aed; font-weight:600;">${tier.breakevenROI.toFixed(2)}倍</span></div>
+							</div>
+						</div>
+					`).join('')}
+				</div>
+			</div>
+			` : ''}
+			
+			<div style="margin-bottom:8px; padding:8px 12px; background:#fef3c7; border-radius:4px; font-size:12px; color:#92400e;">
+				💡 以下指标基于所有档位的平均值计算
+			</div>
+			
 			<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; font-size:13px;">
 				<div style="padding:8px 12px; background:#fff; border-radius:4px;">
-					<span style="color:#6b7280;">售价：</span>
+					<span style="color:#6b7280;">平均售价：</span>
 					<span style="font-weight:600; color:#059669;">¥${product.salePrice.toFixed(2)}</span>
 				</div>
 				<div style="padding:8px 12px; background:#fff; border-radius:4px;">
-					<span style="color:#6b7280;">成本价：</span>
+					<span style="color:#6b7280;">平均成本价：</span>
 					<span style="font-weight:600; color:#059669;">¥${product.costPrice.toFixed(2)}</span>
 				</div>
 				<div style="padding:8px 12px; background:#fff; border-radius:4px;">
-					<span style="color:#6b7280;">加价率：</span>
+					<span style="color:#6b7280;">平均加价率：</span>
 					<span style="font-weight:600; color:#059669;">${formatMarkupRate(product.markupRate)}</span>
 				</div>
 				<div style="padding:8px 12px; background:#fff; border-radius:4px;">
-					<span style="color:#6b7280;">毛利率：</span>
-					<span style="font-weight:600; color:#2563eb;">${formatPercentage(product.grossMargin)}</span>
+					<span style="color:#6b7280;">平均毛利率：</span>
+					<span style="color:#2563eb; font-weight:600;">${formatPercentage(product.grossMargin)}</span>
 				</div>
 				<div style="padding:8px 12px; background:#fff; border-radius:4px;">
 					<span style="color:#6b7280;">退货率：</span>
