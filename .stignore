@@ -1,0 +1,8 @@
+@Recycle
+Recycle
+.@__thumb
+@__thumb
+.sync-**
+.sync-conflict*
+**.sync-conflict*
+.DS_Store

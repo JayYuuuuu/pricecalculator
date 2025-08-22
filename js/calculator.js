@@ -5385,8 +5385,9 @@ function showRiskProductsDetail() {
 			const grossMargin = finalSalePrice > 0 && finalCostPrice > 0 ? (finalSalePrice - finalCostPrice) / finalSalePrice : 0;
 			const returnRate = parseReturnRate(row.returnRate);
 			
-			// 计算保本广告占比（用于显示风险等级）
+			// 计算保本广告占比和保本ROI（用于显示风险等级和整体平均指标）
 			const breakevenAdRate = calculateBreakevenAdRateForRow(row);
+			const breakevenROI = calculateBreakevenROIForRow(row);
 			
 			// 确定风险等级和描述
 			let riskLevel = '';
@@ -5411,6 +5412,7 @@ function showRiskProductsDetail() {
 				grossMargin,
 				returnRate,
 				breakevenAdRate,
+				breakevenROI,
 				riskLevel,
 				riskDescription,
 				rowIndex: index,
@@ -5439,15 +5441,16 @@ function showRiskProductsDetail() {
 	panel.style.borderRadius='12px'; 
 	panel.style.width='900px'; 
 	panel.style.maxWidth='94vw'; 
-	panel.style.maxHeight='88vh'; 
+	panel.style.maxHeight='95vh'; 
+    panel.style.minHeight='85vh';
 	panel.style.overflow='auto'; 
 	panel.style.boxShadow='0 12px 34px rgba(0,0,0,.18)'; 
 	panel.style.padding='20px';
 	
 	// 生成风险商品列表HTML
 	const riskProductsHtml = riskProducts.map((product, index) => `
-		<div style="margin-bottom:16px; padding:16px; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; border-left:4px solid #dc2626;">
-			<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+		<div style="margin-bottom:12px; padding:12px; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; border-left:4px solid #dc2626;">
+			<div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
 				<div style="flex:1;">
 					<h4 style="margin:0 0 4px 0; color:#111827; font-size:16px; font-weight:600;">${product.productName}</h4>
 					<div style="font-size:13px; color:#6b7280;">平台：${product.platform} | 行号：${product.rowIndex + 1}</div>
@@ -5457,21 +5460,21 @@ function showRiskProductsDetail() {
 				</div>
 			</div>
 			
-			<div style="margin-bottom:12px; padding:12px; background:#fff; border-radius:6px;">
-				<div style="font-weight:600; color:#dc2626; margin-bottom:8px;">⚠️ 风险分析</div>
+			<div style="margin-bottom:8px; padding:10px; background:#fff; border-radius:6px;">
+				<div style="font-weight:600; color:#dc2626; margin-bottom:6px;">⚠️ 风险分析</div>
 				<div style="color:#374151; font-size:13px; line-height:1.4;">
 					<div><strong>整体保本广告占比：</strong><span style="color:#dc2626; font-weight:600;">${formatPercentage(product.breakevenAdRate)}</span></div>
-					<div style="margin-top:4px; color:#6b7280;">${product.riskDescription}</div>
+					<div style="margin-top:3px; color:#6b7280;">${product.riskDescription}</div>
 				</div>
 			</div>
 			
 			${product.tierDetails && product.tierDetails.length > 0 ? `
-			<div style="margin-bottom:12px; padding:12px; background:#f0f9ff; border-radius:6px; border-left:3px solid #0ea5e9;">
-				<div style="font-weight:600; color:#0ea5e9; margin-bottom:8px;">📊 档位详细分析</div>
-				<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:8px;">
+			<div style="margin-bottom:8px; padding:10px; background:#f0f9ff; border-radius:6px; border-left:3px solid #0ea5e9;">
+				<div style="font-weight:600; color:#0ea5e9; margin-bottom:6px;">📊 档位详细分析</div>
+				<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:6px;">
 					${product.tierDetails.map(tier => `
-						<div style="padding:8px; background:#fff; border-radius:4px; border:1px solid ${tier.isRisk ? '#fecaca' : '#d1fae5'}; ${tier.isRisk ? 'background:#fef2f2;' : 'background:#f0fdf4;'}">
-							<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+						<div style="padding:6px; background:#fff; border-radius:4px; border:1px solid ${tier.isRisk ? '#fecaca' : '#d1fae5'}; ${tier.isRisk ? 'background:#fef2f2;' : 'background:#f0fdf4;'}">
+							<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
 								<span style="font-weight:600; color:#374151;">第${tier.tierIndex}档</span>
 								<span style="padding:2px 6px; background:${tier.isRisk ? '#dc2626' : '#059669'}; color:white; border-radius:8px; font-size:11px; font-weight:600;">${tier.isRisk ? '风险' : '安全'}</span>
 							</div>
@@ -5487,28 +5490,42 @@ function showRiskProductsDetail() {
 			</div>
 			` : ''}
 			
-			<div style="margin-bottom:8px; padding:8px 12px; background:#fef3c7; border-radius:4px; font-size:12px; color:#92400e;">
+			<div style="margin-bottom:8px; padding:10px; background:#f0f9ff; border-radius:6px; border-left:3px solid #0ea5e9;">
+				<div style="font-weight:600; color:#0ea5e9; margin-bottom:6px;">📈 整体平均指标</div>
+				<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:6px;">
+					<div style="padding:6px; background:#fff; border-radius:4px; border:1px solid #dbeafe;">
+						<div style="font-size:12px; color:#6b7280; margin-bottom:3px;">整体平均保本ROI</div>
+						<div style="font-weight:600; color:#0ea5e9; font-size:14px;">${product.breakevenROI ? product.breakevenROI.toFixed(2) + '倍' : '—'}</div>
+					</div>
+					<div style="padding:6px; background:#fff; border-radius:4px; border:1px solid #dbeafe;">
+						<div style="font-size:12px; color:#6b7280; margin-bottom:3px;">整体平均保本广告占比</div>
+						<div style="font-weight:600; color:#0ea5e9; font-size:14px;">${formatPercentage(product.breakevenAdRate)}</div>
+					</div>
+				</div>
+			</div>
+			
+			<div style="margin-bottom:6px; padding:6px 10px; background:#fef3c7; border-radius:4px; font-size:12px; color:#92400e;">
 				💡 以下指标基于所有档位的平均值计算
 			</div>
 			
-			<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; font-size:13px;">
-				<div style="padding:8px 12px; background:#fff; border-radius:4px;">
+			<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:8px; font-size:13px;">
+				<div style="padding:6px 10px; background:#fff; border-radius:4px;">
 					<span style="color:#6b7280;">平均售价：</span>
 					<span style="font-weight:600; color:#059669;">¥${product.salePrice.toFixed(2)}</span>
 				</div>
-				<div style="padding:8px 12px; background:#fff; border-radius:4px;">
+				<div style="padding:6px 10px; background:#fff; border-radius:4px;">
 					<span style="color:#6b7280;">平均成本价：</span>
 					<span style="font-weight:600; color:#059669;">¥${product.costPrice.toFixed(2)}</span>
 				</div>
-				<div style="padding:8px 12px; background:#fff; border-radius:4px;">
+				<div style="padding:6px 10px; background:#fff; border-radius:4px;">
 					<span style="color:#6b7280;">平均加价率：</span>
 					<span style="font-weight:600; color:#059669;">${formatMarkupRate(product.markupRate)}</span>
 				</div>
-				<div style="padding:8px 12px; background:#fff; border-radius:4px;">
+				<div style="padding:6px 10px; background:#fff; border-radius:4px;">
 					<span style="color:#6b7280;">平均毛利率：</span>
 					<span style="color:#2563eb; font-weight:600;">${formatPercentage(product.grossMargin)}</span>
 				</div>
-				<div style="padding:8px 12px; background:#fff; border-radius:4px;">
+				<div style="padding:6px 10px; background:#fff; border-radius:4px;">
 					<span style="color:#6b7280;">退货率：</span>
 					<span style="font-weight:600; color:#7c3aed;">${formatPercentage(product.returnRate)}</span>
 				</div>
@@ -5525,14 +5542,9 @@ function showRiskProductsDetail() {
 			<button id="riskDetailClose" class="batch-modal-btn">关闭</button>
 		</div>
 		
-		<div style="margin-bottom:16px; padding:12px; background:#dbeafe; border-radius:6px; font-size:13px; color:#1e40af;">
-			<div style="font-weight:600; margin-bottom:4px;">💡 风险等级说明：</div>
-			<div>• <strong>高风险</strong>：保本广告占比 < 10%，盈利能力极差，建议优化或下架</div>
-			<div>• <strong>中高风险</strong>：保本广告占比 < 15%，盈利能力较差，需要重点关注</div>
-			<div>• <strong>中等风险</strong>：保本广告占比 < 21%，盈利空间有限，建议优化成本或提高售价</div>
-		</div>
+
 		
-		<div style="max-height:500px; overflow-y:auto;">
+		<div style="max-height:calc(85vh - 120px); overflow-y:auto;">
 			${riskProductsHtml}
 		</div>
 	`;
