@@ -156,7 +156,53 @@ window.CATALOG_SAMPLE_ROWS = [
 	// 绵绵绒套装 - 多档售价 + 多档进货价
 	{ name:'绵绵绒套装', sku:'FWL240141', platform:'天猫', salePrice:0, salePriceTiers:[59.80, 69.80], returnRate:'3.45%', costTiers:[29.00, 30.50], isMainProduct: false },
 	// 空气层马甲（老） - 单一售价 + 单一进货价
-	{ name:'空气层马甲（老）', sku:'HYXB8401', platform:'天猫', salePrice:59.4, returnRate:'17.12%', costTiers:[25.5], isMainProduct: false }
+	{ name:'空气层马甲（老）', sku:'HYXB8401', platform:'天猫', salePrice:59.4, returnRate:'17.12%', costTiers:[25.5], isMainProduct: false },
+	
+	// 新增示例数据
+	// 奥粒绒单裤 - 单一售价 + 单一进货价
+	{ name:'奥粒绒单裤', sku:'HYX240381', platform:'淘宝', salePrice:49.5, returnRate:'19.49%', costTiers:[21], isMainProduct: false },
+	// 奥粒绒套装 - 单一售价 + 单一进货价
+	{ name:'奥粒绒套装', sku:'HYX240181', platform:'淘宝', salePrice:89.1, returnRate:'15.79%', costTiers:[44], isMainProduct: false },
+	// 大红背心 - 单一售价 + 单一进货价
+	{ name:'大红背心', sku:'HYX18103', platform:'天猫', salePrice:35.9, returnRate:'10.45%', costTiers:[15], isMainProduct: false },
+	// 大红背心 - 单一售价 + 单一进货价
+	{ name:'大红背心', sku:'HYX18103', platform:'淘宝', salePrice:35.9, returnRate:'9.19%', costTiers:[15], isMainProduct: false },
+	// 摇粒绒马甲拉链款 - 单一售价 + 单一进货价
+	{ name:'摇粒绒马甲拉链款', sku:'HYXM50001', platform:'淘宝', salePrice:78, returnRate:'25.19%', costTiers:[35], isMainProduct: false },
+	// 火山石套装 - 多档售价 + 单一进货价
+	{ name:'火山石套装', sku:'HYX9101', platform:'淘宝', salePrice:0, salePriceTiers:[98.1], returnRate:'12.44%', costTiers:[45], isMainProduct: false },
+	// 德绒单裤 - 多档售价 + 单一进货价
+	{ name:'德绒单裤', sku:'HYX21311', platform:'天猫', salePrice:0, salePriceTiers:[79.8], returnRate:'13.46%', costTiers:[38], isMainProduct: false },
+	// 德绒单裤 - 多档售价 + 单一进货价
+	{ name:'德绒单裤', sku:'HYX21311', platform:'淘宝', salePrice:0, salePriceTiers:[79.8], returnRate:'22.86%', costTiers:[38], isMainProduct: false },
+	// 全棉短袖家居服 - 单一售价 + 单一进货价
+	{ name:'全棉短袖家居服', sku:'HYXJ5031', platform:'淘宝', salePrice:71.1, returnRate:'4.65%', costTiers:[32], isMainProduct: false },
+	// 长袖家居服 - 单一售价 + 单一进货价
+	{ name:'长袖家居服', sku:'HYXJ1111', platform:'淘宝', salePrice:134.1, returnRate:'13.25%', costTiers:[63.5], isMainProduct: false },
+	// 全棉单上衣 - 多档售价 + 多档进货价
+	{ name:'全棉单上衣', sku:'HYX1811', platform:'淘宝', salePrice:0, salePriceTiers:[44.40, 53.10, 62.10, 62.10], returnRate:'11.94%', costTiers:[19.00, 20.50, 22.00, 23.50], isMainProduct: false },
+	// 全棉单上衣 - 多档售价 + 多档进货价
+	{ name:'全棉单上衣', sku:'HYX1811', platform:'天猫', salePrice:0, salePriceTiers:[44.40, 53.10, 62.10, 62.10], returnRate:'5.17%', costTiers:[19.00, 20.50, 22.00, 23.50], isMainProduct: false },
+	// 加绒单裤 - 单一售价 + 多档进货价
+	{ name:'加绒单裤', sku:'HYX19527', platform:'淘宝', salePrice:71.1, returnRate:'20.28%', costTiers:[29.50, 32.00, 34.00, 37.00], isMainProduct: false },
+	// 暖阳绒单上衣 - 单一售价 + 单一进货价
+	{ name:'暖阳绒单上衣', sku:'HYXC811', platform:'淘宝', salePrice:53.1, returnRate:'11.64%', costTiers:[23], isMainProduct: false },
+	// 纯棉背心 - 单一售价 + 多档进货价
+	{ name:'纯棉背心', sku:'HYX2117', platform:'淘宝', salePrice:29, returnRate:'6.68%', costTiers:[14.20, 16.10, 18.00, 19.90], isMainProduct: false },
+	// 纯棉背心 - 单一售价 + 多档进货价
+	{ name:'纯棉背心', sku:'HYX2117', platform:'天猫', salePrice:29, returnRate:'6.61%', costTiers:[14.20, 16.10, 18.00, 19.90], isMainProduct: false },
+	// 网眼背心 - 单一售价 + 单一进货价
+	{ name:'网眼背心', sku:'HYXB7201', platform:'淘宝', salePrice:29.9, returnRate:'8.11%', costTiers:[14], isMainProduct: false },
+	// 网眼背心 - 单一售价 + 单一进货价
+	{ name:'网眼背心', sku:'HYXB7201', platform:'天猫', salePrice:29.9, returnRate:'7.48%', costTiers:[14], isMainProduct: false },
+	// 空气层加绒单裤 - 多档售价 + 多档进货价
+	{ name:'空气层加绒单裤', sku:'HYX21811', platform:'淘宝', salePrice:0, salePriceTiers:[71.10, 76.50, 80.10], returnRate:'29.06%', costTiers:[30.00, 36.00, 41.00], isMainProduct: false },
+	// 空气层加绒单裤 - 多档售价 + 多档进货价
+	{ name:'空气层加绒单裤', sku:'HYX21811', platform:'天猫', salePrice:0, salePriceTiers:[71.10, 76.50, 80.10], returnRate:'18.11%', costTiers:[30.00, 36.00, 41.00], isMainProduct: false },
+	// 空气层单裤 - 多档售价 + 多档进货价
+	{ name:'空气层单裤', sku:'HYX20313', platform:'淘宝', salePrice:0, salePriceTiers:[53.10, 58.80, 62.10, 62.10], returnRate:'16.12%', costTiers:[24.80, 26.60, 29.00, 31.60], isMainProduct: false },
+	// 空气层单裤 - 多档售价 + 多档进货价
+	{ name:'空气层单裤', sku:'HYX20313', platform:'天猫', salePrice:0, salePriceTiers:[53.10, 58.80, 62.10, 62.10], returnRate:'13.62%', costTiers:[24.80, 26.60, 29.00, 31.60], isMainProduct: false }
 ];
 
 
