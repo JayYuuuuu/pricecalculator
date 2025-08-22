@@ -672,6 +672,301 @@
                 margin-bottom: 0;
             }
         }
+
+        /* 标价计算弹窗样式 */
+        .modal {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            margin: 0 auto;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 15px 15px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.3rem;
+        }
+
+        .close {
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+            padding: 5px;
+            border-radius: 50%;
+            transition: background-color 0.2s ease;
+        }
+
+        .close:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .modal-body {
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .config-section {
+            margin-bottom: 0;
+        }
+
+        .config-section h3 {
+            color: #333;
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .target-price-inputs {
+            margin-bottom: 10px;
+        }
+
+        .target-price-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 1rem;
+            background: white;
+            box-sizing: border-box;
+        }
+
+        .target-price-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .hint {
+            color: #6c757d;
+            font-size: 0.8rem;
+            margin: 0;
+            font-style: italic;
+        }
+
+        .setting-group {
+            margin-bottom: 12px;
+        }
+
+        .setting-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .setting-header span {
+            font-weight: 600;
+            color: #495057;
+            font-size: 0.95rem;
+        }
+
+        .setting-inputs {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .setting-inputs input {
+            padding: 8px;
+            border: 2px solid #e1e5e9;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            box-sizing: border-box;
+        }
+
+        .setting-inputs input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+        }
+
+        /* 满减规则行样式 */
+        .tier-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 0;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+        }
+
+        .tier-row span {
+            font-weight: 600;
+            color: #495057;
+            white-space: nowrap;
+            font-size: 0.85rem;
+        }
+
+        .tier-row input {
+            flex: 1;
+            min-width: 70px;
+        }
+
+        .result-section {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 10px;
+            padding: 15px;
+            border: 2px solid #dee2e6;
+            margin-top: 0;
+        }
+
+        .result-section h3 {
+            margin: 0 0 12px 0;
+            color: #495057;
+            font-size: 1.1rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #6c757d;
+            padding: 20px;
+        }
+
+        .empty-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .empty-state h4 {
+            margin: 0 0 8px 0;
+            color: #495057;
+            font-size: 1.1rem;
+        }
+
+        .empty-state p {
+            margin: 0;
+            font-size: 0.9rem;
+        }
+
+        .result-content p {
+            margin: 10px 0;
+            font-size: 1rem;
+        }
+
+        .result-content strong {
+            color: #667eea;
+            font-size: 1.1rem;
+        }
+
+        /* 浮动按钮样式 */
+        .floating-button {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+            z-index: 999;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .floating-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        /* 响应式弹窗样式 */
+        @media (max-width: 768px) {
+            .modal {
+                padding: 15px;
+            }
+            
+            .modal-content {
+                width: 100%;
+                max-height: 85vh;
+            }
+
+            .modal-body {
+                padding: 15px;
+                gap: 12px;
+            }
+
+            .config-section h3 {
+                font-size: 1rem;
+                margin-bottom: 8px;
+            }
+
+            .setting-group {
+                margin-bottom: 10px;
+            }
+
+            .tier-row {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 5px;
+            }
+
+            .tier-row span {
+                text-align: center;
+                font-size: 0.8rem;
+            }
+
+            .tier-row input {
+                margin-bottom: 0;
+            }
+
+            .floating-button {
+                bottom: 20px;
+                right: 20px;
+                padding: 12px 16px;
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (min-width: 1200px) {
+            .modal-content {
+                max-width: 600px;
+            }
+            
+            .modal-body {
+                padding: 25px;
+                gap: 20px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -955,6 +1250,71 @@
         </div>
 
     <script>
+        // 精度安全的工具函数
+        function yuanToCents(x) {
+            const s = String(x ?? '').trim();
+            if (!s) return 0;
+            const m = s.match(/^(-?\d+)(?:\.(\d{0,}))?$/);
+            if (!m) return Math.round(Number(x) * 100); // 兜底
+            const int = parseInt(m[1], 10);
+            const dec = (m[2] || '').padEnd(2, '0').slice(0, 2);
+            const sign = int < 0 ? -1 : 1;
+            return sign * (Math.abs(int) * 100 + parseInt(dec || '0', 10));
+        }
+
+        // "分"转元（Number，保留2位）
+        function centsToYuan(c) { 
+            return Number((c / 100).toFixed(2)); 
+        }
+
+        // 最大公约数
+        function __gcd(a, b) { 
+            a = Math.abs(a); 
+            b = Math.abs(b); 
+            while (b) { 
+                const t = a % b; 
+                a = b; 
+                b = t; 
+            } 
+            return a || 1; 
+        }
+
+        // 将十进制小数(如0.90, 0.88)稳定地转为最简分数 num/den
+        function decimalToFractionSafe(d) {
+            // 用字符串避免0.3000000004这类二进制误差
+            const str = String(d);
+            if (!str.includes('.')) return { num: Number(str), den: 1 };
+            const [i, frac] = str.split('.');
+            const den = Math.pow(10, frac.length);
+            const num = Math.round(Number(str) * den);
+            const g = __gcd(num, den);
+            return { num: num / g, den: den / g };
+        }
+
+        // 在"厘"(0.001元)精度下乘以分数 (priceCents × num/den)，结果返回"厘"的整数
+        function mulCentsByFractionToMils(priceCents, num, den) {
+            // 先把分换算成厘(×10)，再乘分数并向下取整，确保不过冲
+            return Math.floor((priceCents * 10 * num) / den);
+        }
+
+        // 计算给定S（分）在折扣后触发的最大满减off（分）与阈值（分）
+        function calcTierForPriceCents(priceCents, kNum, kDen, tiers) {
+            if (!tiers || !tiers.length) return { maxOffCents: 0, usedThresholdCents: null };
+            // 用"分"的保守口径判断触发：向下取整到分，避免把临界值算成已达标
+            const afterDiscountCents = Math.floor((priceCents * kNum) / kDen);
+            let maxOffCents = 0;
+            let usedThresholdCents = null;
+            for (const t of tiers) {
+                const thrC = yuanToCents(t.threshold);
+                const offC = yuanToCents(t.off);
+                if (afterDiscountCents >= thrC && offC >= maxOffCents) {
+                    maxOffCents = offC;
+                    usedThresholdCents = thrC;
+                }
+            }
+            return { maxOffCents, usedThresholdCents };
+        }
+
         function serviceVATFromTaxInclusive(amount, rate = 0.06) {
             return amount * rate / (1 + rate);
         }
@@ -1693,11 +2053,295 @@
                 tbody.appendChild(row);
             });
         }
+
+        // 标价计算弹窗相关函数
+        function openListPriceModal() {
+            document.getElementById('listPriceModal').style.display = 'block';
+            // 初始化弹窗内容
+            initListPriceModal();
+        }
+
+        function closeListPriceModal() {
+            document.getElementById('listPriceModal').style.display = 'none';
+        }
+
+        // 初始化标价计算弹窗
+        function initListPriceModal() {
+            // 绑定事件
+            bindListPriceEvents();
+            // 弹窗打开后自动计算一次结果
+            setTimeout(calculateListPrice, 100);
+        }
+
+        // 绑定标价计算事件
+        function bindListPriceEvents() {
+            // 为所有输入框添加实时计算
+            const inputs = document.querySelectorAll('#listPriceModal input[type="number"]');
+            inputs.forEach(input => {
+                // 移除之前的事件监听器（避免重复绑定）
+                input.removeEventListener('input', handleInputChange);
+                // 添加新的事件监听器
+                input.addEventListener('input', handleInputChange);
+            });
+        }
+
+        // 处理输入框变化事件
+        function handleInputChange() {
+            // 清除之前的定时器
+            if (this.inputTimer) {
+                clearTimeout(this.inputTimer);
+            }
+            // 设置新的定时器，300ms后执行计算
+            this.inputTimer = setTimeout(() => {
+                calculateListPrice();
+            }, 300);
+        }
+
+        // 标价计算核心逻辑 - 使用精度安全算法
+        function calculateListPrice() {
+            try {
+                // 读取输入值
+                const targetPrice = parseFloat(document.querySelector('.target-price-input').value);
+                const discountRate = parseFloat(document.querySelector('.discount-rate-input').value) / 100;
+                const tierThreshold = parseFloat(document.querySelector('.tier-threshold').value);
+                const tierOff = parseFloat(document.querySelector('.tier-off').value);
+
+                // 验证输入
+                if (!isFinite(targetPrice) || targetPrice <= 0) {
+                    throw new Error('请输入有效的目标到手价');
+                }
+                if (!isFinite(discountRate) || discountRate <= 0 || discountRate >= 1) {
+                    throw new Error('请输入有效的立减比例（1%-95%）');
+                }
+                if (!isFinite(tierThreshold) || tierThreshold <= 0) {
+                    throw new Error('请输入有效的满减门槛');
+                }
+                if (!isFinite(tierOff) || tierOff < 0) {
+                    throw new Error('请输入有效的满减金额');
+                }
+
+                // 使用精度安全整数口径 + 保守回推
+                const k = 1 - discountRate;
+                const { num: kNum, den: kDen } = decimalToFractionSafe(k);
+
+                const targetCents = yuanToCents(targetPrice);
+                const tiers = [{ threshold: tierThreshold, off: tierOff }];
+                
+                // 穷举可能的 off 候选
+                const offCandidates = [0, tierOff];
+                
+                let best = null;
+                for (const off of offCandidates) {
+                    const offCentsFixed = yuanToCents(off);
+                    // 反解理论标价（分）：S* ≈ (P + off) / k = (P+off) * kDen / kNum
+                    const exactCents = ((targetCents + offCentsFixed) * kDen) / kNum;
+                    
+                    // 只考察上下两侧的"分"候选，再必要时向下微调
+                    const seedCandidates = [Math.floor(exactCents + 1e-9), Math.ceil(exactCents - 1e-9)];
+                    const targetMils = targetCents * 10; // 目标到手价(厘)
+                    
+                    function evaluate(priceCents) {
+                        if (!isFinite(priceCents) || priceCents <= 0) return null;
+                        // 计算折后价（厘，不四舍五入，向下取整，防止过冲）
+                        const afterDiscountMils = mulCentsByFractionToMils(priceCents, kNum, kDen);
+                        // 触发的满减（分）
+                        const { maxOffCents, usedThresholdCents } = calcTierForPriceCents(priceCents, kNum, kDen, tiers);
+                        // 自洽校验：与假设的 off 一致才成立
+                        if (Math.abs(maxOffCents - offCentsFixed) > 0) return null;
+                        const finalMils = afterDiscountMils - offCentsFixed * 10;
+                        return { priceCents, finalMils, usedThresholdCents };
+                    }
+                    
+                    // 1) 先评估floor/ceil两个种子
+                    let localBest = null;
+                    for (const c of seedCandidates) {
+                        const res = evaluate(c);
+                        if (!res) continue;
+                        // 要求：不超过目标价（以厘为准）
+                        if (res.finalMils <= targetMils) {
+                            const diff = targetMils - res.finalMils; // 越小越接近
+                            if (!localBest || diff < localBest.diff || (diff === localBest.diff && c < localBest.priceCents)) {
+                                localBest = { ...res, diff };
+                            }
+                        }
+                    }
+                    
+                    // 2) 若两个都"超过"目标或不自洽，则从较小的那一个开始，每次下调1分尝试
+                    if (!localBest) {
+                        let c = Math.min(...seedCandidates.filter(x => isFinite(x)));
+                        for (let i = 0; i < 6; i++) { // 最多回退6分，足够覆盖边界
+                            const res = evaluate(c);
+                            if (res && res.finalMils <= targetMils) {
+                                localBest = { ...res, diff: targetMils - res.finalMils };
+                                break;
+                            }
+                            c -= 1; // 下调1分
+                        }
+                    }
+                    
+                    if (localBest) {
+                        // 记录最优解
+                        if (!best || localBest.diff < best.diff || (localBest.diff === best.diff && localBest.priceCents < best.priceCents)) {
+                            best = {
+                                priceCents: localBest.priceCents,
+                                finalMils: localBest.finalMils,
+                                thresholdUsed: localBest.usedThresholdCents,
+                                offCentsFixed,
+                                r: discountRate
+                            };
+                        }
+                    }
+                }
+                
+                if (best) {
+                    const suggestedPrice = centsToYuan(best.priceCents);
+                    const finalPrice = Number((best.finalMils / 1000).toFixed(2));
+                    const maxOff = centsToYuan(best.offCentsFixed);
+                    const usedTier = best.thresholdUsed ? { threshold: centsToYuan(best.thresholdUsed), off: maxOff } : null;
+                    
+                    // 渲染结果
+                    const resultHtml = generateSingleListPriceResult(targetPrice, discountRate, suggestedPrice, finalPrice, maxOff, usedTier);
+                    document.getElementById('listPriceResult').innerHTML = resultHtml;
+                } else {
+                    throw new Error('无法找到自洽解，请检查输入参数');
+                }
+                
+            } catch (error) {
+                document.getElementById('listPriceResult').innerHTML = `
+                    <div class="empty-state">
+                        <h4>❌ 计算错误</h4>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 生成单档位标价计算结果HTML
+        function generateSingleListPriceResult(targetPrice, discountRate, suggestedPrice, finalPrice, maxOff, usedTier) {
+            const tierInfo = usedTier ? 
+                ` (满¥${usedTier.threshold}减¥${usedTier.off})` : '';
+            
+            let html = `
+                <div class="result-item" style="margin-bottom: 0; padding: 15px; background: white; border-radius: 8px; border: 1px solid #dee2e6;">
+                    <div style="text-align: center; margin-bottom: 15px;">
+                        <h4 style="margin: 0 0 12px 0; color: #495057; border-bottom: 2px solid #667eea; padding-bottom: 6px; font-size: 1rem;">
+                            🎯 目标到手价 ¥${targetPrice.toFixed(2)}
+                        </h4>
+                        <div style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 12px; flex-wrap: wrap;">
+                            <span style="font-weight: 600; color: #495057; background: #e3f2fd; padding: 5px 10px; border-radius: 15px; font-size: 0.85rem;">
+                                ${(discountRate * 100).toFixed(0)}%立减
+                            </span>
+                            <span style="font-size: 0.85rem; color: #6c757d; background: #f8f9fa; padding: 5px 10px; border-radius: 15px;">
+                                ${maxOff > 0 ? '满减' + tierInfo : '无满减'}
+                            </span>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div style="text-align: center; background: #e8f5e8; padding: 12px; border-radius: 8px; border: 1px solid #c3e6cb;">
+                            <div style="font-size: 0.8rem; color: #155724; margin-bottom: 5px; font-weight: 600;">建议标价</div>
+                            <div style="font-size: 1.2rem; font-weight: bold; color: #28a745;">¥${suggestedPrice.toFixed(2)}</div>
+                        </div>
+                        <div style="text-align: center; background: #fff3cd; padding: 12px; border-radius: 8px; border: 1px solid #ffeaa7;">
+                            <div style="font-size: 0.8rem; color: #856404; margin-bottom: 5px; font-weight: 600;">实际到手价</div>
+                            <div style="font-size: 1.2rem; font-weight: bold; color: #ff6b35;">¥${finalPrice.toFixed(2)}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // 添加满减规则说明
+            if (usedTier) {
+                html += `
+                    <div style="margin-top: 12px; padding: 12px; background: #e3f2fd; border-radius: 8px; border: 1px solid #2196f3;">
+                        <h4 style="margin: 0 0 6px 0; color: #1976d2; font-size: 0.9rem;">📋 满减规则</h4>
+                        <p style="margin: 0; color: #1565c0; font-weight: 500; font-size: 0.85rem;">满¥${usedTier.threshold}减¥${usedTier.off}</p>
+                    </div>
+                `;
+            }
+
+            return html;
+        }
+
+        // 点击弹窗外部关闭弹窗
+        window.onclick = function(event) {
+            const modal = document.getElementById('listPriceModal');
+            if (event.target === modal) {
+                closeListPriceModal();
+            }
+        }
     </script>
 
     <!-- 版权声明 -->
     <footer style="text-align: center; padding: 20px; color: #495057; font-size: 1rem; border-top: 1px solid #e9ecef; margin-top: 40px; background: #f8f9fa;">
         <p style="font-weight: 500;">© 已根据电商税法合规计算，数据仅供参考。如有算法错误联系微信 jayyuuuuuu 反馈</p>
     </footer>
+
+    <!-- 标价计算弹窗 -->
+    <div id="listPriceModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🎯 标价计算</h2>
+                <span class="close" onclick="closeListPriceModal()">&times;</span>
+            </div>
+            
+            <div class="modal-body">
+                <!-- 目标到手价设置 -->
+                <div class="config-section">
+                    <h3>🎯 目标到手价</h3>
+                    <div class="target-price-inputs">
+                        <input type="number" class="target-price-input" value="59" step="0.01" placeholder="输入目标到手价" min="0.01">
+                    </div>
+                    <p class="hint">买家最终支付的实付价格</p>
+                </div>
+
+                <!-- 优惠设置 -->
+                <div class="config-section">
+                    <h3>🏷️ 优惠设置</h3>
+                    
+                    <!-- 立减设置 -->
+                    <div class="setting-group">
+                        <div class="setting-header">
+                            <span>立减比例</span>
+                        </div>
+                        <div class="setting-inputs">
+                            <input type="number" class="discount-rate-input" value="10" step="1" min="0" max="95" placeholder="立减比例 (%)">
+                        </div>
+                    </div>
+
+                    <!-- 满减设置 -->
+                    <div class="setting-group">
+                        <div class="setting-header">
+                            <span>满减规则</span>
+                        </div>
+                        <div class="setting-inputs">
+                            <div class="tier-row">
+                                <span>满</span>
+                                <input type="number" class="tier-threshold" value="100" step="0.01" placeholder="满减门槛" min="0.01">
+                                <span>减</span>
+                                <input type="number" class="tier-off" value="10" step="0.01" placeholder="满减金额" min="0">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 计算结果 -->
+                <div class="result-section">
+                    <h3>📊 计算结果</h3>
+                    <div id="listPriceResult" class="result-content">
+                        <div class="empty-state">
+                            <div class="empty-icon">⏳</div>
+                            <h4>等待计算</h4>
+                            <p>请设置参数后查看结果</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 标价计算按钮 -->
+    <div class="floating-button" onclick="openListPriceModal()">
+        🏷️ 标价计算
+    </div>
 </body>
 </html>
