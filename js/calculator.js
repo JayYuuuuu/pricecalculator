@@ -1045,8 +1045,10 @@ function calculatePrices(purchaseCost, salesCost, inputs) {
     const VAT_RATE = 0.06; // 现代服务业增值税率6%
     const taxFactorOnFinal = inputs.salesTaxRate / (1 + inputs.salesTaxRate); // 销项税占最终售价比例
     const adFactorEffective = inputs.adRate / salesCost.effectiveRate;       // 广告费分摊（不可退回）
-    const adVatCreditFactor = (VAT_RATE / (1 + VAT_RATE)) * adFactorEffective;  // 价内剥离 v/(1+v)
-    const platformVatCreditFactor = (VAT_RATE / (1 + VAT_RATE)) * inputs.platformRate; // 价内剥离 v/(1+v)
+    // 修正：广告费进项税抵扣基于不含税金额计算
+    const adVatCreditFactor = (adFactorEffective / (1 + VAT_RATE)) * VAT_RATE;  // 不含税广告费 × 进项税率
+    // 修正：平台佣金进项税抵扣基于不含税金额计算  
+    const platformVatCreditFactor = (inputs.platformRate / (1 + VAT_RATE)) * VAT_RATE; // 不含税平台佣金 × 进项税率
     const profitFactorEffective = inputs.targetProfitRate;                   // 目标利润率按最终售价口径，不随退货分摊
     
     // 分子：C（进货成本）- 商品进项税 + F_不可退回/(1-R)
@@ -1065,15 +1067,19 @@ function calculatePrices(purchaseCost, salesCost, inputs) {
     const adCost = finalPrice * inputs.adRate;
     const outputVAT = netPrice * inputs.salesTaxRate;
 
-    // 5. 计算广告费进项税（广告费为可抵扣6%，且为不可退回成本，需按(1-R)分摊，价内剥离）
-    const adVAT = (adCost / salesCost.effectiveRate) * (VAT_RATE / (1 + VAT_RATE)); // 价内剥离
+    // 5. 计算广告费进项税（广告费为可抵扣6%，且为不可退回成本，需按(1-R)分摊）
+    // 修正：进项税抵扣基于不含税金额计算
+    const adCostNet = (adCost / salesCost.effectiveRate) / (1 + VAT_RATE); // 不含税广告费
+    const adVAT = adCostNet * VAT_RATE; // 进项税抵扣 = 不含税金额 × 进项税率
 
     // 6. 计算实际税负（销项税 - 进项税）
     // 实缴增值税口径：销项税 - (商品进项税 + 广告费进项税 + 平台佣金进项税)
-    // 平台佣金可抵扣进项税采用价内剥离
+    // 修正：平台佣金进项税抵扣基于不含税金额计算
+    const platformFeeNet = platformFee / (1 + VAT_RATE); // 不含税平台佣金
+    const platformVAT = platformFeeNet * VAT_RATE; // 平台佣金进项税抵扣
     const totalVATDeduction = purchaseCost.purchaseVAT
         + adVAT
-        + (platformFee * (VAT_RATE / (1 + VAT_RATE))); // 平台佣金可抵扣进项税采用价内剥离
+        + platformVAT;
     const actualVAT = outputVAT - totalVATDeduction;
 
     // 7. 计算实际利润（收入减去所有成本和费用）
@@ -1164,17 +1170,23 @@ function calculateBreakevenROI(params) {
         const purchaseVAT = costPrice * outputTaxRate;          // 商品进项税
         const fixedCosts = (shippingCost + shippingInsurance + otherCost) / effectiveRate; // 不可退回固定成本按(1-R)分摊
 		const taxFactorOnFinal = salesTaxRate / (1 + salesTaxRate); // 销项税占比
-		// 服务业进项税率 v（用于广告与平台佣金的进项抵扣口径展示与推导；当前取 6%）
+		// 服务业进项税率 v（用于广告与平台佣金的进项抵扣计算；当前取 6%）
 		const v = 0.06;
 
 		const B = effectiveCost - purchaseVAT + fixedCosts;     // 分子常数项
-		// 分母常数项（不含广告）：平台佣金的进项按价内口径 v/(1+v)
-		const D = 1 - platformRate - taxFactorOnFinal + (v / (1 + v)) * platformRate;
+		// 分母常数项（不含广告）：平台佣金的进项抵扣基于不含税金额计算
+		const platformVatCredit = (platformRate / (1 + v)) * v; // 平台佣金进项税抵扣 = (平台佣金不含税金额) × 进项税率
+		const D = 1 - platformRate - taxFactorOnFinal + platformVatCredit;
 
         // 3) 反解保本所需的广告付费占比 a*
-		//    a* = (1-R)/(1 - v) × (D - B/P)
+		// 修正：广告费进项税抵扣也应基于不含税金额计算
+		// 广告费进项税抵扣 = (广告费不含税金额) × 进项税率 = (广告费占比 / (1 + v)) × v
+		// 保本方程：收入 = 成本
+		// finalPrice = B + 广告费净成本 + 其他费用
+		// finalPrice = B + (finalPrice × a × (1 - v/(1+v))) + 其他费用
+		// 其中 a 是广告费占比，v/(1+v) 是进项税抵扣占比
         const term = D - (B / finalPrice);
-		const breakevenAdRate = (effectiveRate / (1 - v)) * term; // 可能为负/超1，根据实际情况判断可行性
+		const breakevenAdRate = (effectiveRate / (1 - v/(1 + v))) * term; // 修正：使用正确的进项税抵扣比例
 
         // 4) 计算ROI阈值（按有效GMV口径）：
         //    ROI = 有效GMV / 广告费 = E / a*
@@ -1200,6 +1212,220 @@ function calculateBreakevenROI(params) {
 }
 
 
+
+/**
+ * 数值分析工具函数 - 基于转化率的深度分析
+ * 将"保本ROI ↔ 推广占比"扩展为"CPC ↔ CVR ↔ 售价"三角关系
+ * 
+ * 核心公式：
+ * - ROI = (CVR × 客单价) ÷ CPC
+ * - 保本CPC = (CVR × 客单价) ÷ 保本ROI
+ * - 临界转化率 = (CPC × 保本ROI) ÷ 客单价
+ * - 临界客单价 = (CPC × 保本ROI) ÷ CVR
+ * 
+ * @param {Object} params 参数对象
+ * @returns {Object} 计算结果
+ */
+function calculateNumericalAnalysis(params) {
+    try {
+        // 1) 基础参数读取和校验
+        const costPrice = Number(params.costPrice) || 0;
+        const inputTaxRate = Math.max(0, Number(params.inputTaxRate) || 0);
+        const outputTaxRate = Math.max(0, Number(params.outputTaxRate) || 0);
+        const salesTaxRate = Math.max(0, Number(params.salesTaxRate) || 0);
+        const platformRate = Math.max(0, Number(params.platformRate) || 0);
+        const shippingCost = Math.max(0, Number(params.shippingCost) || 0);
+        const shippingInsurance = Math.max(0, Number(params.shippingInsurance) || 0);
+        const otherCost = Math.max(0, Number(params.otherCost) || 0);
+        const returnRate = Math.min(0.9999, Math.max(0, Number(params.returnRate) || 0));
+        const finalPrice = Number(params.finalPrice) || 0;
+        const conversionRate = Math.min(1, Math.max(0, Number(params.conversionRate) || 0)); // 转化率
+        const cpc = Math.max(0, Number(params.cpc) || 0); // 点击成本
+
+        if (finalPrice <= 0) {
+            return { 
+                success: false, 
+                note: '售价无效，无法进行计算' 
+            };
+        }
+
+        // 2) 计算保本ROI和保本推广占比（复用现有函数）
+        const breakevenResult = calculateBreakevenROI({
+            costPrice, inputTaxRate, outputTaxRate, salesTaxRate,
+            platformRate, shippingCost, shippingInsurance, otherCost,
+            returnRate, finalPrice
+        });
+
+        if (!breakevenResult.feasible) {
+            return {
+                success: false,
+                breakevenResult,
+                note: '保本计算不可行：' + breakevenResult.note
+            };
+        }
+
+        const { breakevenAdRate, breakevenROI } = breakevenResult;
+
+        // 3) 计算关键中间量
+        const effectiveRate = 1 - returnRate; // 有效销售率
+        const effectiveCost = costPrice + costPrice * inputTaxRate; // 实际进货成本
+        const purchaseVAT = costPrice * outputTaxRate; // 商品进项税
+        const fixedCosts = (shippingCost + shippingInsurance + otherCost) / effectiveRate; // 固定成本分摊
+
+        // 4) 核心数值分析计算
+        let results = {
+            success: true,
+            breakevenResult,
+            // 基础指标
+            effectiveRate: effectiveRate,
+            effectiveCost: effectiveCost,
+            purchaseVAT: purchaseVAT,
+            fixedCosts: fixedCosts,
+            // 保本指标
+            breakevenAdRate: breakevenAdRate,
+            breakevenROI: breakevenROI,
+            // 数值分析结果
+            numericalAnalysis: {}
+        };
+
+        // 5) 计算保本CPC（临界点击成本）
+        if (conversionRate > 0 && isFinite(breakevenROI)) {
+            const breakevenCPC = (conversionRate * finalPrice) / breakevenROI;
+            results.numericalAnalysis.breakevenCPC = breakevenCPC;
+            results.numericalAnalysis.breakevenCPCNote = `当转化率为${(conversionRate * 100).toFixed(2)}%时，CPC需≤¥${breakevenCPC.toFixed(2)}才能保本`;
+        } else {
+            results.numericalAnalysis.breakevenCPC = NaN;
+            results.numericalAnalysis.breakevenCPCNote = '转化率无效或保本ROI异常，无法计算保本CPC';
+        }
+
+        // 6) 计算临界转化率
+        if (cpc > 0 && isFinite(breakevenROI)) {
+            const criticalCVR = (cpc * breakevenROI) / finalPrice;
+            results.numericalAnalysis.criticalCVR = criticalCVR;
+            results.numericalAnalysis.criticalCVRNote = `当CPC为¥${cpc.toFixed(2)}时，转化率需≥${(criticalCVR * 100).toFixed(2)}%才能保本`;
+        } else {
+            results.numericalAnalysis.criticalCVR = NaN;
+            results.numericalAnalysis.criticalCVRNote = 'CPC无效或保本ROI异常，无法计算临界转化率';
+        }
+
+        // 7) 计算临界客单价
+        if (conversionRate > 0 && cpc > 0 && isFinite(breakevenROI)) {
+            const criticalPrice = (cpc * breakevenROI) / conversionRate;
+            results.numericalAnalysis.criticalPrice = criticalPrice;
+            results.numericalAnalysis.criticalPriceNote = `当CPC为¥${cpc.toFixed(2)}、转化率为${(conversionRate * 100).toFixed(2)}%时，客单价需≥¥${criticalPrice.toFixed(2)}才能保本`;
+        } else {
+            results.numericalAnalysis.criticalPrice = NaN;
+            results.numericalAnalysis.criticalPriceNote = 'CPC或转化率无效，无法计算临界客单价';
+        }
+
+        // 8) 计算实际ROI（如果提供了CPC和转化率）
+        if (conversionRate > 0 && cpc > 0) {
+            const actualROI = (conversionRate * finalPrice) / cpc;
+            results.numericalAnalysis.actualROI = actualROI;
+            results.numericalAnalysis.actualROINote = `当前参数下的实际ROI为${actualROI.toFixed(2)}`;
+            
+            // ROI对比分析
+            if (isFinite(breakevenROI)) {
+                if (actualROI > breakevenROI) {
+                    results.numericalAnalysis.roiAnalysis = `实际ROI(${actualROI.toFixed(2)}) > 保本ROI(${breakevenROI.toFixed(2)})，当前投放可盈利`;
+                } else if (actualROI === breakevenROI) {
+                    results.numericalAnalysis.roiAnalysis = `实际ROI(${actualROI.toFixed(2)}) = 保本ROI(${breakevenROI.toFixed(2)})，当前投放刚好保本`;
+                } else {
+                    results.numericalAnalysis.roiAnalysis = `实际ROI(${actualROI.toFixed(2)}) < 保本ROI(${breakevenROI.toFixed(2)})，当前投放亏损`;
+                }
+            }
+        } else {
+            results.numericalAnalysis.actualROI = NaN;
+            results.numericalAnalysis.actualROINote = '缺少CPC或转化率数据，无法计算实际ROI';
+        }
+
+        // 9) 计算广告费占比
+        if (conversionRate > 0 && cpc > 0) {
+            // 假设点击数N，成交单数 = N × CVR，广告费 = N × CPC
+            // 广告费占比 = 广告费 ÷ GMV = (N × CPC) ÷ (N × CVR × 客单价) = CPC ÷ (CVR × 客单价)
+            const adRateFromCPC = cpc / (conversionRate * finalPrice);
+            results.numericalAnalysis.adRateFromCPC = adRateFromCPC;
+            results.numericalAnalysis.adRateFromCPCNote = `基于CPC和转化率计算的广告费占比为${(adRateFromCPC * 100).toFixed(2)}%`;
+            
+            // 与保本广告占比对比
+            if (isFinite(breakevenAdRate)) {
+                if (adRateFromCPC <= breakevenAdRate) {
+                    results.numericalAnalysis.adRateAnalysis = `实际广告占比(${(adRateFromCPC * 100).toFixed(2)}%) ≤ 保本广告占比(${(breakevenAdRate * 100).toFixed(2)}%)，可保本`;
+                } else {
+                    results.numericalAnalysis.adRateAnalysis = `实际广告占比(${(adRateFromCPC * 100).toFixed(2)}%) > 保本广告占比(${(breakevenAdRate * 100).toFixed(2)}%)，会亏损`;
+                }
+            }
+        } else {
+            results.numericalAnalysis.adRateFromCPC = NaN;
+            results.numericalAnalysis.adRateFromCPCNote = '缺少CPC或转化率数据，无法计算广告费占比';
+        }
+
+        // 10) 生成优化建议
+        results.numericalAnalysis.optimizationSuggestions = generateOptimizationSuggestions(results);
+
+        return results;
+
+    } catch (e) {
+        return { 
+            success: false, 
+            note: '计算失败：' + e.message 
+        };
+    }
+}
+
+/**
+ * 生成优化建议
+ * @param {Object} results 计算结果
+ * @returns {Array} 优化建议数组
+ */
+function generateOptimizationSuggestions(results) {
+    const suggestions = [];
+    
+    if (!results.success) return suggestions;
+
+    const { numericalAnalysis, breakevenResult } = results;
+    
+    // 基于ROI的优化建议
+    if (numericalAnalysis.actualROI && isFinite(breakevenResult.breakevenROI)) {
+        if (numericalAnalysis.actualROI < breakevenResult.breakevenROI) {
+            suggestions.push('当前ROI低于保本要求，建议：');
+            suggestions.push('• 优化详情页和客服，提高转化率');
+            suggestions.push('• 优化关键词，降低CPC成本');
+            suggestions.push('• 考虑提高产品售价');
+        } else if (numericalAnalysis.actualROI > breakevenResult.breakevenROI * 1.2) {
+            suggestions.push('当前ROI表现优秀，建议：');
+            suggestions.push('• 可以适当增加广告预算');
+            suggestions.push('• 考虑扩大投放规模');
+            suggestions.push('• 优化产品组合，提高整体收益');
+        }
+    }
+
+    // 基于转化率的优化建议
+    if (numericalAnalysis.criticalCVR && numericalAnalysis.criticalCVR > 0.01) {
+        suggestions.push(`临界转化率：${(numericalAnalysis.criticalCVR * 100).toFixed(2)}%`);
+        suggestions.push('• 如果实际转化率低于此值，需要优化页面和客服');
+        suggestions.push('• 如果实际转化率高于此值，可以适当提高CPC出价');
+    }
+
+    // 基于CPC的优化建议
+    if (numericalAnalysis.breakevenCPC && isFinite(numericalAnalysis.breakevenCPC)) {
+        suggestions.push(`保本CPC：¥${numericalAnalysis.breakevenCPC.toFixed(2)}`);
+        suggestions.push('• 当前CPC应控制在此值以下才能保本');
+        suggestions.push('• 可以通过优化关键词质量分来降低CPC');
+    }
+
+    // 基于广告占比的优化建议
+    if (numericalAnalysis.adRateFromCPC && isFinite(breakevenResult.breakevenAdRate)) {
+        if (numericalAnalysis.adRateFromCPC > breakevenResult.breakevenAdRate) {
+            suggestions.push('广告占比过高，建议：');
+            suggestions.push('• 提高转化率，降低单位获客成本');
+            suggestions.push('• 优化产品定价，提高利润率');
+            suggestions.push('• 考虑降低广告预算');
+        }
+    }
+
+    return suggestions;
+}
 
 // 实时计算进货成本
 function updatePurchaseCostSummary() {
@@ -1232,7 +1458,8 @@ function calculate() {
         const VAT_RATE = 0.06; // 现代服务业增值税率6%
         const taxFactorOnFinal = inputs.salesTaxRate / (1 + inputs.salesTaxRate);
         const adFactorEffective = inputs.adRate / effectiveRate;
-        const adVatCreditFactor = VAT_RATE * adFactorEffective;
+        // 修正：广告费进项税抵扣基于不含税金额计算
+        const adVatCreditFactor = (adFactorEffective / (1 + VAT_RATE)) * VAT_RATE;
         const profitFactorEffective = inputs.targetProfitRate; // 利润率按最终售价口径
         const denominatorFinal = 1 - (inputs.platformRate + taxFactorOnFinal + profitFactorEffective + adFactorEffective - adVatCreditFactor);
         if (denominatorFinal <= 0) {
@@ -5542,8 +5769,8 @@ function showRiskProductsDetail() {
 			<button id="riskDetailClose" class="batch-modal-btn">关闭</button>
 		</div>
 		
-
 		
+
 		<div style="max-height:calc(85vh - 120px); overflow-y:auto;">
 			${riskProductsHtml}
 		</div>
@@ -11021,11 +11248,13 @@ function calculateTheoreticalPrice(costPrice, targetProfitRate, params) {
         const fixedCosts = (inputs.shippingCost + inputs.shippingInsurance + inputs.otherCost) / salesCost.effectiveRate;
 
         // 各种占比因子
-        const VAT_RATE = 0.06; // 现代服务业增值税率6%
-        const taxFactorOnFinal = inputs.salesTaxRate / (1 + inputs.salesTaxRate); // 销项税占最终售价比例
-        const adFactorEffective = inputs.adRate / salesCost.effectiveRate;       // 广告费分摊（不可退回）
-        const adVatCreditFactor = VAT_RATE * adFactorEffective;                  // 广告费进项税抵扣占比
-        const platformVatCreditFactor = VAT_RATE * inputs.platformRate;          // 平台佣金进项税抵扣占比
+            const VAT_RATE = 0.06; // 现代服务业增值税率6%
+    const taxFactorOnFinal = inputs.salesTaxRate / (1 + inputs.salesTaxRate); // 销项税占最终售价比例
+    const adFactorEffective = inputs.adRate / salesCost.effectiveRate;       // 广告费分摊（不可退回）
+    // 修正：广告费进项税抵扣基于不含税金额计算
+    const adVatCreditFactor = (adFactorEffective / (1 + VAT_RATE)) * VAT_RATE;  // 广告费进项税抵扣占比
+    // 修正：平台佣金进项税抵扣基于不含税金额计算
+    const platformVatCreditFactor = (inputs.platformRate / (1 + VAT_RATE)) * VAT_RATE;  // 平台佣金进项税抵扣占比
         const profitFactorEffective = inputs.targetProfitRate;                   // 目标利润率按最终售价口径
 
         // 分子和分母（与售价计算完全一致）

@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数值分析工具 - 电商定价计算器</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .analysis-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .input-section, .result-section {
+            background: #fff;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        .input-label {
+            display: block;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+        
+        .input-field {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+        }
+        
+        .input-field:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .calculate-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .calculate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+        }
+        
+        .result-item {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .result-title {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+        
+        .result-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #059669;
+            margin-bottom: 8px;
+        }
+        
+        .result-note {
+            color: #6b7280;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        
+        .suggestions-section {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .suggestions-title {
+            font-weight: 600;
+            color: #92400e;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+        
+        .suggestion-item {
+            color: #78350f;
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+        }
+        
+        .suggestion-item:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #f59e0b;
+            font-weight: bold;
+        }
+        
+        .error-message {
+            background: #fee2e2;
+            border: 1px solid #ef4444;
+            color: #991b1b;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .info-box {
+            background: #dbeafe;
+            border: 1px solid #3b82f6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .info-title {
+            font-weight: 600;
+            color: #1e40af;
+            margin-bottom: 10px;
+        }
+        
+        .info-content {
+            color: #1e3a8a;
+            line-height: 1.6;
+        }
+        
+        @media (max-width: 768px) {
+            .analysis-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .analysis-container {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="analysis-container">
+        <h1 style="text-align: center; color: #1f2937; margin-bottom: 30px;">
+            数值分析工具 - CPC ↔ CVR ↔ 售价 三角关系分析
+        </h1>
+        
+        <div class="info-box">
+            <div class="info-title">📊 工具说明</div>
+            <div class="info-content">
+                基于转化率的深度分析工具，将"保本ROI ↔ 推广占比"扩展为"CPC ↔ CVR ↔ 售价"三角关系。
+                输入任意两个参数，系统将计算出第三个临界值，并提供详细的优化建议。
+            </div>
+        </div>
+        
+        <div class="analysis-grid">
+            <!-- 输入区域 -->
+            <div class="input-section">
+                <div class="section-title">📝 参数输入</div>
+                
+                <!-- 基础成本参数 -->
+                <div class="input-group">
+                    <label class="input-label">进货价（不含税）¥</label>
+                    <input type="number" id="costPrice" class="input-field" placeholder="0.00" step="0.01" min="0">
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">开票成本比例 %</label>
+                    <input type="number" id="inputTaxRate" class="input-field" placeholder="6" step="0.1" min="0" max="100" value="6">
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">商品进项税率 %</label>
+                    <input type="number" id="outputTaxRate" class="input-field" placeholder="13" step="0.1" min="0" max="100" value="13">
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">销项税率 %</label>
+                    <input type="number" id="salesTaxRate" class="input-field" placeholder="13" step="0.1" min="0" max="100" value="13">
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">平台佣金比例 %</label>
+                    <input type="number" id="platformRate" class="input-field" placeholder="5.5" step="0.1" min="0" max="100" value="5.5">
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">物流费（元/单）</label>
+                    <input type="number" id="shippingCost" class="input-field" placeholder="2.8" step="0.01" min="0" value="2.8">
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">运费险（元/单）</label>
+                    <input type="number" id="shippingInsurance" class="input-field" placeholder="1.5" step="0.01" min="0" value="1.5">
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">其他固定成本（元/单）</label>
+                    <input type="number" id="otherCost" class="input-field" placeholder="2.5" step="0.01" min="0" value="2.5">
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">退货率 %</label>
+                    <input type="number" id="returnRate" class="input-field" placeholder="20" step="0.1" min="0" max="99.99" value="20">
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">含税售价 ¥</label>
+                    <input type="number" id="finalPrice" class="input-field" placeholder="0.00" step="0.01" min="0">
+                </div>
+                
+                <!-- 转化率和CPC参数 -->
+                <div class="input-group">
+                    <label class="input-label">转化率 %</label>
+                    <input type="number" id="conversionRate" class="input-field" placeholder="2.5" step="0.01" min="0" max="100">
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label">点击成本（CPC）¥</label>
+                    <input type="number" id="cpc" class="input-field" placeholder="0.50" step="0.01" min="0">
+                </div>
+                
+                <button class="calculate-btn" onclick="calculateAnalysis()">
+                    🚀 开始分析计算
+                </button>
+            </div>
+            
+            <!-- 结果展示区域 -->
+            <div class="result-section">
+                <div class="section-title">📊 分析结果</div>
+                <div id="analysisResults">
+                    <div style="text-align: center; color: #6b7280; padding: 40px 20px;">
+                        请输入参数并点击"开始分析计算"按钮
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 公式说明 -->
+        <div class="info-box">
+            <div class="info-title">🔢 核心公式</div>
+            <div class="info-content">
+                <strong>基础关系：</strong> ROI = (转化率 × 客单价) ÷ CPC<br>
+                <strong>保本CPC：</strong> CPC临界 = (转化率 × 客单价) ÷ 保本ROI<br>
+                <strong>临界转化率：</strong> CVR临界 = (CPC × 保本ROI) ÷ 客单价<br>
+                <strong>临界客单价：</strong> P临界 = (CPC × 保本ROI) ÷ 转化率
+            </div>
+        </div>
+    </div>
+
+    <script src="js/calculator.js"></script>
+    <script>
+        // 页面加载时设置默认值
+        window.addEventListener('load', function() {
+            // 从localStorage加载保存的值
+            loadSavedValues();
+        });
+
+        // 加载保存的值
+        function loadSavedValues() {
+            const fields = [
+                'costPrice', 'inputTaxRate', 'outputTaxRate', 'salesTaxRate',
+                'platformRate', 'shippingCost', 'shippingInsurance', 'otherCost',
+                'returnRate', 'finalPrice', 'conversionRate', 'cpc'
+            ];
+            
+            fields.forEach(field => {
+                const savedValue = localStorage.getItem(`numerical_${field}`);
+                if (savedValue !== null) {
+                    document.getElementById(field).value = savedValue;
+                }
+            });
+        }
+
+        // 保存输入值
+        function saveInputValue(fieldId) {
+            const value = document.getElementById(fieldId).value;
+            localStorage.setItem(`numerical_${fieldId}`, value);
+        }
+
+        // 为所有输入框添加自动保存
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputs = document.querySelectorAll('.input-field');
+            inputs.forEach(input => {
+                input.addEventListener('blur', function() {
+                    saveInputValue(this.id);
+                });
+            });
+        });
+
+        // 执行数值分析计算
+        function calculateAnalysis() {
+            try {
+                // 获取输入参数
+                const params = {
+                    costPrice: parseFloat(document.getElementById('costPrice').value) || 0,
+                    inputTaxRate: parseFloat(document.getElementById('inputTaxRate').value) / 100 || 0,
+                    outputTaxRate: parseFloat(document.getElementById('outputTaxRate').value) / 100 || 0,
+                    salesTaxRate: parseFloat(document.getElementById('salesTaxRate').value) / 100 || 0,
+                    platformRate: parseFloat(document.getElementById('platformRate').value) / 100 || 0,
+                    shippingCost: parseFloat(document.getElementById('shippingCost').value) || 0,
+                    shippingInsurance: parseFloat(document.getElementById('shippingInsurance').value) || 0,
+                    otherCost: parseFloat(document.getElementById('otherCost').value) || 0,
+                    returnRate: parseFloat(document.getElementById('returnRate').value) / 100 || 0,
+                    finalPrice: parseFloat(document.getElementById('finalPrice').value) || 0,
+                    conversionRate: parseFloat(document.getElementById('conversionRate').value) / 100 || 0,
+                    cpc: parseFloat(document.getElementById('cpc').value) || 0
+                };
+
+                // 验证必要参数
+                if (params.finalPrice <= 0) {
+                    showError('请输入有效的含税售价');
+                    return;
+                }
+
+                // 调用数值分析函数
+                const results = calculateNumericalAnalysis(params);
+                
+                // 显示结果
+                displayResults(results);
+                
+            } catch (error) {
+                showError('计算过程中发生错误：' + error.message);
+            }
+        }
+
+        // 显示错误信息
+        function showError(message) {
+            const resultsDiv = document.getElementById('analysisResults');
+            resultsDiv.innerHTML = `
+                <div class="error-message">
+                    ❌ ${message}
+                </div>
+            `;
+        }
+
+        // 显示分析结果
+        function displayResults(results) {
+            const resultsDiv = document.getElementById('analysisResults');
+            
+            if (!results.success) {
+                resultsDiv.innerHTML = `
+                    <div class="error-message">
+                        ❌ ${results.note}
+                    </div>
+                `;
+                return;
+            }
+
+            const { numericalAnalysis, breakevenResult } = results;
+            
+            let html = '';
+            
+            // 保本指标
+            html += `
+                <div class="result-item">
+                    <div class="result-title">🎯 保本指标</div>
+                    <div class="result-value">保本ROI: ${breakevenResult.breakevenROI.toFixed(2)}</div>
+                    <div class="result-note">保本推广占比: ${(breakevenResult.breakevenAdRate * 100).toFixed(2)}%</div>
+                </div>
+            `;
+
+            // 保本CPC
+            if (numericalAnalysis.breakevenCPC && isFinite(numericalAnalysis.breakevenCPC)) {
+                html += `
+                    <div class="result-item">
+                        <div class="result-title">💰 保本CPC</div>
+                        <div class="result-value">¥${numericalAnalysis.breakevenCPC.toFixed(2)}</div>
+                        <div class="result-note">${numericalAnalysis.breakevenCPCNote}</div>
+                    </div>
+                `;
+            }
+
+            // 临界转化率
+            if (numericalAnalysis.criticalCVR && isFinite(numericalAnalysis.criticalCVR)) {
+                html += `
+                    <div class="result-item">
+                        <div class="result-title">📈 临界转化率</div>
+                        <div class="result-value">${(numericalAnalysis.criticalCVR * 100).toFixed(2)}%</div>
+                        <div class="result-note">${numericalAnalysis.criticalCVRNote}</div>
+                    </div>
+                `;
+            }
+
+            // 临界客单价
+            if (numericalAnalysis.criticalPrice && isFinite(numericalAnalysis.criticalPrice)) {
+                html += `
+                    <div class="result-item">
+                        <div class="result-title">🏷️ 临界客单价</div>
+                        <div class="result-value">¥${numericalAnalysis.criticalPrice.toFixed(2)}</div>
+                        <div class="result-note">${numericalAnalysis.criticalPriceNote}</div>
+                    </div>
+                `;
+            }
+
+            // 实际ROI
+            if (numericalAnalysis.actualROI && isFinite(numericalAnalysis.actualROI)) {
+                html += `
+                    <div class="result-item">
+                        <div class="result-title">📊 实际ROI</div>
+                        <div class="result-value">${numericalAnalysis.actualROI.toFixed(2)}</div>
+                        <div class="result-note">${numericalAnalysis.actualROINote}</div>
+                        ${numericalAnalysis.roiAnalysis ? `<div class="result-note" style="margin-top: 8px; font-weight: 600;">${numericalAnalysis.roiAnalysis}</div>` : ''}
+                    </div>
+                `;
+            }
+
+            // 广告费占比
+            if (numericalAnalysis.adRateFromCPC && isFinite(numericalAnalysis.adRateFromCPC)) {
+                html += `
+                    <div class="result-item">
+                        <div class="result-title">💸 广告费占比</div>
+                        <div class="result-value">${(numericalAnalysis.adRateFromCPC * 100).toFixed(2)}%</div>
+                        <div class="result-note">${numericalAnalysis.adRateFromCPCNote}</div>
+                        ${numericalAnalysis.adRateAnalysis ? `<div class="result-note" style="margin-top: 8px; font-weight: 600;">${numericalAnalysis.adRateAnalysis}</div>` : ''}
+                    </div>
+                `;
+            }
+
+            // 优化建议
+            if (numericalAnalysis.optimizationSuggestions && numericalAnalysis.optimizationSuggestions.length > 0) {
+                html += `
+                    <div class="suggestions-section">
+                        <div class="suggestions-title">💡 优化建议</div>
+                        ${numericalAnalysis.optimizationSuggestions.map(suggestion => 
+                            `<div class="suggestion-item">${suggestion}</div>`
+                        ).join('')}
+                    </div>
+                `;
+            }
+
+            resultsDiv.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
