@@ -1382,10 +1382,13 @@
                 const B = effectiveCost - purchaseVAT + fixedCosts;
                 
                 const platformRateDecimal = platformFee / 100;
-                const D = 1 - platformRateDecimal - taxFactorOnFinal + (v / (1 + v)) * platformRateDecimal;
+                // 修正：平台佣金进项税抵扣基于不含税金额计算
+                const platformVatCredit = (platformRateDecimal / (1 + v)) * v;
+                const D = 1 - platformRateDecimal - taxFactorOnFinal + platformVatCredit;
 
                 const term = D - (B / sellingPrice);
-                const breakevenAdRate = (effectiveSalesRate / (1 - v)) * term;
+                // 修正：广告费进项税抵扣基于不含税金额计算
+                const breakevenAdRate = (effectiveSalesRate / (1 - v/(1 + v))) * term;
 
                 let breakevenROI;
                 if (breakevenAdRate <= 0) {
@@ -1723,10 +1726,13 @@
                 const B = effectiveCost - purchaseVAT + fixedCosts;
                 
                 const platformRateDecimal = platformFee / 100;
-                const D = 1 - platformRateDecimal - taxFactorOnFinal + (v / (1 + v)) * platformRateDecimal;
+                // 修正：平台佣金进项税抵扣基于不含税金额计算
+                const platformVatCredit = (platformRateDecimal / (1 + v)) * v;
+                const D = 1 - platformRateDecimal - taxFactorOnFinal + platformVatCredit;
 
                 const term = D - (B / sellingPrice);
-                const breakevenAdRate = (effectiveSalesRate / (1 - v)) * term;
+                // 修正：广告费进项税抵扣基于不含税金额计算
+                const breakevenAdRate = (effectiveSalesRate / (1 - v/(1 + v))) * term;
 
                 let breakevenROI;
                 if (breakevenAdRate <= 0) {

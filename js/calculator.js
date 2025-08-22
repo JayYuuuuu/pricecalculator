@@ -2519,26 +2519,28 @@ function initBreakevenROITooltip() {
     // 工具方法：根据当前输入构造说明HTML
     const buildExplainHtml = (ctx) => {
 		const {P, C, purchaseVAT, fixedCosts, E, tOnFinal, platformRate, breakevenAdRate, breakevenROI} = ctx;
-		// 服务业进项税率 v（本系统当前取 6%）；用于展示一般形式：(1 - v) 与 v×平台费
+		// 服务业进项税率 v（本系统当前取 6%）；用于展示一般形式：(1 - v/(1+v)) 与 平台费进项税抵扣
 		const v = 0.06;
-		const D = 1 - platformRate - tOnFinal + v * platformRate;
+		// 修正：平台佣金进项税抵扣基于不含税金额计算
+		const platformVatCredit = (platformRate / (1 + v)) * v;
+		const D = 1 - platformRate - tOnFinal + platformVatCredit;
 		// 增补：在浮窗顶部给出"保本 ROI"的通俗定义，便于非技术同学理解
 		return (
 			'<div>'+
 			'<div style="margin-bottom:6px; color:#333;">保本 ROI 的含义是：在考虑退货、平台扣点、销项税、进项抵扣、固定成本之后，利润刚好为 0 时的 ROI。</div>'+
-			// 先给出一行"总公式"（一般形式，含税口径）：由 a* = (E/(1−v))×(D − B/P) 与 ROI* = E/a* 推得
+			// 先给出一行"总公式"（一般形式，含税口径）：由 a* = (E/(1−v/(1+v)))×(D − B/P) 与 ROI* = E/a* 推得
 			'<div style="margin-bottom:4px; color:#111;">通用计算公式（含税售价 P）：</div>'+
-			'<div style="margin-left:12px; margin-bottom:8px;">ROI* = (1 − v) ÷ ( D − B / P )</div>'+
+			'<div style="margin-left:12px; margin-bottom:8px;">ROI* = (1 − v/(1+v)) ÷ ( D − B / P )</div>'+
 			'<div style="margin-bottom:6px; color:#111;">公式与中间量（ROI=有效GMV÷广告费）：</div>'+
             `<div>• 有效率 E = 1 - 退货率 = ${(E*100).toFixed(1)}%</div>`+
             `<div>• 销项税占比 = 税率/(1+税率) = ${(tOnFinal*100).toFixed(2)}%</div>`+
             `<div>• 分子 B = C - 商品进项税 + 固定成本/E = ${C.toFixed(2)} - ${purchaseVAT.toFixed(2)} + ${fixedCosts.toFixed(2)} = ${(C - purchaseVAT + fixedCosts).toFixed(2)}</div>`+
-			`<div>• 常数 D' = 1 - 平台费 - 销项税占比 + v×平台费；当前 v = ${(v*100).toFixed(0)}% → D = ${(1 - platformRate).toFixed(4)} - ${(tOnFinal).toFixed(4)} + ${(v*platformRate).toFixed(4)} = ${(D).toFixed(4)}</div>`+
-			`<div>• 保本广告占比 a* = E/(1 - v) × (D - B/P)</div>`+
-			`<div style=\"margin-left:12px;\">= ${(E/(1 - v)).toFixed(6)} × ( ${(D).toFixed(6)} - ${(((C - purchaseVAT + fixedCosts) / P) || 0).toFixed(6)} )</div>`+
+			`<div>• 常数 D' = 1 - 平台费 - 销项税占比 + 平台费进项税抵扣；当前 v = ${(v*100).toFixed(0)}% → D = ${(1 - platformRate).toFixed(4)} - ${(tOnFinal).toFixed(4)} + ${(platformVatCredit).toFixed(4)} = ${(D).toFixed(4)}</div>`+
+			`<div>• 保本广告占比 a* = E/(1 - v/(1+v)) × (D - B/P)</div>`+
+			`<div style=\"margin-left:12px;\">= ${(E/(1 - v/(1 + v))).toFixed(6)} × ( ${(D).toFixed(6)} - ${(((C - purchaseVAT + fixedCosts) / P) || 0).toFixed(6)} )</div>`+
             `<div style=\"margin-left:12px;\">= ${(breakevenAdRate*100).toFixed(2)}%</div>`+
 			`<div>• 保本ROI = E / a* = ${isFinite(breakevenROI)? breakevenROI.toFixed(2): '∞'}</div>`+
-			`<div style=\"margin-top:6px; color:#111;\">因此：ROI* = (1 − v) ÷ ( D − B / P )；当前 v = ${(v*100).toFixed(0)}% → ROI* = ${(1 - v).toFixed(2)} ÷ ( D − B / P )</div>`+
+			`<div style=\"margin-top:6px; color:#111;\">因此：ROI* = (1 − v/(1+v)) ÷ ( D − B / P )；当前 v = ${(v*100).toFixed(0)}% → ROI* = ${(1 - v/(1 + v)).toFixed(4)} ÷ ( D − B / P )</div>`+
             '</div>'
         );
     };
