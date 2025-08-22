@@ -4198,8 +4198,13 @@ function calculateMarkupRate(row) {
 		
 		if (salePrice <= 0 || costPrice <= 0) return NaN;
 		
-		// 加价率 = 售价 / 进货价
-		return salePrice / costPrice;
+		// 计算进货实际成本（进货价 + 开票成本）
+		const inputTaxRate = 0.06; // 默认开票成本6%
+		const invoiceCost = costPrice * inputTaxRate; // 开票成本
+		const effectiveCost = costPrice + invoiceCost; // 进货实际成本
+		
+		// 加价率 = 含税售价 ÷ 进货实际成本（与主页面计算逻辑一致）
+		return salePrice / effectiveCost;
 	} catch (error) {
 		return NaN;
 	}
@@ -4226,8 +4231,13 @@ function calculateGrossMargin(row) {
 		
 		if (salePrice <= 0 || costPrice <= 0) return NaN;
 		
-		// 毛利率 = (售价 - 进货价) / 售价
-		return (salePrice - costPrice) / salePrice;
+		// 计算进货实际成本（进货价 + 开票成本）
+		const inputTaxRate = 0.06; // 默认开票成本6%
+		const invoiceCost = costPrice * inputTaxRate; // 开票成本
+		const effectiveCost = costPrice + invoiceCost; // 进货实际成本
+		
+		// 毛利率 = (含税售价 - 进货实际成本) ÷ 含税售价（与主页面计算逻辑一致）
+		return (salePrice - effectiveCost) / salePrice;
 	} catch (error) {
 		return NaN;
 	}
@@ -4279,16 +4289,19 @@ function calculateBreakevenROIForRow(row) {
 		
 		if (salePrice <= 0 || costPrice <= 0 || !isFinite(returnRate)) return NaN;
 		
-		// 使用系统现有的保本ROI计算函数
+		// 获取系统全局参数（与其他功能保持一致）
+		const globals = getGlobalDefaultsForCatalog();
+		
+		// 使用系统现有的保本ROI计算函数（参数来源与主页面完全一致）
 		const roiResult = calculateBreakevenROI({
 			costPrice: costPrice,
-			inputTaxRate: 0.06,        // 默认开票成本6%
-			outputTaxRate: 0.13,       // 默认进项税率13%
-			salesTaxRate: 0.13,        // 默认销项税率13%
-			platformRate: platformRate,
-			shippingCost: 2.8,         // 默认物流成本
-			shippingInsurance: 1.5,    // 默认运费险
-			otherCost: 2.5,            // 默认其他成本
+			inputTaxRate: globals.inputTaxRate,        // 使用系统设置的开票成本率
+			outputTaxRate: globals.outputTaxRate,      // 使用系统设置的进项税率
+			salesTaxRate: globals.salesTaxRate,        // 使用系统设置的销项税率
+			platformRate: platformRate,                // 使用平台特定佣金率
+			shippingCost: globals.shippingCost,        // 使用系统设置的物流成本
+			shippingInsurance: globals.shippingInsurance, // 使用系统设置的运费险
+			otherCost: globals.otherCost,              // 使用系统设置的其他成本
 			returnRate: returnRate,
 			finalPrice: salePrice
 		});
@@ -4326,16 +4339,19 @@ function calculateBreakevenAdRateForRow(row) {
 		
 		if (salePrice <= 0 || costPrice <= 0 || !isFinite(returnRate)) return NaN;
 		
-		// 使用系统现有的保本ROI计算函数
+		// 获取系统全局参数（与其他功能保持一致）
+		const globals = getGlobalDefaultsForCatalog();
+		
+		// 使用系统现有的保本ROI计算函数（参数来源与主页面完全一致）
 		const roiResult = calculateBreakevenROI({
 			costPrice: costPrice,
-			inputTaxRate: 0.06,        // 默认开票成本6%
-			outputTaxRate: 0.13,       // 默认进项税率13%
-			salesTaxRate: 0.13,        // 默认销项税率13%
-			platformRate: platformRate,
-			shippingCost: 2.8,         // 默认物流成本
-			shippingInsurance: 1.5,    // 默认运费险
-			otherCost: 2.5,            // 默认其他成本
+			inputTaxRate: globals.inputTaxRate,        // 使用系统设置的开票成本率
+			outputTaxRate: globals.outputTaxRate,      // 使用系统设置的进项税率
+			salesTaxRate: globals.salesTaxRate,        // 使用系统设置的销项税率
+			platformRate: platformRate,                // 使用平台特定佣金率
+			shippingCost: globals.shippingCost,        // 使用系统设置的物流成本
+			shippingInsurance: globals.shippingInsurance, // 使用系统设置的运费险
+			otherCost: globals.otherCost,              // 使用系统设置的其他成本
 			returnRate: returnRate,
 			finalPrice: salePrice
 		});
@@ -4349,6 +4365,45 @@ function calculateBreakevenAdRateForRow(row) {
 // 生成概览HTML内容
 function generateOverviewHtml(overviewData) {
 	const { total, platforms, overall } = overviewData;
+	
+	// 获取当前使用的计算参数
+	const globals = getGlobalDefaultsForCatalog();
+	
+	// 生成计算参数显示
+	const parametersHtml = `
+		<div style="margin-bottom:24px; padding:16px; background:#f0f9ff; border:1px solid #0ea5e9; border-radius:8px;">
+			<h3 style="margin:0 0 16px 0; color:#0c4a6e; font-size:16px; font-weight:600;">⚙️ 当前计算参数</h3>
+			<div style="display:flex; gap:16px; font-size:13px;">
+				<div style="flex:1; background:#fff; padding:12px; border:1px solid #bae6fd; border-radius:6px;">
+					<div style="font-weight:600; color:#0c4a6e; margin-bottom:8px;">基础成本参数</div>
+					<div style="color:#374151; line-height:1.4;">
+						<div>开票成本率：<span style="font-weight:600; color:#059669;">${(globals.inputTaxRate * 100).toFixed(1)}%</span></div>
+						<div>进项税率：<span style="font-weight:600; color:#059669;">${(globals.outputTaxRate * 100).toFixed(1)}%</span></div>
+						<div>销项税率：<span style="font-weight:600; color:#059669;">${(globals.salesTaxRate * 100).toFixed(1)}%</span></div>
+					</div>
+				</div>
+				<div style="flex:1; background:#fff; padding:12px; border:1px solid #bae6fd; border-radius:6px;">
+					<div style="font-weight:600; color:#0c4a6e; margin-bottom:8px;">运营成本参数</div>
+					<div style="color:#374151; line-height:1.4;">
+						<div>物流成本：<span style="font-weight:600; color:#059669;">¥${globals.shippingCost.toFixed(2)}/单</span></div>
+						<div>运费险：<span style="font-weight:600; color:#059669;">¥${globals.shippingInsurance.toFixed(2)}/单</span></div>
+						<div>其他成本：<span style="font-weight:600; color:#059669;">¥${globals.otherCost.toFixed(2)}/单</span></div>
+					</div>
+				</div>
+				<div style="flex:1; background:#fff; padding:12px; border:1px solid #bae6fd; border-radius:6px;">
+					<div style="font-weight:600; color:#0c4a6e; margin-bottom:8px;">业务参数</div>
+					<div style="color:#374151; line-height:1.4;">
+						<div>广告费占比：<span style="font-weight:600; color:#059669;">${(globals.adRate * 100).toFixed(1)}%</span> <span style="font-size:11px; color:#6b7280; font-style:italic;">(不参与计算)</span></div>
+						<div>退货率：<span style="font-weight:600; color:#059669;">${(globals.returnRate * 100).toFixed(1)}%</span></div>
+						<div>平台佣金：<span style="font-weight:600; color:#059669;">${(globals.platformRate * 100).toFixed(1)}%</span></div>
+					</div>
+				</div>
+			</div>
+			<div style="margin-top:12px; padding:8px 12px; background:#dbeafe; border-radius:6px; font-size:12px; color:#1e40af;">
+				<span style="font-weight:600;">💡 提示：</span>这些参数来自"售价计算"标签页的设置。如需调整，请前往"售价计算"标签页修改参数并保存。
+			</div>
+		</div>
+	`;
 	
 	// 生成整体概览
 	const overallHtml = `
@@ -4484,7 +4539,7 @@ function generateOverviewHtml(overviewData) {
 		</div>
 	`;
 	
-	return overallHtml + metricsHtml + platformDetailsHtml;
+	return parametersHtml + overallHtml + metricsHtml + platformDetailsHtml;
 }
 
 // 格式化加价率
@@ -4529,7 +4584,9 @@ function showMetricTooltip(event, metricType, scope, data) {
 		tooltipContent = `平均加价率 = 所有商品加价率的总和 ÷ 有效商品数量
 
 计算逻辑：
-• 加价率 = 售价 ÷ 进货价
+• 加价率 = 含税售价 ÷ 进货实际成本
+• 进货实际成本 = 进货价（不含税）+ 开票成本
+• 开票成本 = 进货价 × 开票成本率（默认6%）
 • 优先使用多档售价的第一档，否则使用单一售价
 • 优先使用多档进货价的第一档，否则使用单一进货价
 • 过滤掉售价或进货价无效的商品
@@ -4543,7 +4600,9 @@ function showMetricTooltip(event, metricType, scope, data) {
 		tooltipContent = `平均毛利率 = 所有商品毛利率的总和 ÷ 有效商品数量
 
 计算逻辑：
-• 毛利率 = (售价 - 进货价) ÷ 售价 × 100%
+• 毛利率 = (含税售价 - 进货实际成本) ÷ 含税售价 × 100%
+• 进货实际成本 = 进货价（不含税）+ 开票成本
+• 开票成本 = 进货价 × 开票成本率（默认6%）
 • 优先使用多档售价的第一档，否则使用单一售价
 • 优先使用多档进货价的第一档，否则使用单一进货价
 • 过滤掉售价或进货价无效的商品
@@ -4571,8 +4630,8 @@ function showMetricTooltip(event, metricType, scope, data) {
 
 计算逻辑：
 • 使用系统现有的保本ROI计算函数
-• 默认参数：开票成本6%、进项税率13%、销项税率13%
-• 物流成本2.8元/单、运费险1.5元/单、其他成本2.5元/单
+• 系统参数：使用当前系统设置的各项成本和税率参数
+• 包括：开票成本率、进项税率、销项税率、物流成本、运费险、其他成本等
 • 平台佣金率根据平台名称自动获取
 • 过滤掉计算结果无效的商品
 
@@ -4586,8 +4645,8 @@ function showMetricTooltip(event, metricType, scope, data) {
 
 计算逻辑：
 • 使用系统现有的保本ROI计算逻辑
-• 默认参数：开票成本6%、进项税率13%、销项税率13%
-• 物流成本2.8元/单、运费险1.5元/单、其他成本2.5元/单
+• 系统参数：使用当前系统设置的各项成本和税率参数
+• 包括：开票成本率、进项税率、销项税率、物流成本、运费险、其他成本等
 • 平台佣金率根据平台名称自动获取
 • 过滤掉计算结果无效的商品
 • 风险识别：保本广告占比 < 21% 的商品标记为风险商品
@@ -4687,7 +4746,9 @@ function showMetricTooltipFromData(event) {
 		tooltipContent = `平均加价率 = 所有商品加价率的总和 ÷ 有效商品数量
 
 计算逻辑：
-• 加价率 = 售价 ÷ 进货价
+• 加价率 = 含税售价 ÷ 进货实际成本
+• 进货实际成本 = 进货价（不含税）+ 开票成本
+• 开票成本 = 进货价 × 开票成本率（默认6%）
 • 优先使用多档售价的第一档，否则使用单一售价
 • 优先使用多档进货价的第一档，否则使用单一进货价
 • 过滤掉售价或进货价无效的商品
@@ -4701,7 +4762,9 @@ function showMetricTooltipFromData(event) {
 		tooltipContent = `平均毛利率 = 所有商品毛利率的总和 ÷ 有效商品数量
 
 计算逻辑：
-• 毛利率 = (售价 - 进货价) ÷ 售价 × 100%
+• 毛利率 = (含税售价 - 进货实际成本) ÷ 含税售价 × 100%
+• 进货实际成本 = 进货价（不含税）+ 开票成本
+• 开票成本 = 进货价 × 开票成本率（默认6%）
 • 优先使用多档售价的第一档，否则使用单一售价
 • 优先使用多档进货价的第一档，否则使用单一进货价
 • 过滤掉售价或进货价无效的商品
@@ -4729,8 +4792,8 @@ function showMetricTooltipFromData(event) {
 
 计算逻辑：
 • 使用系统现有的保本ROI计算函数
-• 默认参数：开票成本6%、进项税率13%、销项税率13%
-• 物流成本2.8元/单、运费险1.5元/单、其他成本2.5元/单
+• 系统参数：使用当前系统设置的各项成本和税率参数
+• 包括：开票成本率、进项税率、销项税率、物流成本、运费险、其他成本等
 • 平台佣金率根据平台名称自动获取
 • 过滤掉计算结果无效的商品
 
@@ -4744,8 +4807,8 @@ function showMetricTooltipFromData(event) {
 
 计算逻辑：
 • 使用系统现有的保本ROI计算逻辑
-• 默认参数：开票成本6%、进项税率13%、销项税率13%
-• 物流成本2.8元/单、运费险1.5元/单、其他成本2.5元/单
+• 系统参数：使用当前系统设置的各项成本和税率参数
+• 包括：开票成本率、进项税率、销项税率、物流成本、运费险、其他成本等
 • 平台佣金率根据平台名称自动获取
 • 过滤掉计算结果无效的商品
 • 风险识别：保本广告占比 < 21% 的商品标记为风险商品
