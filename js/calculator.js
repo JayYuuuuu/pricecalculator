@@ -6221,7 +6221,7 @@ function renderCatalogTable() {
 				`<option value=""${!val?' selected':''}>请选择平台</option>`+opts+
 			`</select>`;
 		}
-			// 退货率字段特殊处理：显示为百分比格式，但存储为小数值
+			// 退货率字段特殊处理：手动输入，验证是否包含%符号
 	if (key === 'returnRate') {
 		const displayValue = (() => {
 			if (val === undefined || val === null || val === '') return '';
@@ -6237,7 +6237,7 @@ function renderCatalogTable() {
 			// 如果已经是字符串格式（如"12%"），直接显示
 			return String(val);
 		})();
-		return `<input data-key="${key}" class="${cls}" type="text" value="${displayValue}" placeholder="输入数字自动添加%" style="width:${width};" title="直接输入数字即可，系统自动添加%号，如：12">`;
+		return `<input data-key="${key}" class="${cls}" type="text" value="${displayValue}" placeholder="请输入百分比，如：12%" style="width:${width};" title="请输入百分比格式，如：12%">`;
 	}
 		return `<input data-key="${key}" class="${cls}" type="${type}" value="${val === undefined ? '' : String(val)}" placeholder="${placeholder||''}"${step}${disabled} style="width:${width};">`; 
 	};
@@ -6576,32 +6576,55 @@ function renderCatalogTable() {
 			const row = getRowByDisplayIndex(index);
 			if (!row) return;
 			
-			// 退货率字段特殊处理：支持百分比格式输入，智能处理%号
+			// 退货率字段特殊处理：手动输入，验证是否包含%符号
 			if (key === 'returnRate') {
-				// 智能处理退货率输入：移除所有%号，重新格式化
-				let cleanValue = value.replace(/%/g, ''); // 移除所有%号
-				
-				// 检查是否为有效数字
-				if (/^\d+(\.\d+)?$/.test(cleanValue)) {
-					// 如果是纯数字，自动添加%号并更新显示
-					el.value = cleanValue + '%';
-					value = cleanValue + '%';
-				} else if (cleanValue === '') {
-					// 如果为空，清空显示
-					el.value = '';
-					value = '';
-				} else {
-					// 如果不是有效数字，保持原值但尝试清理
-					value = cleanValue + '%';
+				// 验证退货率格式：必须包含%符号
+				if (value && !value.includes('%')) {
+					// 如果没有%符号，显示错误提示并高亮输入框
+					el.style.borderColor = '#dc2626';
+					el.style.backgroundColor = '#fef2f2';
+					el.style.animation = 'pulse-error 0.6s ease-in-out';
+					
+					// 显示错误提示
+					showToast && showToast('退货率必须包含%符号，如：12%');
+					
+					// 恢复输入框样式（延迟恢复）
+					setTimeout(() => {
+						el.style.borderColor = '';
+						el.style.backgroundColor = '';
+						el.style.animation = '';
+					}, 2000);
+					
+					// 不更新数据，等待用户修正
+					return;
 				}
+				
+				// 验证通过，恢复输入框样式
+				el.style.borderColor = '';
+				el.style.backgroundColor = '';
+				el.style.animation = '';
 				
 				// 使用 parsePercent 函数解析输入值，确保存储为小数值
 				const parsedValue = parsePercent(value);
 				if (isFinite(parsedValue)) {
 					value = parsedValue; // 存储为小数值
 				} else {
-					// 如果解析失败，保持原值但标记为无效
-					console.warn(`退货率输入值 "${el.value}" 无法解析，将保持原值`);
+					// 如果解析失败，显示错误提示
+					el.style.borderColor = '#dc2626';
+					el.style.backgroundColor = '#fef2f2';
+					el.style.animation = 'pulse-error 0.6s ease-in-out';
+					
+					showToast && showToast('退货率格式错误，请输入正确的百分比格式，如：12%');
+					
+					// 恢复输入框样式（延迟恢复）
+					setTimeout(() => {
+						el.style.borderColor = '';
+						el.style.backgroundColor = '';
+						el.style.animation = '';
+					}, 2000);
+					
+					// 不更新数据，等待用户修正
+					return;
 				}
 			}
 			

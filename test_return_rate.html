@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>退货率输入框测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8fafc;
+        }
+        
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        input {
+            width: 200px;
+            padding: 8px 12px;
+            border: 2px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .error {
+            border-color: #dc2626 !important;
+            background-color: #fef2f2 !important;
+            animation: pulse-error 0.6s ease-in-out;
+        }
+        
+        .success {
+            border-color: #059669 !important;
+            background-color: #f0fdf4 !important;
+        }
+        
+        .message {
+            margin-top: 8px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .message.error {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+        
+        .message.success {
+            background: #f0fdf4;
+            color: #059669;
+            border: 1px solid #bbf7d0;
+        }
+        
+        .info {
+            background: #eff6ff;
+            color: #1e40af;
+            border: 1px solid #bfdbfe;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes pulse-error {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <h1>退货率输入框测试</h1>
+    
+    <div class="info">
+        <strong>测试说明：</strong><br>
+        1. 输入退货率时必须包含%符号（如：12%）<br>
+        2. 如果没有%符号，输入框会显示红色高亮和闪烁动画<br>
+        3. 输入正确格式后，输入框恢复正常样式<br>
+        4. 系统会自动验证格式并显示相应提示
+    </div>
+    
+    <div class="test-container">
+        <h3>退货率输入测试</h3>
+        
+        <div class="input-group">
+            <label for="returnRate">退货率：</label>
+            <input 
+                type="text" 
+                id="returnRate" 
+                placeholder="请输入百分比，如：12%"
+                title="请输入百分比格式，如：12%"
+            >
+            <div id="message" class="message" style="display: none;"></div>
+        </div>
+        
+        <div class="input-group">
+            <label>当前值：</label>
+            <div id="currentValue" style="padding: 8px 12px; background: #f3f4f6; border-radius: 6px; font-family: monospace;">
+                未输入
+            </div>
+        </div>
+    </div>
+    
+    <div class="test-container">
+        <h3>测试用例</h3>
+        <ul>
+            <li><strong>正确格式：</strong> 12%, 15.5%, 0%</li>
+            <li><strong>错误格式：</strong> 12, 15.5, 0</li>
+            <li><strong>边界情况：</strong> 空值, 100%, 0.1%</li>
+        </ul>
+    </div>
+    
+    <script>
+        const returnRateInput = document.getElementById('returnRate');
+        const messageDiv = document.getElementById('message');
+        const currentValueDiv = document.getElementById('currentValue');
+        
+        // 验证退货率格式
+        function validateReturnRate(value) {
+            if (!value) {
+                return { valid: true, message: '' };
+            }
+            
+            if (!value.includes('%')) {
+                return { 
+                    valid: false, 
+                    message: '退货率必须包含%符号，如：12%' 
+                };
+            }
+            
+            // 移除%符号后检查是否为有效数字
+            const cleanValue = value.replace(/%/g, '');
+            if (!/^\d+(\.\d+)?$/.test(cleanValue)) {
+                return { 
+                    valid: false, 
+                    message: '退货率格式错误，请输入正确的百分比格式，如：12%' 
+                };
+            }
+            
+            const num = parseFloat(cleanValue);
+            if (num < 0 || num > 100) {
+                return { 
+                    valid: false, 
+                    message: '退货率必须在0-100%之间' 
+                };
+            }
+            
+            return { valid: true, message: '格式正确' };
+        }
+        
+        // 显示消息
+        function showMessage(message, type) {
+            messageDiv.textContent = message;
+            messageDiv.className = `message ${type}`;
+            messageDiv.style.display = 'block';
+            
+            // 3秒后自动隐藏
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 3000);
+        }
+        
+        // 更新输入框样式
+        function updateInputStyle(isValid) {
+            returnRateInput.classList.remove('error', 'success');
+            
+            if (isValid) {
+                returnRateInput.classList.add('success');
+            } else {
+                returnRateInput.classList.add('error');
+            }
+        }
+        
+        // 解析退货率值
+        function parseReturnRate(value) {
+            if (!value) return null;
+            
+            const cleanValue = value.replace(/%/g, '');
+            const num = parseFloat(cleanValue);
+            
+            if (isNaN(num) || num < 0 || num > 100) {
+                return null;
+            }
+            
+            // 转换为小数值（0-1）
+            return num / 100;
+        }
+        
+        // 输入事件处理
+        returnRateInput.addEventListener('input', (e) => {
+            const value = e.target.value;
+            const validation = validateReturnRate(value);
+            
+            if (validation.valid) {
+                // 验证通过
+                updateInputStyle(true);
+                showMessage(validation.message, 'success');
+                
+                // 解析并显示当前值
+                const parsedValue = parseReturnRate(value);
+                if (parsedValue !== null) {
+                    currentValueDiv.textContent = `小数: ${parsedValue.toFixed(4)} | 百分比: ${value}`;
+                } else {
+                    currentValueDiv.textContent = '解析失败';
+                }
+            } else {
+                // 验证失败
+                updateInputStyle(false);
+                showMessage(validation.message, 'error');
+                currentValueDiv.textContent = '格式错误';
+            }
+        });
+        
+        // 失去焦点事件处理
+        returnRateInput.addEventListener('blur', (e) => {
+            const value = e.target.value;
+            if (value && !validateReturnRate(value).valid) {
+                // 如果格式错误，恢复输入框样式
+                setTimeout(() => {
+                    returnRateInput.classList.remove('error', 'success');
+                }, 2000);
+            }
+        });
+    </script>
+</body>
+</html>
