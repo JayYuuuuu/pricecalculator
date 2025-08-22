@@ -1,9 +1,20 @@
 // 商品清单示例数据（独立文件）
+// 版本号：v1.0.2 (2025-08-22)
 // 说明：
 // - 本文件用于集中维护"插入示例"所使用的示例行，便于后期统一修改与扩展
 // - 数据口径需与 `js/calculator.js` 中的清单字段一致
 // - 价格、成本、退货率等字段请填写与页面一致的口径（退货率可用百分比字符串或小数）
 // - 主推款标识：isMainProduct: true 表示该商品为主推款
+// 
+// ⚠️ 重要提醒：每次更新示例数据后，请同时更新HTML文件中的版本号！
+// 更新方法：在index.html中找到 <script src="js/catalog-samples.js"></script>
+// 修改为：<script src="js/catalog-samples.js?v=新版本号"></script>
+// 例如：<script src="js/catalog-samples.js?v=1.0.2"></script>
+// 
+// 版本历史：
+// v1.0.2 (2025-08-22) - 更新示例数据
+// v1.0.1 (2024-12-01) - 新增25条示例数据，包括奥粒绒、火山石、德绒等系列商品
+// v1.0.0 (初始版本) - 基础示例数据
 
 // 全局变量：页面通过 <script> 标签引入后可直接读取
 // 注意：保持字段名称与清单一致：name, sku, platform, salePrice, salePriceTiers, returnRate, costTiers, costMin, costMax, isMainProduct
