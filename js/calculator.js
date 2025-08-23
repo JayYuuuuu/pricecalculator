@@ -130,6 +130,45 @@ function showPriceMetricTooltip(event, metricType) {
 毛利率 = (¥${actualPrice.toFixed(2)} - ¥${effectiveCost.toFixed(2)}) ÷ ¥${actualPrice.toFixed(2)} × 100%
       = ¥${(actualPrice - effectiveCost).toFixed(2)} ÷ ¥${actualPrice.toFixed(2)} × 100%
       = ${(((actualPrice - effectiveCost) / actualPrice) * 100).toFixed(2)}%`;
+    } else if (metricType === 'breakevenROI') {
+        // 获取保本ROI计算所需的参数
+        const returnRate = parseFloat(document.getElementById('profitReturnRate')?.value || '0') / 100;
+        const platformRate = parseFloat(document.getElementById('profitPlatformRate')?.value || '0') / 100;
+        const shippingCost = parseFloat(document.getElementById('profitShippingCost')?.value || '0');
+        const shippingInsurance = parseFloat(document.getElementById('profitShippingInsurance')?.value || '0');
+        const otherCost = parseFloat(document.getElementById('profitOtherCost')?.value || '0');
+        const salesTaxRate = parseFloat(document.getElementById('profitSalesTaxRate')?.value || '0') / 100;
+        const outputTaxRate = parseFloat(document.getElementById('profitOutputTaxRate')?.value || '0') / 100;
+        
+        // 计算保本ROI的关键参数
+        const effectiveSalesRate = 1 - returnRate;
+        const fixedCosts = (shippingCost + shippingInsurance + otherCost) / effectiveSalesRate;
+        const B = effectiveCost + fixedCosts;
+        const taxFactorOnFinal = salesTaxRate / (1 + salesTaxRate);
+        const v = 0.06; // 服务业增值税率
+        const platformVatCredit = (platformRate / (1 + v)) * v;
+        const D = 1 - platformRate - taxFactorOnFinal + platformVatCredit;
+        const term = D - (B / actualPrice);
+        const breakevenAdRate = (effectiveSalesRate / (1 - v / (1 + v))) * term;
+        const breakevenROI = effectiveSalesRate / breakevenAdRate;
+        
+        tooltipTitle = '保本ROI计算过程';
+        tooltipContent = `保本ROI = 有效销售率 ÷ 保本广告占比
+
+核心公式：保本ROI = E / a*
+其中：E = 有效销售率，a* = 保本广告占比
+
+具体计算：
+• 有效销售率 E = 1 - 退货率 = 1 - ${(returnRate * 100).toFixed(1)}% = ${effectiveSalesRate.toFixed(4)}
+• 保本广告占比 a* = ${(breakevenAdRate * 100).toFixed(2)}%
+
+保本ROI = ${effectiveSalesRate.toFixed(4)} ÷ ${breakevenAdRate.toFixed(4)} = ${breakevenROI.toFixed(2)}
+
+含义解释：
+• 保本ROI表示广告投入产出比的临界值
+• 当实际ROI > 保本ROI时，商品开始盈利
+• 当实际ROI < 保本ROI时，商品处于亏损状态
+• 保本ROI考虑了退货率、税费、运费等所有成本因素`;
     }
     
     // 创建浮层元素，使用与税费占比浮窗相同的样式
@@ -1267,69 +1306,97 @@ function calculatePrices(purchaseCost, salesCost, inputs) {
  */
 function calculateBreakevenROI(params) {
     try {
-        // 1) 读取参数并校验基本范围（为稳健起见）
-        const costPrice = Number(params.costPrice) || 0;
-        const inputTaxRate = Math.max(0, Number(params.inputTaxRate) || 0);
-        const outputTaxRate = Math.max(0, Number(params.outputTaxRate) || 0);
-        const salesTaxRate = Math.max(0, Number(params.salesTaxRate) || 0);
-        const platformRate = Math.max(0, Number(params.platformRate) || 0);
-        const shippingCost = Math.max(0, Number(params.shippingCost) || 0);
-        const shippingInsurance = Math.max(0, Number(params.shippingInsurance) || 0);
-        const otherCost = Math.max(0, Number(params.otherCost) || 0);
-        const returnRate = Math.min(0.9999, Math.max(0, Number(params.returnRate) || 0));
-        const finalPrice = Number(params.finalPrice) || 0;
-
-        if (finalPrice <= 0) {
+        const {
+            costPrice,          // 进货价（不含税）
+            inputTaxRate,       // 开票成本比例
+            outputTaxRate,      // 商品进项税率
+            salesTaxRate,       // 销项税率
+            platformRate,       // 平台佣金比例
+            shippingCost,       // 物流费
+            shippingInsurance,  // 运费险
+            otherCost,          // 其他成本
+            returnRate,         // 退货率
+            finalPrice          // 含税售价
+        } = params;
+        
+        // 参数校验和默认值处理
+        const costPriceValue = Number(costPrice) || 0;
+        const inputTaxRateValue = Math.max(0, Number(inputTaxRate) || 0);
+        const outputTaxRateValue = Math.max(0, Number(outputTaxRate) || 0);
+        const salesTaxRateValue = Math.max(0, Number(salesTaxRate) || 0);
+        const platformRateValue = Math.max(0, Number(platformRate) || 0);
+        const shippingCostValue = Math.max(0, Number(shippingCost) || 0);
+        const shippingInsuranceValue = Math.max(0, Number(shippingInsurance) || 0);
+        const otherCostValue = Math.max(0, Number(otherCost) || 0);
+        const returnRateValue = Math.min(0.9999, Math.max(0, Number(returnRate) || 0));
+        const finalPriceValue = Number(finalPrice) || 0;
+        
+        if (finalPriceValue <= 0) {
             return { breakevenAdRate: NaN, breakevenROI: NaN, feasible: false, note: '售价无效' };
         }
-
-        // 2) 计算关键中间量（与calculatePrices保持一致）
-        const E = 1 - returnRate;                                              // 有效销售率
-        const C_goods = costPrice * (1 + inputTaxRate);                        // 进货净成本
-        const C_fix = (shippingCost + shippingInsurance + otherCost) / E;       // 固定成本摊到有效单
-        const VAT_in_goods = costPrice * outputTaxRate;                        // 商品进项税额（可抵扣）
-        const K0 = C_goods + C_fix - VAT_in_goods;                            // 常数K₀
         
-        const α = platformRate;                                                 // 平台佣金率
-        const t = salesTaxRate;                                                // 销项税率
-        const v = 0.06;                                                        // 服务业税率
-
-        // 3) 基于保本条件反解广告占比
-        // 当profit = 0时：A×P = K₀
-        // 即：[1 - α - β/E - t/(1+t) + v/(1+v)(α+β)]×P = K₀
-        // 整理得：β* = E × [1 - α - t/(1+t) + v/(1+v)×α - K₀/P] / [1 - v/(1+v)]
+        // 1. 计算有效销售率
+        const effectiveSalesRate = 1 - returnRateValue;
         
-        const baseConstant = 1 - α - t/(1+t) + v/(1+v)*α;                     // 不含广告的基础常数
-        const K0_ratio = K0 / finalPrice;                                      // K₀占售价比例
-        const adTaxFactor = 1 - v/(1+v);                                       // 广告费税务因子
+        // 2. 计算实际进货成本（包含开票成本）
+        const effectiveCost = costPriceValue + (costPriceValue * inputTaxRateValue);
         
-        const breakevenAdRate = E * (baseConstant - K0_ratio) / adTaxFactor;
-
-        // 4) 计算ROI阈值（按有效GMV口径）：
-        //    ROI = 有效GMV / 广告费 = E / β*
-        let breakevenROI; let feasible = true; let note = '';
+        // 3. 计算固定成本分摊
+        const fixedCosts = (shippingCostValue + shippingInsuranceValue + otherCostValue) / effectiveSalesRate;
+        
+        // 4. 计算B值：实际进货成本 + 固定成本分摊（与price.html保持一致）
+        const B = effectiveCost + fixedCosts;
+        
+        // 5. 计算销项税占比
+        const taxFactorOnFinal = salesTaxRateValue / (1 + salesTaxRateValue);
+        
+        // 6. 计算平台佣金进项税抵扣
+        const v = 0.06; // 服务业增值税率
+        const platformVatCredit = (platformRateValue / (1 + v)) * v;
+        
+        // 7. 计算D值
+        const D = 1 - platformRateValue - taxFactorOnFinal + platformVatCredit;
+        
+        // 8. 计算中间项term
+        const term = D - (B / finalPriceValue);
+        
+        // 9. 计算保本广告占比（使用price.html的正确公式）
+        const breakevenAdRate = (effectiveSalesRate / (1 - v / (1 + v))) * term;
+        
+        // 10. 计算保本ROI
+        let breakevenROI;
         if (breakevenAdRate <= 0) {
-            // β*<=0：无需广告即可保本（或价格已经过高），ROI阈值视为∞
             breakevenROI = Infinity;
-            note = '无需广告也能保本';
-        } else if (!isFinite(breakevenAdRate)) {
-            breakevenROI = NaN; feasible = false; note = '参数异常';
+        } else if (!isFinite(breakevenAdRate) || breakevenAdRate >= 1) {
+            breakevenROI = NaN;
         } else {
-            breakevenROI = E / breakevenAdRate;
-            if (breakevenAdRate >= 1) {
-                // 需要广告占比≥100%才保本，基本不可行
-                note = '不现实：需广告占比≥100%';
-                feasible = false;
-            }
+            breakevenROI = effectiveSalesRate / breakevenAdRate;
         }
-
-        return { breakevenAdRate, breakevenROI, feasible, note };
-    } catch (e) {
-        return { breakevenAdRate: NaN, breakevenROI: NaN, feasible: false, note: '计算失败' };
+        
+        const feasible = isFinite(breakevenROI) && breakevenROI > 0;
+        let note = '';
+        if (breakevenAdRate <= 0) {
+            note = '无需广告也能保本';
+        } else if (breakevenAdRate >= 1) {
+            note = '不现实：需广告占比≥100%';
+        }
+        
+        return {
+            breakevenAdRate,
+            breakevenROI,
+            feasible,
+            note
+        };
+        
+    } catch (error) {
+        return {
+            breakevenAdRate: NaN,
+            breakevenROI: NaN,
+            feasible: false,
+            note: '计算失败: ' + error.message
+        };
     }
 }
-
-
 
 /**
  * 数值分析工具函数 - 基于转化率的深度分析
