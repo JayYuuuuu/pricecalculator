@@ -6,23 +6,23 @@
   <title>电商保本计算器｜利润 / 保本ROI / 保本广告占比</title>
   <style>
     :root{
-      --bg:#0b0f14;
-      --card:#121923;
-      --ink:#e6eef7;
-      --muted:#9fb0c3;
-      --accent:#3ea6ff;
-      --accent-2:#7c4dff;
-      --ok:#22c55e;
-      --warn:#f59e0b;
-      --bad:#ef4444;
+      --bg:#F5F5F7;              /* Apple system background */
+      --card:#FFFFFF;             /* Card surface */
+      --ink:#111111;              /* Primary text */
+      --muted:#6e6e73;            /* Secondary text (Apple Gray 2) */
+      --accent:#007aff;           /* iOS blue */
+      --accent-2:#0a84ff;         /* hover */
+      --ok:#34c759;               /* Apple green */
+      --warn:#ff9f0a;             /* Apple orange */
+      --bad:#ff3b30;              /* Apple red */
       --grid: 12px;
-      --radius: 14px;
+      --radius: 12px;
       --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
     }
     html,body{height:100%}
     body{
-      margin:0; background:radial-gradient(1200px 600px at 80% -10%, #20304455 0, transparent 60%), linear-gradient(180deg, #0b0f14, #0e141c);
+      margin:0; background:var(--bg);
       color:var(--ink); font-family:var(--sans);
     }
     header{ padding:24px 24px 0; }
@@ -32,14 +32,14 @@
     .wrap{ display:grid; grid-template-columns: 1.1fr .9fr; gap:24px; }
     @media (max-width: 980px){ .wrap{ grid-template-columns: 1fr; } }
     .card{
-      background:linear-gradient(180deg, #101722, #0f1620);
-      border:1px solid #1e2a39; border-radius:14px;
-      box-shadow: 0 20px 60px #00000050 inset, 0 1px 0 #243244;
+      background:var(--card);
+      border:1px solid #d2d2d7; border-radius:var(--radius);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06);
     }
     .card h2{
-      font-size:16px; margin:0; padding:16px 16px 10px 16px; border-bottom:1px solid #1c2837;
-      background: linear-gradient(180deg, #0f1620, #121a25);
-      border-top-left-radius:14px; border-top-right-radius:14px;
+      font-size:16px; margin:0; padding:14px 16px; border-bottom:1px solid #e5e5ea;
+      background: linear-gradient(180deg, #fafafa, #ffffff);
+      border-top-left-radius:var(--radius); border-top-right-radius:var(--radius);
     }
     .content{ padding:16px; }
     .grid{ display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:16px; }
@@ -47,38 +47,69 @@
     label{ font-size:12px; color:var(--muted); display:block; margin:0 0 6px 2px; }
     .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
     .input{
-      background:#0b121a; border:1px solid #1d2a3a; color:var(--ink);
+      background:#ffffff; border:1px solid #d2d2d7; color:var(--ink);
       border-radius:10px; padding:14px 12px; width:90%;
       outline:none; font-size:16px; font-weight:600;
     }
-    .input:focus{ border-color:#2d8cff; box-shadow:0 0 0 3px #2d8cff33; }
+    /* 左侧参数输入区域：输入框加高 50%，字体加大加粗 */
+    .wrap > section.card:first-child .input{
+      padding:21px 14px;   /* 原 14px → 21px，高度 +50% */
+      font-size:20px;      /* 原 16px → 20px */
+      font-weight:700;     /* 原 600 → 700（更粗） */
+    }
+    .input:focus{ border-color:var(--accent); box-shadow:0 0 0 3px rgba(0,122,255,0.2); }
     .switch{
-      display:inline-flex; align-items:center; gap:8px; background:#0b121a; border:1px solid #1d2a3a; padding:8px 10px; border-radius:999px;
+      display:inline-flex; align-items:center; gap:8px; background:#ffffff; border:1px solid #d2d2d7; padding:8px 10px; border-radius:999px;
     }
     .btn{
-      appearance:none; border:0; background:linear-gradient(135deg, var(--accent), var(--accent-2)); color:white;
-      padding:12px 16px; border-radius:12px; font-weight:600; cursor:pointer; font-size:14px;
-      box-shadow: 0 8px 20px #3ea6ff44, inset 0 0 0 1px #ffffff33;
+      appearance:none; border:0; background:var(--accent); color:white;
+      padding:12px 16px; border-radius:10px; font-weight:600; cursor:pointer; font-size:14px;
+      box-shadow: 0 4px 12px rgba(0,122,255,0.24);
     }
-    .btn:active{ transform: translateY(1px); }
+    .btn:active{ transform: translateY(1px); filter:brightness(0.95); }
     .muted{ color:var(--muted); font-size:12px; }
     .kpi{ display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:10px; }
     @media (max-width: 640px){ .kpi{ grid-template-columns: 1fr; } }
-    .kpi .box{ background:#0b121a; border:1px solid #1d2a3a; border-radius:12px; padding:12px; }
+    .kpi .box{ background:#ffffff; border:1px solid #e5e5ea; border-radius:12px; padding:12px; }
     .kpi .label{ color:var(--muted); font-size:12px; }
-    .kpi .value{ font-family:var(--mono); font-size:20px; margin-top:8px; }
-    .good{ color:#22c55e } .bad{ color:#ef4444 }
+    .kpi .value{ font-family:var(--mono); font-size:20px; margin-top:8px; color:#111; }
+    .good{ color:#34c759 } .bad{ color:#ff3b30 }
     table{ width:100%; border-collapse:collapse; font-size:13px; }
-    th, td{ border-bottom:1px dashed #263343; padding:8px 6px; text-align:right; }
+    th, td{ border-bottom:1px solid #e5e5ea; padding:8px 6px; text-align:right; }
     th:first-child, td:first-child{ text-align:left; }
-    .note{ font-size:11px; color:#8ba0b8; line-height:1.6; }
-    .sep{ height:1px; background:linear-gradient(90deg, #253346, transparent); margin:12px 0; }
-    .pill{ padding:2px 8px; border-radius:999px; background:#132031; font-size:11px; color:#9bc3ff; border:1px solid #1d2a3a; }
+    .note{ font-size:12px; color:#3a3a3c; line-height:1.6; }
+    .sep{ height:1px; background:linear-gradient(90deg, #e5e5ea, transparent); margin:12px 0; }
+    .pill{ padding:2px 8px; border-radius:999px; background:#f2f2f7; font-size:11px; color:#111; border:1px solid #d2d2d7; }
     .mono{ font-family: var(--mono); }
     /* two-column layout for the explanation card */
     .explain-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
     @media (max-width: 980px){ .explain-grid{ grid-template-columns: 1fr; } }
     .explain-col{ display:flex; flex-direction:column; gap:10px; }
+    .axis-label{ font-size:11px; fill:#6e6e73; font-family: var(--sans); }
+    .axis-line{ stroke:#e5e5ea; stroke-width:1; }
+    /* Modal styles */
+    .modal-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; z-index:999; }
+    .modal{ width:min(1000px, 94vw); max-height:86vh; background:var(--card); border:1px solid #d2d2d7; border-radius:16px; box-shadow:0 20px 60px rgba(0,0,0,.25); display:flex; flex-direction:column; }
+    .modal header{ padding:14px 16px; border-bottom:1px solid #e5e5ea; display:flex; align-items:center; justify-content:space-between; }
+    .modal header h3{ margin:0; font-size:16px; }
+    .modal .modal-body{ padding:16px; overflow:auto; }
+    .modal .modal-actions{ padding:12px 16px; border-top:1px solid #e5e5ea; display:flex; gap:10px; justify-content:flex-end; }
+    .icon-btn{ background:#f2f2f7; border:1px solid #d2d2d7; border-radius:10px; padding:8px 10px; cursor:pointer; }
+    .close-x{ background:transparent; border:0; font-size:22px; line-height:1; cursor:pointer; color:#6e6e73; }
+    /* 功能按钮托盘：卡片底部，紧凑、可换行、移动端友好 */
+    .tooltray{ display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+    .tooltray .tag{ margin-right:auto; align-self:center; color:var(--muted); font-size:12px; }
+    @media (max-width: 640px){ .tooltray{ justify-content:flex-start; } }
+
+    /* Floating explain FAB */
+    .fab-explain{ position:fixed; right:22px; bottom:22px; z-index:998; }
+    .fab-btn{
+      background:var(--card); border:1px solid #d2d2d7; color:var(--ink);
+      width:44px; height:44px; border-radius:999px; cursor:pointer; font-weight:700; font-size:18px;
+      box-shadow:0 6px 18px rgba(0,0,0,.18); display:flex; align-items:center; justify-content:center;
+    }
+    .fab-btn:hover{ border-color:#bcbcc0; }
+    .fab-hint{ position:absolute; right:54px; bottom:8px; background:#111; color:#fff; font-size:12px; padding:6px 8px; border-radius:8px; opacity:.9; }
   </style>
 </head>
 <body>
@@ -180,6 +211,20 @@
             <button class="btn" id="calc">计算</button>
             <span class="muted">提示：所有 % 将自动换算为小数参与计算。</span>
           </div>
+          <div class="sep"></div>
+          <div class="tooltray">
+            <span class="tag">功能</span>
+            <button class="btn" id="openSim">利润率推演</button>
+            <button class="btn" id="openPriceSim">到手价推演</button>
+            <button class="btn" id="openTaxSim">税费推演</button>
+            <button class="btn" id="openCostSim">成本价推演</button>
+            <button class="btn" id="openValueSim">数值分析</button>
+            <!-- 未来功能按钮占位：
+            <button class="icon-btn" disabled>毛利敏感度</button>
+            <button class="icon-btn" disabled>多SKU对比</button>
+            <button class="icon-btn" disabled>渠道费模拟</button>
+            -->
+          </div>
         </div>
       </section>
 
@@ -216,6 +261,11 @@
               <div class="value" id="kpiROIGMV">—</div>
               <div class="muted">= 1 ÷ （保本广告占比（GMV））</div>
             </div>
+            <div class="box">
+              <div class="label">保本广告费（每出货单）</div>
+              <div class="value" id="kpiAdCost">—</div>
+              <div class="muted">= (1 + 服务费税率) × A</div>
+            </div>
           </div>
 
           <div class="sep"></div>
@@ -224,59 +274,311 @@
             <tbody id="detailRows"></tbody>
           </table>
 
-          <div class="sep"></div>
         </div>
       </section>
-    </div>
-      <section class="card" style="margin-top:16px">
-        <h2>口径说明 / 推导</h2>
-        <div class="content">
-          <div class="explain-grid">
-            <!-- Left column: ①定义, ②保本指标, ③规则, ⑤建议 -->
-            <div class="explain-col">
-              <div class="muted" style="margin-bottom:6px">本工具展示两种口径，并解释常见疑问：</div>
-
-              <h4 style="font-size:13px; margin:8px 0 4px">① 两套口径的定义</h4>
-              <ul class="muted" style="margin:0 0 8px 18px">
-                <li><strong>有效营收口径</strong>：分母 = 售价 × (1 − 退货率)，更贴近实际入账收入，用于经营决策。</li>
-                <li><strong>GMV 口径</strong>：分母 = 售价（含税），与广告平台报表对齐，便于外部沟通。</li>
-              </ul>
-
-              <h4 style="font-size:13px; margin:8px 0 4px">② 保本广告占比与 ROI</h4>
-              <ul class="muted" style="margin:0 0 8px 18px">
-                <li>保本广告占比（有效营收） = <span class="mono">X ÷ [售价 × (1 − 退货率)]</span></li>
-                <li>保本广告占比（GMV） = <span class="mono">X ÷ 售价</span> = 上式 × <span class="mono">(1 − 退货率)</span></li>
-                <li>ROI = 各自占比的倒数。判断盈亏时，务必在<strong>同一口径</strong>下比较。</li>
-              </ul>
-
-              <h4 style="font-size:13px; margin:8px 0 4px">③ 成本与税的口径规则</h4>
-              <div class="note" style="margin-bottom:8px">
-                ① 进货可退：进货成本与其进项抵扣按 ×r；不可退：按 ×1（出货即耗用）。<br>
-                ② 快递/运费险/其他：发货即发生，按 ×1。<br>
-                ③ 平台佣金：仅成交发生，按 ×r；佣金进项抵扣需价内还原。<br>
-                ④ 广告费：按 ×1 入账；广告进项抵扣需价内还原。<br>
-                ⑤ 销项税：按有效营收做价内扣除。
+      <div class="modal-overlay" id="simModal">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="simTitle">
+          <header>
+            <h3 id="simTitle">利润率推演</h3>
+            <button class="close-x" id="closeSim" aria-label="关闭">×</button>
+          </header>
+          <div class="modal-body">
+            <div class="grid">
+              <div>
+                <label>广告占比范围（%）</label>
+                <div class="row">
+                  <input id="simRateFrom" class="input" type="number" step="0.1" value="0" style="width:110px">
+                  <span class="muted">→</span>
+                  <input id="simRateTo" class="input" type="number" step="0.1" value="35" style="width:110px">
+                  <span class="muted">步长</span>
+                  <input id="simRateStep" class="input" type="number" step="0.1" value="2.5" style="width:110px">
+                </div>
               </div>
-
-              <h4 style="font-size:13px; margin:8px 0 4px">⑤ 建议</h4>
-              <div class="note">
-                <strong>经营决策优先</strong>：关注有效营收口径（更贴近真实利润）。<br>
-                <strong>报表对齐</strong>：GMV 口径用于与平台 ROI 对比。两者应同时监控，但不要跨口径直接比较。
+              <div>
+                <label>占比口径</label>
+                <div class="row">
+                  <label class="switch"><input type="radio" name="simBasis" value="effective" checked> 按有效营收</label>
+                  <label class="switch"><input type="radio" name="simBasis" value="gmv"> 按 GMV</label>
+                </div>
               </div>
-
-              <h4 style="font-size:13px; margin:8px 0 4px">④ 常见疑问</h4>
-              <div class="note">
-                <strong>疑问：</strong>为何选择 GMV 口径输入广告费占比时，利润更少？<br>
-                <strong>解释：</strong>因为 GMV > 有效营收，相同的 % 换算成的广告金额更大。利润恒等式未变，是<strong>输入口径分母不同</strong>导致。<br>
-                提示：跨口径换算关系—— 占比(GMV) = 占比(有效) × r； ROI(GMV) = ROI(有效) ÷ r。
+              <div>
+                <label>退货率场景（%，逗号分隔）</label>
+                <input id="simReturnScenarios" class="input" type="text" value="5,8,10,12,15,18,20,22,25,28,30">
+              </div>
+              <div>
+                <label>操作</label>
+                <div class="row">
+                  <button class="btn" id="simulate">推演</button>
+                  <button class="icon-btn" id="markBreakeven">一键标注保本点</button>
+                </div>
               </div>
             </div>
 
-            <!-- Right column: ④常见疑问, 完整利润式, 要点, 退货处理表, 回代验证 -->
-            <div class="explain-col">
-              <div class="sep"></div>
-              <div class="muted" style="margin:6px 0">完整利润恒等式（以「出货 1 单」为基准件）：</div>
-              <pre class="mono" style="font-size:12px; line-height:1.65; white-space:pre-wrap; background:#0b121a; border:1px solid #1d2a3a; border-radius:10px; padding:10px;">
+            <div class="sep"></div>
+            <h3 style="margin:6px 0 8px; font-size:14px">推演表</h3>
+            <table>
+              <thead id="simTableHead"></thead>
+              <tbody id="simTableBody"></tbody>
+            </table>
+          </div>
+          <div class="modal-actions">
+            <button class="icon-btn" id="closeSim2">关闭</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-overlay" id="priceModal">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="priceTitle">
+          <header>
+            <h3 id="priceTitle">到手价推演（反推售价）</h3>
+            <button class="close-x" id="closePrice" aria-label="关闭">×</button>
+          </header>
+          <div class="modal-body">
+            <div class="grid">
+              <div>
+                <label>广告占比范围（%）</label>
+                <div class="row">
+                  <input id="pRateFrom" class="input" type="number" step="0.1" value="0" style="width:110px">
+                  <span class="muted">→</span>
+                  <input id="pRateTo" class="input" type="number" step="0.1" value="35" style="width:110px">
+                  <span class="muted">步长</span>
+                  <input id="pRateStep" class="input" type="number" step="0.1" value="2.5" style="width:110px">
+                </div>
+              </div>
+              <div>
+                <label>占比口径</label>
+                <div class="row">
+                  <label class="switch"><input type="radio" name="pBasis" value="effective" checked> 按有效营收</label>
+                  <label class="switch"><input type="radio" name="pBasis" value="gmv"> 按 GMV</label>
+                </div>
+              </div>
+              <div>
+                <label>目标利润率场景（%，逗号分隔）</label>
+                <input id="pMarginScenarios" class="input" type="text" value="0,3,5,7,9,10,12,13,15,18,20">
+              </div>
+              <div>
+                <label>退货率场景（%，逗号分隔）</label>
+                <input id="pReturnScenarios" class="input" type="text" value="5,8,10,12,15,18,20,22,25,28,30">
+              </div>
+              <div>
+                <label>操作</label>
+                <div class="row">
+                  <button class="btn" id="priceSimRun">推演售价</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="sep"></div>
+            <div id="priceSimWrap"></div>
+          </div>
+          <div class="modal-actions">
+            <button class="icon-btn" id="closePrice2">关闭</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-overlay" id="taxModal">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="taxTitle">
+          <header>
+            <h3 id="taxTitle">税费推演（实际税负占比）</h3>
+            <button class="close-x" id="closeTax" aria-label="关闭">×</button>
+          </header>
+          <div class="modal-body">
+            <div class="grid">
+              <div>
+                <label>广告占比范围（%）</label>
+                <div class="row">
+                  <input id="tRateFrom" class="input" type="number" step="0.1" value="0" style="width:110px">
+                  <span class="muted">→</span>
+                  <input id="tRateTo" class="input" type="number" step="0.1" value="35" style="width:110px">
+                  <span class="muted">步长</span>
+                  <input id="tRateStep" class="input" type="number" step="0.1" value="2.5" style="width:110px">
+                </div>
+              </div>
+              <div>
+                <label>广告占比口径</label>
+                <div class="row">
+                  <label class="switch"><input type="radio" name="tBasis" value="effective" checked> 按有效营收</label>
+                  <label class="switch"><input type="radio" name="tBasis" value="gmv"> 按 GMV</label>
+                </div>
+              </div>
+              <div>
+                <label>退货率场景（%，逗号分隔）</label>
+                <input id="tReturnScenarios" class="input" type="text" value="5,8,10,12,15,18,20,22,25,28,30">
+              </div>
+              <div>
+                <label>说明</label>
+                <div class="note">此推演的“实际税费占比”= <strong>净应纳税额 ÷ 售价（GMV）</strong>，其中净应纳税额 = 销项税 − 进项税（进货/佣金/广告）。</div>
+              </div>
+              <div>
+                <label>操作</label>
+                <div class="row"><button class="btn" id="taxSimRun">开始推演</button></div>
+              </div>
+            </div>
+
+            <div class="sep"></div>
+            <div id="taxSimWrap"></div>
+          </div>
+          <div class="modal-actions">
+            <button class="icon-btn" id="closeTax2">关闭</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-overlay" id="costModal">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="costTitle">
+          <header>
+            <h3 id="costTitle">成本价推演（反推进货价）</h3>
+            <button class="close-x" id="closeCost" aria-label="关闭">×</button>
+          </header>
+          <div class="modal-body">
+            <div class="grid">
+              <div>
+                <label>广告占比范围（%）</label>
+                <div class="row">
+                  <input id="cRateFrom" class="input" type="number" step="0.1" value="0" style="width:110px">
+                  <span class="muted">→</span>
+                  <input id="cRateTo" class="input" type="number" step="0.1" value="35" style="width:110px">
+                  <span class="muted">步长</span>
+                  <input id="cRateStep" class="input" type="number" step="0.1" value="2.5" style="width:110px">
+                </div>
+              </div>
+              <div>
+                <label>占比口径</label>
+                <div class="row">
+                  <label class="switch"><input type="radio" name="cBasis" value="effective" checked> 按有效营收</label>
+                  <label class="switch"><input type="radio" name="cBasis" value="gmv"> 按 GMV</label>
+                </div>
+              </div>
+              <div>
+                <label>目标利润率场景（%，逗号分隔）</label>
+                <input id="cMarginScenarios" class="input" type="text" value="0,3,5,7,9,10,12,13,15,18,20">
+              </div>
+              <div>
+                <label>退货率场景（%，逗号分隔）</label>
+                <input id="cReturnScenarios" class="input" type="text" value="5,8,10,12,15,18,20,22,25,28,30">
+              </div>
+              <div>
+                <label>操作</label>
+                <div class="row">
+                  <button class="btn" id="costSimRun">推演进货价</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="sep"></div>
+            <div class="note" style="margin:8px 0 10px">说明：反推 <strong>进货价（costPrice）</strong> 使得 <span class="mono">利润率 = 目标值</span>。利润率定义为 <span class="mono">Profit ÷ (售价 × r)</span>；广告占比用于换算广告金额并影响广告进项抵扣。</div>
+            <div id="costSimWrap"></div>
+          </div>
+          <div class="modal-actions">
+            <button class="icon-btn" id="closeCost2">关闭</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-overlay" id="valueModal">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="valueTitle">
+          <header>
+            <h3 id="valueTitle">数值分析（CPC ↔ CVR ↔ 售价）</h3>
+            <button class="close-x" id="closeValue" aria-label="关闭">×</button>
+          </header>
+          <div class="modal-body">
+            <div class="grid">
+              <div>
+                <label>ROI 口径</label>
+                <div class="row">
+                  <label class="switch"><input type="radio" name="vBasis" value="effective" checked> 按有效营收</label>
+                  <label class="switch"><input type="radio" name="vBasis" value="gmv"> 按 GMV</label>
+                </div>
+              </div>
+              <div>
+                <label>转化率（CVR）%</label>
+                <input id="vCVR" class="input" type="number" step="0.01" placeholder="例如 3.5">
+              </div>
+              <div>
+                <label>CPC（元/点击）</label>
+                <input id="vCPC" class="input" type="number" step="0.01" placeholder="例如 0.60">
+              </div>
+              <div>
+                <label>客单价（AOV，元）<span class="muted">（留空将仅用于临界计算；可手动填当前售价）</span></label>
+                <div class="row">
+                  <input id="vAOV" class="input" type="number" step="0.01" placeholder="例如 79.80">
+                </div>
+              </div>
+              <div>
+                <label>操作</label>
+                <div class="row">
+                  <button class="btn" id="valueRun">计算</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="sep"></div>
+            <div class="note" style="margin:6px 0 10px">
+              基础关系：<span class="mono">ROI = (CVR × 客单价) ÷ CPC</span>。本工具用当前参数计算<strong>保本 ROI</strong>，并在你给定任意两项（CVR/CPC/客单价）时，求出第三项的<strong>临界值</strong>。
+            </div>
+            <div id="valueWrap"></div>
+          </div>
+          <div class="modal-actions">
+            <button class="icon-btn" id="closeValue2">关闭</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="fab-explain">
+        <button class="fab-btn" id="openExplain" title="口径说明 / 推导">？</button>
+        <div class="fab-hint" style="display:none" id="explainHint">口径说明 / 推导</div>
+      </div>
+      <div class="modal-overlay" id="explainModal">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="explainTitle">
+          <header>
+            <h3 id="explainTitle">口径说明 / 推导</h3>
+            <button class="close-x" id="closeExplain" aria-label="关闭">×</button>
+          </header>
+          <div class="modal-body">
+            <div class="explain-grid">
+              <div class="explain-col">
+                <div class="muted" style="margin-bottom:6px">本工具展示两种口径，并解释常见疑问：</div>
+
+                <h4 style="font-size:13px; margin:8px 0 4px">① 两套口径的定义</h4>
+                <ul class="muted" style="margin:0 0 8px 18px">
+                  <li><strong>有效营收口径</strong>：分母 = 售价 × (1 − 退货率)，更贴近实际入账收入，用于经营决策。</li>
+                  <li><strong>GMV 口径</strong>：分母 = 售价（含税），与广告平台报表对齐，便于外部沟通。</li>
+                </ul>
+
+                <h4 style="font-size:13px; margin:8px 0 4px">② 保本广告占比与 ROI</h4>
+                <ul class="muted" style="margin:0 0 8px 18px">
+                  <li>保本广告占比（有效营收） = <span class="mono">X ÷ [售价 × (1 − 退货率)]</span></li>
+                  <li>保本广告占比（GMV） = <span class="mono">X ÷ 售价</span> = 上式 × <span class="mono">(1 − 退货率)</span></li>
+                  <li>ROI = 各自占比的倒数。判断盈亏时，务必在<strong>同一口径</strong>下比较。</li>
+                </ul>
+
+                <h4 style="font-size:13px; margin:8px 0 4px">③ 成本与税的口径规则</h4>
+                <div class="note" style="margin-bottom:8px">
+                  ① 进货可退：进货成本与其进项抵扣按 ×r；不可退：按 ×1（出货即耗用）。<br>
+                  ② 快递/运费险/其他：发货即发生，按 ×1。<br>
+                  ③ 平台佣金：仅成交发生，按 ×r；佣金进项抵扣需价内还原。<br>
+                  ④ 广告费：按 ×1 入账；广告进项抵扣需价内还原。<br>
+                  ⑤ 销项税：按有效营收做价内扣除。
+                </div>
+
+                <h4 style="font-size:13px; margin:8px 0 4px">⑤ 建议</h4>
+                <div class="note">
+                  <strong>经营决策优先</strong>：关注有效营收口径（更贴近真实利润）。<br>
+                  <strong>报表对齐</strong>：GMV 口径用于与平台 ROI 对比。两者应同时监控，但不要跨口径直接比较。
+                </div>
+
+                <h4 style="font-size:13px; margin:8px 0 4px">④ 常见疑问</h4>
+                <div class="note">
+                  <strong>疑问：</strong>为何选择 GMV 口径输入广告费占比时，利润更少？<br>
+                  <strong>解释：</strong>因为 GMV > 有效营收，相同的 % 换算成的广告金额更大。利润恒等式未变，是<strong>输入口径分母不同</strong>导致。<br>
+                  提示：跨口径换算关系—— 占比(GMV) = 占比(有效) × r； ROI(GMV) = ROI(有效) ÷ r。
+                </div>
+              </div>
+
+              <div class="explain-col">
+                <div class="sep"></div>
+                <div class="muted" style="margin:6px 0">完整利润恒等式（以「出货 1 单」为基准件）：</div>
+                <pre class="mono" style="font-size:12px; line-height:1.65; white-space:pre-wrap; background:#f8f8f8; border:1px solid #e5e5ea; border-radius:10px; padding:10px;">
 Profit = Rev
   - [goodsCost + othersCost + commission + X]
   - (VAT_out - VAT_in_goods - VAT_in_comm - VAT_in_ad)
@@ -295,57 +597,61 @@ Rev = 售价 × (1 − 退货率)
 Profit = A − X/(1 + 服务费税率)
 ⇒ 保本广告费 X = (1 + 服务费税率) × A
 A = Rev − (goodsCost + othersCost + commission) − VAT_out + VAT_in_goods + VAT_in_comm
-              </pre>
+                </pre>
 
-              <div class="muted" style="margin-top:8px">要点：
-                <ul style="margin:6px 0 0 18px; padding:0 0 0 0">
-                  <li>进货可退：成本与进项抵扣按 <span class="mono">× r</span>；不可退：按 <span class="mono">×1</span>。</li>
-                  <li>快递/险/其他为发货即发生，<strong>不随 r 分摊</strong>（因“出货基准件”）。</li>
-                  <li>佣金仅在成交时发生，按 <span class="mono">× r</span>；广告抵扣需做价内还原。</li>
-                </ul>
+                <div class="muted" style="margin-top:8px">要点：
+                  <ul style="margin:6px 0 0 18px; padding:0 0 0 0">
+                    <li>进货可退：成本与进项抵扣按 <span class="mono">× r</span>；不可退：按 <span class="mono">×1</span>。</li>
+                    <li>快递/险/其他为发货即发生，<strong>不随 r 分摊</strong>（因“出货基准件”）。</li>
+                    <li>佣金仅在成交时发生，按 <span class="mono">× r</span>；广告抵扣需做价内还原。</li>
+                  </ul>
+                </div>
+
+                <div class="sep"></div>
+                <div class="muted" style="margin:6px 0">成本/费用的退货处理方式：</div>
+                <table style="width:100%; font-size:12px; border-collapse:collapse; margin-bottom:10px">
+                  <thead>
+                    <tr style="text-align:left; color:#6e6e73">
+                      <th style="padding:4px 6px; border-bottom:1px solid #e5e5ea">类别</th>
+                      <th style="padding:4px 6px; border-bottom:1px solid #e5e5ea">处理方式</th>
+                      <th style="padding:4px 6px; border-bottom:1px solid #e5e5ea">说明</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style="padding:4px 6px">进货成本</td>
+                      <td style="padding:4px 6px">可退：×r<br>不可退：×1</td>
+                      <td style="padding:4px 6px">退货时货值可退回，不需分摊；若不可退则摊到全部出货</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 6px">快递/运费险/其他</td>
+                      <td style="padding:4px 6px">×1 （发货即发生）</td>
+                      <td style="padding:4px 6px">退货也不退回，需摊到所有出货</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 6px">平台佣金</td>
+                      <td style="padding:4px 6px">×r</td>
+                      <td style="padding:4px 6px">佣金仅对成交有效，退货可退</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:4px 6px">广告费</td>
+                      <td style="padding:4px 6px">×1 （出货即确认）</td>
+                      <td style="padding:4px 6px">退货不退广告，必须摊到所有出货</td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <div class="sep"></div>
+                <div class="muted" style="margin:6px 0">回代验证：</div>
+                <div class="note">系统会将计算出的保本广告费 X 带回利润恒等式进行检验，若 Profit≈0，则说明公式和逻辑闭合无误。</div>
               </div>
-
-              <div class="sep"></div>
-              <div class="muted" style="margin:6px 0">成本/费用的退货处理方式：</div>
-              <table style="width:100%; font-size:12px; border-collapse:collapse; margin-bottom:10px">
-                <thead>
-                  <tr style="text-align:left; color:#9fb0c3">
-                    <th style="padding:4px 6px; border-bottom:1px dashed #263343">类别</th>
-                    <th style="padding:4px 6px; border-bottom:1px dashed #263343">处理方式</th>
-                    <th style="padding:4px 6px; border-bottom:1px dashed #263343">说明</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td style="padding:4px 6px">进货成本</td>
-                    <td style="padding:4px 6px">可退：×r<br>不可退：×1</td>
-                    <td style="padding:4px 6px">退货时货值可退回，不需分摊；若不可退则摊到全部出货</td>
-                  </tr>
-                  <tr>
-                    <td style="padding:4px 6px">快递/运费险/其他</td>
-                    <td style="padding:4px 6px">×1 （发货即发生）</td>
-                    <td style="padding:4px 6px">退货也不退回，需摊到所有出货</td>
-                  </tr>
-                  <tr>
-                    <td style="padding:4px 6px">平台佣金</td>
-                    <td style="padding:4px 6px">×r</td>
-                    <td style="padding:4px 6px">佣金仅对成交有效，退货可退</td>
-                  </tr>
-                  <tr>
-                    <td style="padding:4px 6px">广告费</td>
-                    <td style="padding:4px 6px">×1 （出货即确认）</td>
-                    <td style="padding:4px 6px">退货不退广告，必须摊到所有出货</td>
-                  </tr>
-                </tbody>
-              </table>
-
-              <div class="sep"></div>
-              <div class="muted" style="margin:6px 0">回代验证：</div>
-              <div class="note">系统会将计算出的保本广告费 X 带回利润恒等式进行检验，若 Profit≈0，则说明公式和逻辑闭合无误。</div>
             </div>
           </div>
+          <div class="modal-actions">
+            <button class="icon-btn" id="closeExplain2">关闭</button>
+          </div>
         </div>
-      </section>
+      </div>
   </main>
 
   <footer>
@@ -365,6 +671,20 @@ A = Rev − (goodsCost + othersCost + commission) − VAT_out + VAT_in_goods + V
     function valRate(id){ // percent to decimal
       return valNum(id) / 100;
     }
+
+    // ===== Local Storage: auto-save & restore all inputs (DISABLED) =====
+    const LS_KEY = null; // disabled
+
+    function saveState(){ /* disabled: no-op */ }
+
+    function loadState(){
+      // disabled: only refresh UI once
+      try{ updateAdMode(); }catch(e){}
+      try{ compute(); }catch(e){}
+    }
+
+    // debounce helper for saving
+    function debounce(fn, ms){ let t; return function(){ /* disabled debounce call */ } }
 
     // Switch ad input mode UI
     function updateAdMode(){
@@ -484,6 +804,7 @@ A = Rev − (goodsCost + othersCost + commission) − VAT_out + VAT_in_goods + V
 
       $('kpiAdRateGMV').textContent = pct(adRateBreakEvenGMV, 2);
       $('kpiROIGMV').textContent = isFinite(ROIBreakEvenGMV) ? fmt(ROIBreakEvenGMV, 2) : '—';
+      $('kpiAdCost').textContent = isFinite(adCostBreakEven) ? fmt(adCostBreakEven, 2) + ' 元' : '—';
 
       // Details table
       const rows = [
@@ -511,16 +832,761 @@ A = Rev − (goodsCost + othersCost + commission) − VAT_out + VAT_in_goods + V
       tbody.innerHTML = rows.map(([k,v,u])=>`<tr><td>${k}</td><td>${v}</td><td>${u}</td></tr>`).join('');
     }
 
+    let SIM_MARK_BREAK_EVEN = false;
+    // -------- 利润率推演 --------
+    // ===== 到手价推演（反推售价） =====
+    function parseListPercents(text){
+      return String(text).split(/[,，\s]+/).map(s=>parseFloat(s)).filter(v=>isFinite(v)).map(v=>Math.max(-999, Math.min(999, v)));
+    }
+
+    function solveSellingPrice(params, r, a, basis, m){
+      // params fields same as main compute
+      const { costPrice, inputTaxRate, outputTaxRate, platformRate, shippingCost, shippingInsurance, otherCost, salesTaxRate, serviceVATRate, goodsMode } = params;
+      // Precompute constants under given r
+      const G = costPrice * (1 + inputTaxRate) * (goodsMode==='canReturn' ? r : 1); // goodsCost 常量部分
+      const O = (shippingCost + shippingInsurance + otherCost);
+      const Vg = costPrice * outputTaxRate * (goodsMode==='canReturn' ? r : 1);
+      const t = salesTaxRate;   // 销项税率
+      const s = serviceVATRate; // 服务费税率（佣金/广告）
+      const p = platformRate;   // 平台佣金率
+
+      // 公式推导：
+      // 有效口径： S = (Vg - G - O) / [ r * ( m - 1 + t/(1+t) + (a+p)/(1+s) ) ]
+      // GMV 口径： S = (Vg - G - O) / [ r * ( m - 1 + t/(1+t) + p/(1+s) ) + a/(1+s) ]
+      const numerator = (Vg - G - O);
+      let denom;
+      if(basis==='effective'){
+        denom = r * ( m - 1 + (t/(1+t)) + ( (a + p) / (1 + s) ) );
+      }else{ // gmv
+        denom = r * ( m - 1 + (t/(1+t)) + ( p / (1 + s) ) ) + ( a / (1 + s) );
+      }
+      if(!isFinite(numerator) || !isFinite(denom) || Math.abs(denom) < 1e-9){ return NaN; }
+      const S = numerator / denom; // 售价（含税）
+      return S>0 && isFinite(S) ? S : NaN;
+    }
+
+    function renderPriceSim(){
+      const params = {
+        sellingPrice: valNum('sellingPrice'), // 不直接使用，但保留结构一致
+        costPrice: valNum('costPrice'),
+        inputTaxRate: valRate('inputTaxRate'),
+        outputTaxRate: valRate('outputTaxRate'),
+        platformRate: valRate('platformRate'),
+        shippingCost: valNum('shippingCost'),
+        shippingInsurance: valNum('shippingInsurance'),
+        otherCost: valNum('otherCost'),
+        salesTaxRate: valRate('salesTaxRate'),
+        serviceVATRate: valRate('serviceVATRate'),
+        goodsMode: document.querySelector('input[name="goodsMode"]:checked').value
+      };
+
+      const basis = document.querySelector('input[name="pBasis"]:checked').value;
+      const rates = [];
+      for(let v=parseFloat($('pRateFrom').value)||0; v<= (parseFloat($('pRateTo').value)||0) + 1e-9; v += (parseFloat($('pRateStep').value)||1)){
+        rates.push(parseFloat(v.toFixed(4)));
+      }
+      const margins = parseListPercents($('pMarginScenarios').value).map(v=> v/100);
+      const rScenarios = parseListPercents($('pReturnScenarios').value).map(v=> Math.max(0, 1 - v/100));
+
+      // Build HTML: one table per r
+      let html = '';
+      rScenarios.forEach((r, idx)=>{
+        // header rows
+        const headTop = `<tr><th class="muted">利润率 →</th>${margins.map(m=>`<th class="muted">${(m*100).toFixed(1)}%</th>`).join('')}</tr>`;
+        const head = `<tr><th>广告占比%</th>${margins.map(()=>'<th>所需售价</th>').join('')}</tr>`;
+        const rows = rates.map(pct=>{
+          const a = pct/100; // 占比小数
+          const cols = margins.map(m=>{
+            const S = solveSellingPrice(params, r, a, basis, m);
+            return isFinite(S) ? fmt(S,2) : '—';
+          });
+          return `<tr><td>${pct.toFixed(1)}%</td>${cols.map(c=>`<td>${c}</td>`).join('')}</tr>`;
+        }).join('');
+
+        html += `
+          <div class="muted" style="margin:14px 0 6px">退货率场景：${((1-r)*100).toFixed(1)}%（r=${r.toFixed(3)}）</div>
+          <table>
+            <thead>${headTop}${head}</thead>
+            <tbody>${rows}</tbody>
+          </table>
+        `;
+      });
+
+      $('priceSimWrap').innerHTML = html || '<div class="muted">请先设置参数后推演。</div>';
+    }
+    // ===== 税费推演：在不同广告占比 & 退货率下，实际税负占比（净税/售价） =====
+    function taxBurdenGiven(params, a, r, basis){
+      const { sellingPrice, costPrice, inputTaxRate, outputTaxRate, platformRate, shippingCost, shippingInsurance, otherCost, salesTaxRate, serviceVATRate, goodsMode } = params;
+      const Rev = sellingPrice * r;
+      const commission = sellingPrice * platformRate * r;
+      const VAT_out = Rev / (1 + salesTaxRate) * salesTaxRate;
+      const VAT_in_goods = costPrice * outputTaxRate * (goodsMode==='canReturn' ? r : 1);
+      const VAT_in_comm  = commission / (1 + serviceVATRate) * serviceVATRate;
+      const base = (basis==='gmv') ? sellingPrice : Rev;        // 用于把占比换成金额
+      const adCost = base * a;
+      const VAT_in_ad  = adCost / (1 + serviceVATRate) * serviceVATRate;
+      const netTax = VAT_out - VAT_in_goods - VAT_in_comm - VAT_in_ad; // 净应纳税额
+      const shareGMV = sellingPrice>0 ? (netTax / sellingPrice) : NaN;  // 对售价（GMV）的占比
+      return { netTax, shareGMV };
+    }
+
+    function renderTaxSim(){
+      const params = {
+        sellingPrice: valNum('sellingPrice'),
+        costPrice: valNum('costPrice'),
+        inputTaxRate: valRate('inputTaxRate'),
+        outputTaxRate: valRate('outputTaxRate'),
+        platformRate: valRate('platformRate'),
+        shippingCost: valNum('shippingCost'),
+        shippingInsurance: valNum('shippingInsurance'),
+        otherCost: valNum('otherCost'),
+        salesTaxRate: valRate('salesTaxRate'),
+        serviceVATRate: valRate('serviceVATRate'),
+        goodsMode: document.querySelector('input[name="goodsMode"]:checked').value
+      };
+      const basis = document.querySelector('input[name="tBasis"]:checked').value;
+      const rates = [];
+      for(let v=parseFloat($('tRateFrom').value)||0; v<= (parseFloat($('tRateTo').value)||0) + 1e-9; v += (parseFloat($('tRateStep').value)||1)){
+        rates.push(parseFloat(v.toFixed(4)));
+      }
+      const rScenarios = parseListPercents($('tReturnScenarios').value).map(v=> Math.max(0, 1 - v/100));
+
+      let html = '';
+      // 表头：每个 r 一列
+      const headTop = `<tr><th class="muted">口径</th>${rScenarios.map(()=>`<th class="muted">净税/售价</th>`).join('')}</tr>`;
+      const head   = `<tr><th>广告占比%</th>${rScenarios.map(r=>`<th>退货率 ${( (1-r)*100 ).toFixed(1)}%</th>`).join('')}</tr>`;
+
+      const rows = rates.map(pct=>{
+        const a = pct/100;
+        const cols = rScenarios.map(r=>{
+          const { netTax, shareGMV } = taxBurdenGiven(params, a, r, basis);
+          return isFinite(shareGMV) ? `${(shareGMV*100).toFixed(2)}%<br><span class="muted">(${fmt(netTax,2)} 元)</span>` : '—';
+        });
+        return `<tr><td>${pct.toFixed(1)}%</td>${cols.map(c=>`<td>${c}</td>`).join('')}</tr>`;
+      }).join('');
+
+      html = `
+        <div class="note" style="margin:8px 0 10px">说明：净税 = 销项税 − 进货抵扣 − 佣金抵扣 − 广告抵扣；占比= 净税 ÷ 售价（GMV）。广告占比口径用于换算广告金额（影响“广告可抵扣”）。</div>
+        <table>
+          <thead>${headTop}${head}</thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+
+      $('taxSimWrap').innerHTML = html;
+    }
+
+    // ===== 成本价推演：在不同广告占比 & 利润率 & 退货率下，反推进货价 =====
+    function solveCostPrice(params, r, a, basis, m){
+      const { sellingPrice, inputTaxRate, outputTaxRate, platformRate, shippingCost, shippingInsurance, otherCost, salesTaxRate, serviceVATRate, goodsMode } = params;
+      const S = sellingPrice;
+      const t = salesTaxRate;   // 销项税率
+      const s = serviceVATRate; // 服务费税率
+      const p = platformRate;   // 佣金率
+
+      const Rev = S * r;                                    // 有效含税营收
+      const commission = S * p * r;                         // 佣金金额
+      const VAT_out = Rev / (1 + t) * t;                    // 销项税
+      const VAT_in_comm = commission / (1 + s) * s;         // 佣金进项
+
+      // 广告占比口径 → 广告金额
+      const base = (basis==='gmv') ? S : Rev;
+      const adCost = base * a;
+      const VAT_in_ad = adCost / (1 + s) * s;               // 广告进项
+
+      const othersCost = (shippingCost + shippingInsurance + otherCost); // 发货即发生
+
+      // 与 costPrice 相关的两项：goodsCost 与 VAT_in_goods
+      const factorR = (goodsMode==='canReturn') ? r : 1;    // 可退：×r；不可退：×1
+      const k = (1 + inputTaxRate) * factorR;               // goodsCost = costPrice * k
+      const g = (outputTaxRate) * factorR;                  // VAT_in_goods = costPrice * g
+
+      // Profit = Rev - othersCost - commission - adCost - VAT_out + VAT_in_comm + VAT_in_ad + costPrice*(g - k)
+      // 目标：Profit = m * Rev  ⇒  costPrice = (m*Rev - B) / (g - k)
+      const B = Rev - othersCost - commission - adCost - VAT_out + VAT_in_comm + VAT_in_ad;
+      const denom = (g - k);
+      if (Math.abs(denom) < 1e-12) return NaN; // 避免除零
+      const cp = (m * Rev - B) / denom;
+      return (cp>0 && isFinite(cp)) ? cp : NaN;
+    }
+
+    function renderCostSim(){
+      const params = {
+        sellingPrice: valNum('sellingPrice'),
+        costPrice: valNum('costPrice'), // 未直接使用，仅保持结构一致
+        inputTaxRate: valRate('inputTaxRate'),
+        outputTaxRate: valRate('outputTaxRate'),
+        platformRate: valRate('platformRate'),
+        shippingCost: valNum('shippingCost'),
+        shippingInsurance: valNum('shippingInsurance'),
+        otherCost: valNum('otherCost'),
+        salesTaxRate: valRate('salesTaxRate'),
+        serviceVATRate: valRate('serviceVATRate'),
+        goodsMode: document.querySelector('input[name="goodsMode"]:checked').value
+      };
+
+      const basis = document.querySelector('input[name="cBasis"]:checked').value;
+
+      const rates = [];
+      for(let v=parseFloat($('cRateFrom').value)||0; v<= (parseFloat($('cRateTo').value)||0) + 1e-9; v += (parseFloat($('cRateStep').value)||1)){
+        rates.push(parseFloat(v.toFixed(4)));
+      }
+      const margins = parseListPercents($('cMarginScenarios').value).map(v=> v/100);
+      const rScenarios = parseListPercents($('cReturnScenarios').value).map(v=> Math.max(0, 1 - v/100));
+
+      let html = '';
+      rScenarios.forEach((r)=>{
+        const headTop = `<tr><th class="muted">利润率 →</th>${margins.map(m=>`<th class=\"muted\">${(m*100).toFixed(1)}%</th>`).join('')}</tr>`;
+        const head = `<tr><th>广告占比%</th>${margins.map(()=>'<th>所需进货价</th>').join('')}</tr>`;
+        const rows = rates.map(pct=>{
+          const a = pct/100;
+          const cols = margins.map(m=>{
+            const cp = solveCostPrice(params, r, a, basis, m);
+            return isFinite(cp) ? fmt(cp,2) : '—';
+          });
+          return `<tr><td>${pct.toFixed(1)}%</td>${cols.map(c=>`<td>${c}</td>`).join('')}</tr>`;
+        }).join('');
+
+        html += `
+          <div class="muted" style="margin:14px 0 6px">退货率场景：${((1-r)*100).toFixed(1)}%（r=${r.toFixed(3)}）</div>
+          <table>
+            <thead>${headTop}${head}</thead>
+            <tbody>${rows}</tbody>
+          </table>
+        `;
+      });
+
+      $('costSimWrap').innerHTML = html || '<div class="muted">请先设置参数后推演。</div>';
+    }
+
+    function clamp(n, a, b){ return Math.min(b, Math.max(a, n)); }
+    function parseScenarioRates(text){
+      return String(text).split(/[,，\s]+/).map(s=>parseFloat(s)).filter(v=>isFinite(v)).map(v=>clamp(v,0,99.999));
+    }
+
+    function profitGivenAdRateAndR(params, adRateDecimal, r, basis){
+      const { sellingPrice, costPrice, inputTaxRate, outputTaxRate, platformRate, shippingCost, shippingInsurance, otherCost, salesTaxRate, serviceVATRate, goodsMode } = params;
+
+      const Rev = sellingPrice * r;
+      const goodsCost = costPrice * (1 + inputTaxRate) * (goodsMode==='canReturn' ? r : 1);
+      const othersCost = (shippingCost + shippingInsurance + otherCost);
+      const commission = sellingPrice * platformRate * r;
+
+      const VAT_out = Rev / (1 + salesTaxRate) * salesTaxRate;
+      const VAT_in_goods = costPrice * outputTaxRate * (goodsMode==='canReturn' ? r : 1);
+      const VAT_in_comm  = commission / (1 + serviceVATRate) * serviceVATRate;
+
+      // 广告占比口径 → 金额
+      const base = (basis==='gmv') ? sellingPrice : Rev;
+      const adCostGiven = base * adRateDecimal;
+      const VAT_in_ad_given = adCostGiven / (1 + serviceVATRate) * serviceVATRate;
+
+      const Profit = Rev - (goodsCost + othersCost + commission + adCostGiven)
+        - (VAT_out - VAT_in_goods - VAT_in_comm - VAT_in_ad_given);
+      const Margin = (Rev>0) ? (Profit/Rev) : NaN;
+      return { Profit, Margin, adCostGiven };
+    }
+
+    function renderSimChart(xVals, series, legends){
+      const svg = document.getElementById('simChart');
+      if(!svg) return;
+      const W = svg.viewBox.baseVal && svg.viewBox.baseVal.width ? svg.viewBox.baseVal.width : svg.width.baseVal.value || 720;
+      const H = svg.viewBox.baseVal && svg.viewBox.baseVal.height ? svg.viewBox.baseVal.height : svg.height.baseVal.value || 280;
+      const padL=42, padR=12, padT=8, padB=26;
+
+      // compute domain
+      const allY = series.flatMap(s=>s.values).filter(v=>isFinite(v));
+      const yMin = Math.min(-0.6, Math.min(...allY, 0));
+      const yMax = Math.max(0.6, Math.max(...allY, 0.01));
+      const xMin = 0, xMax = xVals.length-1;
+
+      const sx = i=> padL + ( (W - padL - padR) * (i - xMin) / Math.max(1, (xMax - xMin)) );
+      const sy = y=> padT + (H - padT - padB) * (1 - ( (y - yMin) / (yMax - yMin) ));
+
+      // clear
+      svg.innerHTML = '';
+
+      // axes
+      const axis = document.createElementNS('http://www.w3.org/2000/svg','path');
+      axis.setAttribute('d',`M ${padL} ${sy(0)} H ${W-padR} M ${padL} ${padT} V ${H-padB}`);
+      axis.setAttribute('class','axis-line');
+      axis.setAttribute('fill','none');
+      svg.appendChild(axis);
+
+      // x labels (every ~5th)
+      for(let i=0;i<xVals.length;i++){
+        if(i%5!==0 && i!==xVals.length-1) continue;
+        const tx = document.createElementNS('http://www.w3.org/2000/svg','text');
+        tx.setAttribute('x', sx(i));
+        tx.setAttribute('y', H-8);
+        tx.setAttribute('text-anchor','middle');
+        tx.setAttribute('class','axis-label');
+        tx.textContent = xVals[i].toFixed(1)+'%';
+        svg.appendChild(tx);
+      }
+      // y labels (5 ticks)
+      for(let t=0;t<=5;t++){
+        const yv = yMin + (yMax-yMin)*t/5;
+        const ty = document.createElementNS('http://www.w3.org/2000/svg','text');
+        ty.setAttribute('x', 6);
+        ty.setAttribute('y', sy(yv)+4);
+        ty.setAttribute('class','axis-label');
+        ty.textContent = (yv*100).toFixed(0)+'%';
+        svg.appendChild(ty);
+        const grid = document.createElementNS('http://www.w3.org/2000/svg','line');
+        grid.setAttribute('x1', padL);
+        grid.setAttribute('x2', W-padR);
+        grid.setAttribute('y1', sy(yv));
+        grid.setAttribute('y2', sy(yv));
+        grid.setAttribute('class','axis-line');
+        grid.setAttribute('opacity','0.5');
+        svg.appendChild(grid);
+      }
+
+      const colors = ['#007aff','#34c759','#ff9f0a','#ff3b30','#5e5ce6','#64d2ff'];
+      series.forEach((s,idx)=>{
+        const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+        let d='';
+        s.values.forEach((y,i)=>{
+          const X=sx(i), Y=sy(y);
+          d += (i===0?`M ${X} ${Y}`:` L ${X} ${Y}`);
+        });
+        path.setAttribute('d', d);
+        path.setAttribute('fill','none');
+        path.setAttribute('stroke', colors[idx%colors.length]);
+        path.setAttribute('stroke-width','2');
+        svg.appendChild(path);
+
+        // breakeven marker
+        if (SIM_MARK_BREAK_EVEN && s.breakEvenIndex != null) {
+          const i = s.breakEvenIndex;
+          const X = sx(i);
+          const Y = sy(s.values[i]);
+          const dot = document.createElementNS('http://www.w3.org/2000/svg','circle');
+          dot.setAttribute('cx', X); dot.setAttribute('cy', Y); dot.setAttribute('r', 4);
+          dot.setAttribute('fill', colors[idx%colors.length]);
+          dot.setAttribute('stroke', '#fff'); dot.setAttribute('stroke-width', '1.5');
+          svg.appendChild(dot);
+        }
+      });
+
+      // legend
+      legends.forEach((lg,idx)=>{
+        const x = padL + idx*140;
+        const y = padT + 14;
+        const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+        line.setAttribute('x1', x); line.setAttribute('x2', x+18);
+        line.setAttribute('y1', y-5); line.setAttribute('y2', y-5);
+        line.setAttribute('stroke', ['#007aff','#34c759','#ff9f0a','#ff3b30','#5e5ce6','#64d2ff'][idx%6]);
+        line.setAttribute('stroke-width','3');
+        svg.appendChild(line);
+        const tx = document.createElementNS('http://www.w3.org/2000/svg','text');
+        tx.setAttribute('x', x+24); tx.setAttribute('y', y-2);
+        tx.setAttribute('class','axis-label');
+        tx.textContent = lg;
+        svg.appendChild(tx);
+      });
+    }
+
+    function simulate(){
+      // read params from current inputs
+      const params = {
+        sellingPrice: valNum('sellingPrice'),
+        costPrice: valNum('costPrice'),
+        inputTaxRate: valRate('inputTaxRate'),
+        outputTaxRate: valRate('outputTaxRate'),
+        platformRate: valRate('platformRate'),
+        shippingCost: valNum('shippingCost'),
+        shippingInsurance: valNum('shippingInsurance'),
+        otherCost: valNum('otherCost'),
+        salesTaxRate: valRate('salesTaxRate'),
+        serviceVATRate: valRate('serviceVATRate'),
+        goodsMode: document.querySelector('input[name="goodsMode"]:checked').value
+      };
+
+      // Reset cached breakeven list
+      window._beRates = [];
+
+      const rateFrom = Math.max(0, parseFloat(document.getElementById('simRateFrom').value) || 0);
+      const rateTo = Math.max(rateFrom, parseFloat(document.getElementById('simRateTo').value) || 0);
+      const rateStep = Math.max(0.1, parseFloat(document.getElementById('simRateStep').value) || 1);
+      const basis = document.querySelector('input[name="simBasis"]:checked').value;
+      const rScenariosPct = parseScenarioRates(document.getElementById('simReturnScenarios').value);
+      const rScenarios = rScenariosPct.map(p=> Math.max(0, 1 - p/100));
+
+      // x-axis values (percent list)
+      const xVals = [];
+      for(let v=rateFrom; v<=rateTo+1e-9; v+=rateStep){ xVals.push(parseFloat(v.toFixed(4))); }
+
+      // build series per scenario
+      const series = [];
+      const legends = [];
+      rScenarios.forEach((r,idx)=>{
+        const values = [];
+        xVals.forEach(pctVal=>{
+          const res = profitGivenAdRateAndR(params, pctVal/100, r, basis);
+          values.push(res.Margin);
+        });
+        // compute breakeven ad rate for this r
+        // First compute A(r) and X(r) using same rules as main compute()
+        const Rev = params.sellingPrice * r;
+        const goodsCost = params.costPrice * (1 + params.inputTaxRate) * (params.goodsMode==='canReturn' ? r : 1);
+        const othersCost = (params.shippingCost + params.shippingInsurance + params.otherCost);
+        const commission = params.sellingPrice * params.platformRate * r;
+        const VAT_out = Rev / (1 + params.salesTaxRate) * params.salesTaxRate;
+        const VAT_in_goods = params.costPrice * params.outputTaxRate * (params.goodsMode==='canReturn' ? r : 1);
+        const VAT_in_comm  = commission / (1 + params.serviceVATRate) * params.serviceVATRate;
+        const A = Rev - (goodsCost + othersCost + commission) - VAT_out + VAT_in_goods + VAT_in_comm;
+        const X = (1 + params.serviceVATRate) * A;
+        const base = (basis==='gmv') ? params.sellingPrice : Rev;
+        const rateBE = base>0 ? (X / base) : NaN; // 小数
+        let idxBE = null;
+        if (isFinite(rateBE)) {
+          // find nearest index on xVals
+          let best = 0, bestDiff = Infinity;
+          for(let i=0;i<xVals.length;i++){
+            const diff = Math.abs(rateBE*100 - xVals[i]);
+            if(diff < bestDiff){ bestDiff = diff; best = i; }
+          }
+          idxBE = best;
+        }
+        series.push({ r, values, breakEvenIndex: idxBE });
+        legends.push(`退货率 ${((1-r)*100).toFixed(1)}%`);
+        if(!window._beRates){ window._beRates = []; }
+        window._beRates.push(isFinite(rateBE) ? (rateBE*100).toFixed(1)+'%' : '—');
+      });
+
+      // 图表已移除：此处不再渲染 SVG 曲线
+
+      // table
+      const thead = document.getElementById('simTableHead');
+      const tbody = document.getElementById('simTableBody');
+      const beRow = `<tr><th class="muted">保本占比</th>${(window._beRates||[]).map(v=>`<th class="muted">≈ ${v}</th>`).join('')}</tr>`;
+      const headRow = `<tr><th>广告占比%</th>${legends.map(l=>`<th>${l}</th>`).join('')}</tr>`;
+      thead.innerHTML = beRow + headRow;
+      tbody.innerHTML = xVals.map((pctVal,i)=>{
+        const cols = series.map(s=> isFinite(s.values[i]) ? (s.values[i]*100).toFixed(2)+'%' : '—');
+        return `<tr><td>${pctVal.toFixed(1)}%</td>${cols.map(c=>`<td>${c}</td>`).join('')}</tr>`;
+      }).join('');
+    }
+
     // Wire up
 
     document.getElementById('calc').addEventListener('click', compute);
+    const saveDebounced = function(){};
     document.querySelectorAll('input').forEach(el=>{
-      el.addEventListener('input', ()=>{ clearTimeout(el._t); el._t=setTimeout(compute,120); });
+      el.addEventListener('input', ()=>{ clearTimeout(el._t); el._t=setTimeout(compute,120); saveDebounced(); });
+      el.addEventListener('change', ()=>{ compute(); saveDebounced(); });
     });
-    document.querySelectorAll('input[name="goodsMode"]').forEach(el=> el.addEventListener('change', compute));
-    document.querySelectorAll('input[name="adRateBasis"]').forEach(el=> el.addEventListener('change', compute));
-    compute();
+    document.querySelectorAll('input[name="goodsMode"]').forEach(el=> el.addEventListener('change', ()=>{ compute(); saveDebounced(); }));
+    document.querySelectorAll('input[name="adRateBasis"]').forEach(el=> el.addEventListener('change', ()=>{ compute(); saveDebounced(); }));
+
+    // first-time restore
+    loadState();
     updateAdMode();
-  </script>
+
+    // --- 利润率推演交互 ---
+    document.getElementById('simulate').addEventListener('click', simulate);
+    document.querySelectorAll('input[name="simBasis"]').forEach(el=> el.addEventListener('change', simulate));
+    ['simRateFrom','simRateTo','simRateStep','simReturnScenarios'].forEach(id=>{
+      const el=$(id); if(el){ el.addEventListener('input', ()=>{ clearTimeout(el._t); el._t=setTimeout(simulate,160); saveDebounced(); }); }
+    });
+    // --- Modal open/close ---
+    const simModal = document.getElementById('simModal');
+    function openSim(){ simModal.style.display='flex'; simulate(); }
+    function closeSim(){ simModal.style.display='none'; }
+    document.getElementById('openSim').addEventListener('click', openSim);
+    document.getElementById('closeSim').addEventListener('click', closeSim);
+    document.getElementById('closeSim2').addEventListener('click', closeSim);
+    simModal.addEventListener('click', (e)=>{ if(e.target===simModal) closeSim(); });
+    document.addEventListener('keydown', (e)=>{
+      if(e.key==='Escape'){
+        closeSim();
+        closePrice();
+        closeTax();
+        closeCost();
+        closeValue();
+        closeExplain();
+      }
+    });
+    // --- Explain modal open/close ---
+    const explainModal = document.getElementById('explainModal');
+    function openExplain(){ explainModal.style.display='flex'; }
+    function closeExplain(){ explainModal.style.display='none'; }
+    const openExplainBtn = document.getElementById('openExplain');
+    const explainHint = document.getElementById('explainHint');
+    if(openExplainBtn){
+      openExplainBtn.addEventListener('click', openExplain);
+      openExplainBtn.addEventListener('mouseenter', ()=>{ if(explainHint) explainHint.style.display='block'; });
+      openExplainBtn.addEventListener('mouseleave', ()=>{ if(explainHint) explainHint.style.display='none'; });
+    }
+    document.getElementById('closeExplain').addEventListener('click', closeExplain);
+    document.getElementById('closeExplain2').addEventListener('click', closeExplain);
+    explainModal.addEventListener('click', (e)=>{ if(e.target===explainModal) closeExplain(); });
+
+    // --- One-click mark breakeven ---
+    document.getElementById('markBreakeven').addEventListener('click', ()=>{ SIM_MARK_BREAK_EVEN = true; simulate(); });
+    // initial render
+    simulate();
+
+    // --- Price Sim modal open/close ---
+    const priceModal = document.getElementById('priceModal');
+    function openPrice(){ priceModal.style.display='flex'; renderPriceSim(); }
+    function closePrice(){ priceModal.style.display='none'; }
+    document.getElementById('openPriceSim').addEventListener('click', openPrice);
+    document.getElementById('closePrice').addEventListener('click', closePrice);
+    document.getElementById('closePrice2').addEventListener('click', closePrice);
+    priceModal.addEventListener('click', (e)=>{ if(e.target===priceModal) closePrice(); });
+
+    // live update
+    ['pRateFrom','pRateTo','pRateStep','pMarginScenarios','pReturnScenarios'].forEach(id=>{
+      const el=$(id); if(el){ el.addEventListener('input', ()=>{ clearTimeout(el._t); el._t=setTimeout(renderPriceSim,160); saveDebounced(); }); }
+    });
+    document.querySelectorAll('input[name="pBasis"]').forEach(el=> el.addEventListener('change', renderPriceSim));
+    // ensure main params changes also refresh when modal打开着
+    document.querySelectorAll('#sellingPrice,#costPrice,#inputTaxRate,#outputTaxRate,#platformRate,#shippingCost,#shippingInsurance,#otherCost,#salesTaxRate,#serviceVATRate').forEach(el=>{
+      el.addEventListener('input', ()=>{ if(priceModal.style.display==='flex'){ renderPriceSim(); } });
+    });
+    document.querySelectorAll('input[name="goodsMode"]').forEach(el=> el.addEventListener('change', ()=>{ if(priceModal.style.display==='flex'){ renderPriceSim(); } }));
+    // --- Tax Sim modal open/close ---
+    const taxModal = document.getElementById('taxModal');
+    function openTax(){ taxModal.style.display='flex'; renderTaxSim(); }
+    function closeTax(){ taxModal.style.display='none'; }
+    document.getElementById('openTaxSim').addEventListener('click', openTax);
+    document.getElementById('closeTax').addEventListener('click', closeTax);
+    document.getElementById('closeTax2').addEventListener('click', closeTax);
+    taxModal.addEventListener('click', (e)=>{ if(e.target===taxModal) closeTax(); });
+
+    // live update for Tax Sim
+    ['tRateFrom','tRateTo','tRateStep','tReturnScenarios'].forEach(id=>{
+      const el=$(id); if(el){ el.addEventListener('input', ()=>{ clearTimeout(el._t); el._t=setTimeout(renderTaxSim,160); saveDebounced(); }); }
+    });
+    document.querySelectorAll('input[name="tBasis"]').forEach(el=> el.addEventListener('change', renderTaxSim));
+    // 主参数变化联动刷新（当弹窗开启时）
+    document.querySelectorAll('#sellingPrice,#costPrice,#inputTaxRate,#outputTaxRate,#platformRate,#shippingCost,#shippingInsurance,#otherCost,#salesTaxRate,#serviceVATRate').forEach(el=>{
+      el.addEventListener('input', ()=>{ if(taxModal.style.display==='flex'){ renderTaxSim(); } });
+    });
+    document.querySelectorAll('input[name="goodsMode"]').forEach(el=> el.addEventListener('change', ()=>{ if(taxModal.style.display==='flex'){ renderTaxSim(); } }));
+    // --- Cost Sim modal open/close ---
+    const costModal = document.getElementById('costModal');
+    function openCost(){ costModal.style.display='flex'; renderCostSim(); }
+    function closeCost(){ costModal.style.display='none'; }
+    document.getElementById('openCostSim').addEventListener('click', openCost);
+    document.getElementById('closeCost').addEventListener('click', closeCost);
+    document.getElementById('closeCost2').addEventListener('click', closeCost);
+    costModal.addEventListener('click', (e)=>{ if(e.target===costModal) closeCost(); });
+
+    // live update for Cost Sim
+    ['cRateFrom','cRateTo','cRateStep','cMarginScenarios','cReturnScenarios'].forEach(id=>{
+      const el=$(id); if(el){ el.addEventListener('input', ()=>{ clearTimeout(el._t); el._t=setTimeout(renderCostSim,160); saveDebounced(); }); }
+    });
+    document.querySelectorAll('input[name="cBasis"]').forEach(el=> el.addEventListener('change', renderCostSim));
+    // 主参数变化联动刷新（当弹窗开启时）
+    document.querySelectorAll('#sellingPrice,#inputTaxRate,#outputTaxRate,#platformRate,#shippingCost,#shippingInsurance,#otherCost,#salesTaxRate,#serviceVATRate').forEach(el=>{
+      el.addEventListener('input', ()=>{ if(costModal.style.display==='flex'){ renderCostSim(); } });
+    });
+    document.querySelectorAll('input[name="goodsMode"]').forEach(el=> el.addEventListener('change', ()=>{ if(costModal.style.display==='flex'){ renderCostSim(); } }));
+  // ===== 保本 ROI（按口径） =====
+  function getBreakevenROI_byBasis(basis){
+    const S = valNum('sellingPrice');
+    const r = Math.max(0, 1 - valRate('returnRate'));
+    const costPrice = valNum('costPrice');
+    const inputTaxRate = valRate('inputTaxRate');
+    const outputTaxRate = valRate('outputTaxRate');
+    const platformRate = valRate('platformRate');
+    const shippingCost = valNum('shippingCost');
+    const shippingInsurance = valNum('shippingInsurance');
+    const otherCost = valNum('otherCost');
+    const salesTaxRate = valRate('salesTaxRate');
+    const serviceVATRate = valRate('serviceVATRate');
+    const goodsMode = document.querySelector('input[name="goodsMode"]:checked').value;
+
+    const Rev = S * r;
+    const goodsCost = costPrice * (1 + inputTaxRate) * (goodsMode==='canReturn' ? r : 1);
+    const othersCost = (shippingCost + shippingInsurance + otherCost);
+    const commission = S * platformRate * r;
+    const VAT_out = Rev / (1 + salesTaxRate) * salesTaxRate;
+    const VAT_in_goods = costPrice * outputTaxRate * (goodsMode==='canReturn' ? r : 1);
+    const VAT_in_comm  = commission / (1 + serviceVATRate) * serviceVATRate;
+    const A = Rev - (goodsCost + othersCost + commission) - VAT_out + VAT_in_goods + VAT_in_comm;
+    const X = (1 + serviceVATRate) * A; // 保本广告费（出货基准单）
+
+    if(basis==='effective'){
+      const adRate = Rev>0 ? (X/Rev) : NaN;        // 有效营收口径
+      return (adRate>0) ? (1/adRate) : NaN;
+    }else{
+      const adRate = S>0 ? (X/S) : NaN;            // GMV 口径
+      return (adRate>0) ? (1/adRate) : NaN;
+    }
+  }
+
+  // ===== 数值分析：根据两项求第三项临界值 =====
+  function valueSim(){
+    const basis = document.querySelector('input[name="vBasis"]:checked')?.value || 'effective';
+    const ROIbe = getBreakevenROI_byBasis(basis);
+
+    const cvrInput = parseFloat((document.getElementById('vCVR').value||'').trim());
+    const CPC = parseFloat((document.getElementById('vCPC').value||'').trim());
+    const AOV = parseFloat((document.getElementById('vAOV').value||'').trim());
+    const CVR = isFinite(cvrInput) ? (cvrInput/100) : NaN; // 转化率小数
+
+    if(!isFinite(ROIbe) || ROIbe<=0){
+      document.getElementById('valueWrap').innerHTML = '<div class="note">当前参数下无法计算保本 ROI，请先在左侧完善参数（售价、成本、税率、退货率等）。</div>';
+      return;
+    }
+
+    const miss = [isFinite(CPC), isFinite(CVR), isFinite(AOV)].filter(v=>!v).length;
+    // 缺两项或三项 → 无法计算
+    if(miss >= 2){
+      document.getElementById('valueWrap').innerHTML = '<div class="note">请至少填写其中两项（CPC / CVR / 客单价）。\n若填写三项，将显示“即时诊断”；若留空一项，将计算该项的临界值。</div>';
+      return;
+    }
+
+    const cards = [];
+    // 当仅留空一项时，才计算三角临界卡片
+    const needCritical = (miss === 1);
+    // CPC 临界
+    if(needCritical && isFinite(CVR) && isFinite(AOV)){
+      const CPCcrit = (CVR * AOV) / ROIbe;
+      const gap = isFinite(CPC) ? (CPC - CPCcrit) : NaN;
+      cards.push(`<div class="box"><div class="label">最大可承受 CPC</div><div class="value">${fmt(CPCcrit,2)} 元/点</div>${isFinite(gap)?`<div class="muted">与你输入的 CPC 差：${gap>=0?'+':''}${fmt(gap,2)} 元</div>`:''}</div>`);
+    }
+    // CVR 临界
+    if(needCritical && isFinite(CPC) && isFinite(AOV) && AOV>0){
+      const CVRcrit = (CPC * ROIbe) / AOV;
+      const gappp = isFinite(CVR) ? ((CVRcrit - CVR) * 100) : NaN;
+      cards.push(`<div class="box"><div class="label">最低所需转化率</div><div class="value">${pct(CVRcrit,2)}</div>${isFinite(gappp)?`<div class="muted">与你输入的 CVR 差：${gappp>=0?'+':''}${gappp.toFixed(2)} pp</div>`:''}</div>`);
+    }
+    // 客单价临界
+    if(needCritical && isFinite(CPC) && isFinite(CVR) && CVR>0){
+      const AOVcrit = (CPC * ROIbe) / CVR;
+      const gapA = isFinite(AOV) ? (AOVcrit - AOV) : NaN;
+      cards.push(`<div class="box"><div class="label">最低所需客单价</div><div class="value">${fmt(AOVcrit,2)} 元</div>${isFinite(gapA)?`<div class="muted">与你输入的客单差：${gapA>=0?'+':''}${fmt(gapA,2)} 元</div>`:''}</div>`);
+    }
+
+    // ===== 扩展：已知 CPC、CVR、AOV 时，给出更多经营指标 =====
+    const allGiven = isFinite(CPC) && isFinite(CVR) && CVR>0 && isFinite(AOV) && AOV>0;
+    let extras = '';
+    if(allGiven){
+      // 读取主参数
+      const S = valNum('sellingPrice');
+      const rEff = Math.max(0, 1 - valRate('returnRate'));
+      const ROI_be_eff = getBreakevenROI_byBasis('effective');
+      const ROI_be_gmv = getBreakevenROI_byBasis('gmv');
+
+      // 基础派生量
+      const CPA = CPC / CVR;                 // 每出货单广告成本（按“出货基准单”）
+      const RPC_gmv = AOV * CVR;             // 每点击带来的 GMV 收入
+      const RPC_eff = AOV * rEff * CVR;      // 每点击带来的有效收入
+
+      // 实际广告占比（两口径）与 ROI（两口径）
+      const adRate_gmv_act = (S>0) ? (CPA / S) : NaN;        // 小数
+      const adRate_eff_act = (S>0 && rEff>0) ? (CPA / (S*rEff)) : NaN;
+      const ROI_gmv_act = isFinite(adRate_gmv_act) && adRate_gmv_act>0 ? (1/adRate_gmv_act) : NaN;
+      const ROI_eff_act = isFinite(adRate_eff_act) && adRate_eff_act>0 ? (1/adRate_eff_act) : NaN;
+
+      // 与保本的安全边际（正数=安全，负数=超支）
+      const headroom_gmv = isFinite(ROI_be_gmv) && isFinite(ROI_gmv_act) ? (ROI_gmv_act/ROI_be_gmv - 1) : NaN; // ROI 角度
+      const headroom_eff = isFinite(ROI_be_eff) && isFinite(ROI_eff_act) ? (ROI_eff_act/ROI_be_eff - 1) : NaN;
+
+      // 计算“给定广告”下的真实利润/利润率，复用主公式
+      (function(){
+        const params = {
+          sellingPrice: valNum('sellingPrice'),
+          costPrice: valNum('costPrice'),
+          inputTaxRate: valRate('inputTaxRate'),
+          outputTaxRate: valRate('outputTaxRate'),
+          platformRate: valRate('platformRate'),
+          shippingCost: valNum('shippingCost'),
+          shippingInsurance: valNum('shippingInsurance'),
+          otherCost: valNum('otherCost'),
+          salesTaxRate: valRate('salesTaxRate'),
+          serviceVATRate: valRate('serviceVATRate'),
+          goodsMode: document.querySelector('input[name="goodsMode"]:checked').value
+        };
+        const Rev = params.sellingPrice * rEff;
+        const goodsCost = params.costPrice * (1 + params.inputTaxRate) * (params.goodsMode==='canReturn' ? rEff : 1);
+        const othersCost = (params.shippingCost + params.shippingInsurance + params.otherCost);
+        const commission = params.sellingPrice * params.platformRate * rEff;
+        const VAT_out = Rev / (1 + params.salesTaxRate) * params.salesTaxRate;
+        const VAT_in_goods = params.costPrice * params.outputTaxRate * (params.goodsMode==='canReturn' ? rEff : 1);
+        const VAT_in_comm  = commission / (1 + params.serviceVATRate) * params.serviceVATRate;
+        const VAT_in_ad_given = CPA / (1 + params.serviceVATRate) * params.serviceVATRate; // 广告抵扣（按 CPA 金额）
+        const ProfitActual = Rev - (goodsCost + othersCost + commission + CPA)
+          - (VAT_out - VAT_in_goods - VAT_in_comm - VAT_in_ad_given);
+        const MarginActual = (Rev>0) ? (ProfitActual/Rev) : NaN;
+
+        // 可承受 CPA（保本）与与当前 CPA 的差
+        // 保本广告费 X = (1 + s) * A ；A 同 compute()
+        const A = Rev - (goodsCost + othersCost + commission) - VAT_out + VAT_in_goods + VAT_in_comm;
+        const CPAcrit = (1 + params.serviceVATRate) * A; // 每出货单保本广告额
+        const gapCPA = isFinite(CPAcrit) ? (CPAcrit - CPA) : NaN;
+
+        extras = `
+          <div class="sep"></div>
+          <h3 style="margin:6px 0 8px; font-size:14px">基于 CPC/CVR/客单价 的即时诊断</h3>
+          <div class="kpi">
+            <div class="box"><div class="label">实际 ROI（有效营收口径）</div><div class="value">${isFinite(ROI_eff_act)?fmt(ROI_eff_act,2):'—'}</div><div class="muted">= 1 ÷ 实际广告占比（有效）</div></div>
+            <div class="box"><div class="label">实际 ROI（GMV 口径）</div><div class="value">${isFinite(ROI_gmv_act)?fmt(ROI_gmv_act,2):'—'}</div><div class="muted">= 1 ÷ 实际广告占比（GMV）</div></div>
+            <div class="box"><div class="label">CPA（每出货单广告成本）</div><div class="value">${fmt(CPA,2)} 元</div><div class="muted">= CPC ÷ CVR</div></div>
+          </div>
+          <div class="kpi" style="margin-top:10px">
+            <div class="box"><div class="label">实际广告占比（有效）</div><div class="value">${pct(adRate_eff_act,2)}</div><div class="muted">= CPA ÷ [售价 × r]</div></div>
+            <div class="box"><div class="label">实际广告占比（GMV）</div><div class="value">${pct(adRate_gmv_act,2)}</div><div class="muted">= CPA ÷ 售价</div></div>
+            <div class="box"><div class="label">与保本 CPA 的差</div><div class="value">${isFinite(gapCPA)?(gapCPA>=0?'+':'')+fmt(gapCPA,2)+' 元':'—'}</div><div class="muted">正数=还有空间；负数=已超支</div></div>
+          </div>
+          <div class="kpi" style="margin-top:10px">
+            <div class="box"><div class="label">每点击收益（有效）</div><div class="value">${fmt(RPC_eff,2)} 元/点</div><div class="muted">= AOV × r × CVR</div></div>
+            <div class="box"><div class="label">每点击收益（GMV）</div><div class="value">${fmt(RPC_gmv,2)} 元/点</div><div class="muted">= AOV × CVR</div></div>
+            <div class="box"><div class="label">安全边际（ROI，有效）</div><div class="value">${isFinite(headroom_eff)?((headroom_eff*100).toFixed(2)+'%'):'—'}</div><div class="muted">= 实际 ROI / 保本 ROI − 1</div></div>
+          </div>
+          <div class="muted" style="margin-top:6px">提示：以上“实际”口径与你在弹窗顶部选择的 ROI 口径并无强制绑定，已同时给出两套口径，便于对齐外部报表。</div>
+        `;
+      })();
+    }
+
+    // 敏感度（线性近似）
+    const baseAOV = isFinite(AOV) ? AOV : (isFinite(CPC)&&isFinite(CVR) ? (CPC*ROIbe/CVR) : NaN);
+    const baseCVR = isFinite(CVR) ? CVR : (isFinite(CPC)&&isFinite(AOV) ? (CPC*ROIbe/AOV) : NaN);
+    const dCPC_per_1pp_CVR = (isFinite(baseAOV) ? (baseAOV/ROIbe*0.01) : NaN);
+    const dCPC_per_1yuan_AOV = (isFinite(baseCVR) ? (baseCVR/ROIbe) : NaN);
+    const dCVR_per_01yuan_CPC = (isFinite(baseAOV) ? ((0.1*ROIbe)/baseAOV) : NaN);
+    const dAOV_per_01yuan_CPC = (isFinite(baseCVR) && baseCVR>0 ? ((0.1*ROIbe)/baseCVR) : NaN);
+
+    const suggest = `
+      <div class="sep"></div>
+      <h3 style="margin:6px 0 8px; font-size:14px">优化建议 & 敏感度</h3>
+      <div class="note">当前保本 ROI（${basis==='effective'?'有效营收':'GMV'} 口径）= <strong>${fmt(ROIbe,2)}</strong>。
+      <ul style="margin:6px 0 0 18px">
+        ${isFinite(dCPC_per_1pp_CVR)?`<li>CVR 每提升 <strong>1pp</strong> ，可将可承受 CPC 提升约 <strong>${fmt(dCPC_per_1pp_CVR,2)} 元</strong>。</li>`:''}
+        ${isFinite(dCPC_per_1yuan_AOV)?`<li>客单价每提高 <strong>1 元</strong> ，可将可承受 CPC 提升约 <strong>${fmt(dCPC_per_1yuan_AOV,2)} 元</strong>。</li>`:''}
+        ${isFinite(dCVR_per_01yuan_CPC)?`<li>CPC 每降低 <strong>0.10 元</strong> ，等价于 CVR 提升约 <strong>${(dCVR_per_01yuan_CPC*100).toFixed(2)} pp</strong>。</li>`:''}
+        ${isFinite(dAOV_per_01yuan_CPC)?`<li>CPC 每降低 <strong>0.10 元</strong> ，等价于客单价提升约 <strong>${fmt(dAOV_per_01yuan_CPC,2)} 元</strong>。</li>`:''}
+      </ul>
+      <div class="muted" style="margin-top:6px">提示：上述为线性近似，适用于小幅调整的判断；大幅调整请结合利润推演验证。</div>
+      </div>`;
+
+    const grid = `<div class="kpi" style="margin-top:6px">${cards.join('')}</div>`;
+    document.getElementById('valueWrap').innerHTML = grid + suggest + (extras||'');
+  }
+
+  // --- Value Sim modal open/close ---
+  const valueModal = document.getElementById('valueModal');
+  function openValue(){ valueModal.style.display='flex'; valueSim(); }
+  function closeValue(){ valueModal.style.display='none'; }
+  document.getElementById('openValueSim').addEventListener('click', openValue);
+  document.getElementById('closeValue').addEventListener('click', closeValue);
+  document.getElementById('closeValue2').addEventListener('click', closeValue);
+  valueModal.addEventListener('click', (e)=>{ if(e.target===valueModal) closeValue(); });
+  document.getElementById('valueRun').addEventListener('click', valueSim);
+
+  // live update inside modal
+  ;['vCVR','vCPC','vAOV'].forEach(id=>{ const el=$(id); if(el){ el.addEventListener('input', ()=>{ clearTimeout(el._t); el._t=setTimeout(valueSim,140); saveDebounced(); }); } });
+  document.querySelectorAll('input[name="vBasis"]').forEach(el=> el.addEventListener('change', valueSim));
+  // 主参数变动联动（弹窗开启时刷新）
+  document.querySelectorAll('#sellingPrice,#costPrice,#inputTaxRate,#outputTaxRate,#platformRate,#shippingCost,#shippingInsurance,#otherCost,#salesTaxRate,#serviceVATRate,#returnRate').forEach(el=>{
+    el.addEventListener('input', ()=>{ if(valueModal.style.display==='flex'){ valueSim(); } });
+  });
+  // storage sync disabled
+</script>
 </body>
 </html>
