@@ -268,7 +268,9 @@
                             <div id="metricBreakevenROI" style="font-size:1.25rem; font-weight:600; margin-top:4px;">-</div>
                             <div style="color:#999; font-size:0.8rem; margin-top:2px;">有效销售率÷保本广告占比</div>
                         </div>
-                        <div style="background:#f8f9fa; border-radius:8px; padding:12px; text-align:center;">
+                        <div id="metricBreakevenAdRateCard" style="background:#f8f9fa; border-radius:8px; padding:12px; text-align:center; cursor: help;"
+                             data-tooltip="保本广告占比计算过程"
+                             onmouseenter="showPriceMetricTooltip(event, 'breakevenAdRate')">
                             <div style="color:#666; font-size:0.9rem;">保本广告占比</div>
                             <div id="metricBreakevenAdRate" style="font-size:1.25rem; font-weight:600; margin-top:4px;">-</div>
                             <div style="color:#999; font-size:0.8rem; margin-top:2px;">单品付费占比警戒线</div>

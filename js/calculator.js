@@ -169,6 +169,48 @@ function showPriceMetricTooltip(event, metricType) {
 • 当实际ROI > 保本ROI时，商品开始盈利
 • 当实际ROI < 保本ROI时，商品处于亏损状态
 • 保本ROI考虑了退货率、税费、运费等所有成本因素`;
+    } else if (metricType === 'breakevenAdRate') {
+        // 获取保本广告占比计算所需的参数
+        const returnRate = parseFloat(document.getElementById('profitReturnRate')?.value || '0') / 100;
+        const platformRate = parseFloat(document.getElementById('profitPlatformRate')?.value || '0') / 100;
+        const shippingCost = parseFloat(document.getElementById('profitShippingCost')?.value || '0');
+        const shippingInsurance = parseFloat(document.getElementById('profitShippingInsurance')?.value || '0');
+        const otherCost = parseFloat(document.getElementById('profitOtherCost')?.value || '0');
+        const salesTaxRate = parseFloat(document.getElementById('profitSalesTaxRate')?.value || '0') / 100;
+        const outputTaxRate = parseFloat(document.getElementById('profitOutputTaxRate')?.value || '0') / 100;
+        
+        // 计算保本广告占比的关键参数
+        const effectiveSalesRate = 1 - returnRate;
+        const fixedCosts = (shippingCost + shippingInsurance + otherCost) / effectiveSalesRate;
+        const B = effectiveCost + fixedCosts;
+        const taxFactorOnFinal = salesTaxRate / (1 + salesTaxRate);
+        const v = 0.06; // 服务业增值税率
+        const platformVatCredit = (platformRate / (1 + v)) * v;
+        const D = 1 - platformRate - taxFactorOnFinal + platformVatCredit;
+        const term = D - (B / actualPrice);
+        const breakevenAdRate = (effectiveSalesRate / (1 - v / (1 + v))) * term;
+        
+        tooltipTitle = '保本广告占比计算过程';
+        tooltipContent = `保本广告占比 = (有效销售率 / (1 - v / (1 + v))) × (D - B / 含税售价)
+
+核心公式：a* = (E / (1 - v / (1 + v))) × (D - B / P)
+其中：E = 有效销售率，v = 服务业增值税率，D = 常数，B = 成本，P = 含税售价
+
+具体计算：
+• 有效销售率 E = 1 - 退货率 = 1 - ${(returnRate * 100).toFixed(1)}% = ${effectiveSalesRate.toFixed(4)}
+• 服务业增值税率 v = 6% = 0.06
+• 进货实际成本 B = 进货价 + 开票成本 + 固定成本分摊 = ${effectiveCost.toFixed(2)} + ${fixedCosts.toFixed(2)} = ${(effectiveCost + fixedCosts).toFixed(2)}
+• 常数 D = 1 - 平台费 - 销项税占比 + 平台费进项税抵扣 = 1 - ${platformRate.toFixed(4)} - ${taxFactorOnFinal.toFixed(4)} + ${platformVatCredit.toFixed(4)} = ${D.toFixed(4)}
+• 中间项 term = D - B / P = ${D.toFixed(4)} - ${((effectiveCost + fixedCosts) / actualPrice).toFixed(4)} = ${term.toFixed(4)}
+• 系数 (E / (1 - v / (1 + v))) = ${effectiveSalesRate.toFixed(4)} / (1 - 0.06 / 1.06) = ${(effectiveSalesRate / (1 - v / (1 + v))).toFixed(4)}
+
+保本广告占比 = ${(effectiveSalesRate / (1 - v / (1 + v))).toFixed(4)} × ${term.toFixed(4)} = ${(breakevenAdRate * 100).toFixed(2)}%
+
+含义解释：
+• 保本广告占比表示在考虑所有成本后，广告费用占销售额的最大比例
+• 当实际广告占比 < 保本广告占比时，商品开始盈利
+• 当实际广告占比 > 保本广告占比时，商品处于亏损状态
+• 保本广告占比考虑了退货率、税费、运费等所有成本因素`;
     }
     
     // 创建浮层元素，使用与税费占比浮窗相同的样式
@@ -1705,23 +1747,6 @@ window.addEventListener('load', () => {
     try {
         initPlatformFreeToggles();
     } catch (e) {}
-    
-    try {
-        // 默认显示利润计算结果
-        calculateProfit();
-    } catch (error) {
-        console.error('初始化计算错误:', error);
-    }
-
-    // 初始化分享工具栏按钮事件
-    try {
-        // 分享功能已移除
-    } catch (e) {}
-
-    // 初始化保本ROI浮窗交互
-    try {
-        initBreakevenROITooltip();
-    } catch (e) {}
 
     // 初始化"费用设置"中的快速调整拉杆
     try {
@@ -2657,200 +2682,7 @@ function showToast(message) {
  * - 桌面端：悬停显示，移出隐藏
  * - 移动端：点击卡片打开，点击遮罩或关闭按钮关闭
  */
-function initBreakevenROITooltip() {
-    const card = document.getElementById('metricBreakevenROICard');
-    if (!card) return;
-
-    // 创建浮窗元素（桌面端小气泡 + 移动端全屏弹层共用模板）
-    const tooltip = document.createElement('div');
-    tooltip.id = 'breakevenRoiTooltip';
-    tooltip.style.position = 'fixed';
-    tooltip.style.zIndex = '9999';
-    tooltip.style.maxWidth = '320px';
-    tooltip.style.background = '#ffffff';
-    tooltip.style.border = '1px solid #e5e7eb';
-    tooltip.style.borderRadius = '8px';
-    tooltip.style.boxShadow = '0 8px 24px rgba(0,0,0,0.12)';
-    tooltip.style.padding = '12px 14px';
-    tooltip.style.fontSize = '12px';
-    tooltip.style.lineHeight = '1.6';
-    tooltip.style.color = '#333';
-    tooltip.style.display = 'none';
-    tooltip.style.pointerEvents = 'none';
-    tooltip.innerHTML = '<div id="breakevenRoiTooltipContent"></div>';
-    document.body.appendChild(tooltip);
-
-    // 移动端遮罩 + 面板
-    const overlay = document.createElement('div');
-    overlay.id = 'breakevenRoiOverlay';
-    overlay.style.position = 'fixed';
-    overlay.style.left = '0';
-    overlay.style.top = '0';
-    overlay.style.right = '0';
-    overlay.style.bottom = '0';
-    overlay.style.background = 'rgba(0,0,0,0.35)';
-    overlay.style.zIndex = '9998';
-    overlay.style.display = 'none';
-
-    const panel = document.createElement('div');
-    panel.style.position = 'fixed';
-    panel.style.left = '50%';
-    panel.style.top = '50%';
-    panel.style.transform = 'translate(-50%, -50%)';
-    panel.style.width = '88%';
-    panel.style.maxWidth = '420px';
-    panel.style.maxHeight = '70vh';
-    panel.style.overflow = 'auto';
-    panel.style.background = '#fff';
-    panel.style.borderRadius = '12px';
-    panel.style.boxShadow = '0 12px 36px rgba(0,0,0,0.18)';
-    panel.style.padding = '16px';
-    panel.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><div style="font-weight:600;">保本ROI计算说明</div><button id="breakevenRoiCloseBtn" style="border:none;background:#f5f5f5;border-radius:6px;padding:6px 10px;cursor:pointer;">关闭</button></div><div id="breakevenRoiPanelContent" style="font-size:13px;line-height:1.7;color:#333;"></div>';
-    overlay.appendChild(panel);
-    document.body.appendChild(overlay);
-
-    // 工具方法：根据当前输入构造说明HTML
-    const buildExplainHtml = (ctx) => {
-		const {P, C, purchaseVAT, fixedCosts, E, tOnFinal, platformRate, breakevenAdRate, breakevenROI} = ctx;
-		// 服务业进项税率 v（本系统当前取 6%）；用于展示一般形式：(1 - v/(1+v)) 与 平台费进项税抵扣
-		const v = 0.06;
-		// 修正：平台佣金进项税抵扣基于不含税金额计算
-		const platformVatCredit = (platformRate / (1 + v)) * v;
-		const D = 1 - platformRate - tOnFinal + platformVatCredit;
-		// 增补：在浮窗顶部给出"保本 ROI"的通俗定义，便于非技术同学理解
-		return (
-			'<div>'+
-			'<div style="margin-bottom:6px; color:#333;">保本 ROI 的含义是：在考虑退货、平台扣点、销项税、进项抵扣、固定成本之后，利润刚好为 0 时的 ROI。</div>'+
-			// 先给出一行"总公式"（一般形式，含税口径）：由 a* = (E/(1−v/(1+v)))×(D − B/P) 与 ROI* = E/a* 推得
-			'<div style="margin-bottom:4px; color:#111;">通用计算公式（含税售价 P）：</div>'+
-			'<div style="margin-left:12px; margin-bottom:8px;">ROI* = (1 − v/(1+v)) ÷ ( D − B / P )</div>'+
-			'<div style="margin-bottom:6px; color:#111;">公式与中间量（ROI=有效GMV÷广告费）：</div>'+
-            `<div>• 有效率 E = 1 - 退货率 = ${(E*100).toFixed(1)}%</div>`+
-            `<div>• 销项税占比 = 税率/(1+税率) = ${(tOnFinal*100).toFixed(2)}%</div>`+
-            `<div>• 分子 B = C + 固定成本/E = ${C.toFixed(2)} + ${fixedCosts.toFixed(2)} = ${(C + fixedCosts).toFixed(2)}</div>`+
-			`<div>• 常数 D' = 1 - 平台费 - 销项税占比 + 平台费进项税抵扣；当前 v = ${(v*100).toFixed(0)}% → D = ${(1 - platformRate).toFixed(4)} - ${(tOnFinal).toFixed(4)} + ${(platformVatCredit).toFixed(4)} = ${(D).toFixed(4)}</div>`+
-			`<div>• 保本广告占比 a* = E/(1 - v/(1+v)) × (D - B/P)</div>`+
-			`<div style="margin-left:12px;">修复：移除进项税重复抵扣，使用修正后的公式</div>`+
-			`<div style="margin-left:12px;">= ${(E/(1 - v/(1 + v))).toFixed(6)} × ( ${(D).toFixed(6)} - ${(((C + fixedCosts) / P) || 0).toFixed(6)} )</div>`+
-            `<div style=\"margin-left:12px;\">= ${(breakevenAdRate*100).toFixed(2)}%</div>`+
-			`<div>• 保本ROI = E / a* = ${isFinite(breakevenROI)? breakevenROI.toFixed(2): '∞'}</div>`+
-			`<div style=\"margin-top:6px; color:#111;\">因此：ROI* = (1 − v/(1+v)) ÷ ( D − B / P )；当前 v = ${(v*100).toFixed(0)}% → ROI* = ${(1 - v/(1 + v)).toFixed(4)} ÷ ( D − B / P )</div>`+
-            '</div>'
-        );
-    };
-
-    // 获取当前上下文并构建数据
-    const collectContext = () => {
-        // 判断当前处于利润页（有实际售价）还是售价页（建议售价）
-        const isProfitMode = document.getElementById('profitTab')?.classList.contains('active');
-        let costPrice, inputTaxRate, outputTaxRate, salesTaxRate, platformRate, shippingCost, shippingInsurance, otherCost, returnRate, P;
-        if (isProfitMode) {
-            costPrice = validateInput(parseFloat(document.getElementById('profitCostPrice').value), 0.01, 1000000, '进货价');
-            inputTaxRate = validateInput(parseFloat(document.getElementById('profitInputTaxRate').value), 0, 100, '开票成本')/100;
-            outputTaxRate = validateInput(parseFloat(document.getElementById('profitOutputTaxRate').value), 0, 100, '商品进项税率')/100;
-            // 销项税率直接取输入
-            salesTaxRate = validateInput(parseFloat(document.getElementById('profitSalesTaxRate').value), 0, 100, '销项税率')/100;
-            platformRate = validateInput(parseFloat(document.getElementById('profitPlatformRate').value), 0, 100, '平台佣金')/100;
-            shippingCost = validateInput(parseFloat(document.getElementById('profitShippingCost').value), 0, 10000, '物流费');
-            shippingInsurance = validateInput(parseFloat(document.getElementById('profitShippingInsurance').value), 0, 100, '运费险');
-            otherCost = validateInput(parseFloat(document.getElementById('profitOtherCost').value), 0, 10000, '其他成本');
-            returnRate = validateInput(parseFloat(document.getElementById('profitReturnRate').value), 0, 100, '退货率')/100;
-            P = validateInput(parseFloat(document.getElementById('actualPrice').value), 0.01, 1000000, '实际售价');
-        } else {
-            const inputs = getValidatedInputs();
-            costPrice = inputs.costPrice; inputTaxRate = inputs.inputTaxRate; outputTaxRate = inputs.outputTaxRate;
-            salesTaxRate = inputs.salesTaxRate; platformRate = inputs.platformRate; shippingCost = inputs.shippingCost;
-            shippingInsurance = inputs.shippingInsurance; otherCost = inputs.otherCost; returnRate = inputs.returnRate;
-            // 从售价结果区域尝试读建议售价
-            const priceText = document.querySelector('.final-price .price-value')?.textContent || '';
-            const match = priceText.match(/([\d.]+)/);
-            P = match ? parseFloat(match[1]) : NaN;
-        }
-
-        const E = 1 - returnRate;
-        const C = costPrice + costPrice * inputTaxRate; // 实际进货成本
-        const purchaseVAT = costPrice * outputTaxRate;  // 商品进项税
-        const fixedCosts = (shippingCost + shippingInsurance + otherCost) / E;
-        const tOnFinal = salesTaxRate / (1 + salesTaxRate);
-        const roiRes = calculateBreakevenROI({
-            costPrice, inputTaxRate, outputTaxRate, salesTaxRate, platformRate,
-            shippingCost, shippingInsurance, otherCost, returnRate, finalPrice: P
-        });
-        return { P, C, purchaseVAT, fixedCosts, E, tOnFinal, platformRate, breakevenAdRate: roiRes.breakevenAdRate, breakevenROI: roiRes.breakevenROI };
-    };
-
-    // 桌面端：hover 展示
-    let hoverTimer = null;
-    const showTooltip = (evt) => {
-        try {
-            const ctx = collectContext();
-            const html = buildExplainHtml(ctx);
-            const content = document.getElementById('breakevenRoiTooltipContent');
-            if (content) content.innerHTML = html;
-            const x = evt.clientX + 12;
-            const y = evt.clientY + 12;
-            tooltip.style.left = Math.min(x, window.innerWidth - 340) + 'px';
-            tooltip.style.top = Math.min(y, window.innerHeight - 200) + 'px';
-            tooltip.style.display = 'block';
-        } catch (_) {}
-    };
-    const hideTooltip = () => {
-        tooltip.style.display = 'none';
-    };
-    card.addEventListener('mouseenter', (e) => {
-        if (window.matchMedia('(hover: hover)').matches) {
-            clearTimeout(hoverTimer);
-            showTooltip(e);
-        }
-    });
-    card.addEventListener('mousemove', (e) => {
-        if (window.matchMedia('(hover: hover)').matches) {
-            showTooltip(e);
-        }
-    });
-    card.addEventListener('mouseleave', () => {
-        if (window.matchMedia('(hover: hover)').matches) {
-            hoverTimer = setTimeout(hideTooltip, 100);
-        }
-    });
-
-    // 移动端：点击打开面板
-    const openPanel = () => {
-        try {
-            const ctx = collectContext();
-            const html = buildExplainHtml(ctx);
-            document.getElementById('breakevenRoiPanelContent').innerHTML = html;
-            overlay.style.display = 'block';
-        } catch (_) {}
-    };
-    const closePanel = () => {
-        overlay.style.display = 'none';
-    };
-    overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) closePanel();
-    });
-    overlay.querySelector('#breakevenRoiCloseBtn').addEventListener('click', closePanel);
-    card.addEventListener('click', () => {
-        if (!window.matchMedia('(hover: hover)').matches) {
-            openPanel();
-        }
-    });
-}
-
-/**
- * 收集分享所需上下文（当前模式、参数徽章、结论文案）
- * 返回示例：
- * {
- *   mode: 'price' | 'profit',
- *   inputsForBadges: [ { label, value, unit? }, ... ],
- *   conclusion: '建议售价 ¥xx.xx，预期利润率 xx.xx%'
- * }
- */
-// 分享功能已移除，collectShareContext函数已被删除
-function collectShareContext() {
-    return null; // 分享功能已移除
-}
-
+// 旧的保本ROI浮窗实现已移除，使用新的统一浮窗机制
 
 /**
  * 批量利润率推演：初始化入口按钮与浮窗
