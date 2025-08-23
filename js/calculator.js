@@ -10281,36 +10281,73 @@ function generateTakeHomePriceResults(inputs, adRates, targetProfitRates) {
  */
 function calculateTakeHomePriceForExploration(costPrice, adRate, targetProfitRate, params) {
     try {
-        // 使用与售价计算tab完全一致的精确计算函数
-        // 基于目标利润率和已知参数，直接计算到手价（无迭代，精确计算）
+        // 使用基于正确算法的反推计算，而不是错误的旧算法
+        // 基于目标利润率反推到手价
         
-        // 构建参数对象，与 calculateTheoreticalPrice 函数保持一致
-        const theoreticalParams = {
-            inputTaxRate: params.inputTaxRate,
-            outputTaxRate: params.outputTaxRate,
-            salesTaxRate: params.salesTaxRate,
-            platformRate: params.platformRate,
-            adRate: adRate,
-            returnRate: params.returnRate,
-            shippingCost: params.shippingCost,
-            shippingInsurance: params.shippingInsurance,
-            otherCost: params.otherCost
-        };
+        // 参数标准化
+        const inputTaxRate = params.inputTaxRate;
+        const outputTaxRate = params.outputTaxRate;
+        const salesTaxRate = params.salesTaxRate;
+        const platformRate = params.platformRate;
+        const returnRate = params.returnRate;
+        const shippingCost = params.shippingCost;
+        const shippingInsurance = params.shippingInsurance;
+        const otherCost = params.otherCost;
         
-        // 调用精确计算函数，与售价计算tab使用完全相同的逻辑
-        const takeHomePrice = calculateTheoreticalPrice(costPrice, targetProfitRate, theoreticalParams);
-        
-        // 验证计算结果
-        if (isNaN(takeHomePrice) || takeHomePrice <= 0) {
-            console.warn('精确计算失败，参数:', {
-                costPrice,
-                targetProfitRate,
-                theoreticalParams
-            });
-            return NaN;
+        // 有效率
+        const E = Math.max(0, Math.min(1, 1 - returnRate));
+        if (E === 0) {
+            return NaN; // 无法成交
         }
         
-        return takeHomePrice;
+        // 使用二分查找法精确求解到手价
+        let low = costPrice * 1.1; // 最低价格：成本价的1.1倍
+        let high = costPrice * 10; // 最高价格：成本价的10倍
+        const tolerance = 0.01; // 精度：1分钱
+        const maxIterations = 50; // 最大迭代次数
+        
+        for (let i = 0; i < maxIterations; i++) {
+            const midPrice = (low + high) / 2;
+            
+            // 使用正确的利润计算函数验证当前价格下的利润率
+            const testInputs = {
+                costPrice: costPrice,
+                actualPrice: midPrice,
+                inputTaxRate: inputTaxRate,
+                outputTaxRate: outputTaxRate,
+                salesTaxRate: salesTaxRate,
+                platformRate: platformRate,
+                adRate: adRate,
+                shippingCost: shippingCost,
+                shippingInsurance: shippingInsurance,
+                otherCost: otherCost,
+                returnRate: returnRate
+            };
+            
+            // 使用统一的正确计算函数
+            const result = calculateProfitUnified(testInputs);
+            const actualProfitRate = result.profitRate;
+            
+            // 检查是否达到目标利润率
+            if (Math.abs(actualProfitRate - targetProfitRate) < 0.0001) {
+                return midPrice; // 找到精确解
+            }
+            
+            // 调整搜索范围
+            if (actualProfitRate < targetProfitRate) {
+                low = midPrice; // 利润率不够，价格需要更高
+            } else {
+                high = midPrice; // 利润率超了，价格需要更低
+            }
+            
+            // 检查收敛条件
+            if (high - low < tolerance) {
+                return (low + high) / 2; // 在容差范围内收敛
+            }
+        }
+        
+        // 如果迭代完了还没找到解，返回最后的中点
+        return (low + high) / 2;
         
     } catch (error) {
         console.error('计算到手价错误:', error);
@@ -10917,80 +10954,42 @@ function displayCostPriceResults(results, inputs, adRates, targetProfitRates) {
         });
     }
 
-            // 为表格添加tooltip功能
-        const table = document.getElementById('costExplorationTable');
-        if (table) {
-            // 创建tooltip元素，使用与到手价推演相同的样式
-            const tooltip = document.createElement('div');
-            tooltip.id = 'cost-exploration-tooltip';
-            Object.assign(tooltip.style, {
-                position: 'fixed',
-                zIndex: '10002',
-                padding: '12px',
-                borderRadius: '10px',
-                background: 'rgba(255, 255, 255, 0.98)',
-                color: '#1f2937',
-                fontSize: '12px',
-                lineHeight: '1.4',
-                boxShadow: '0 8px 20px rgba(0,0,0,0.15), 0 4px 8px rgba(0,0,0,0.1)',
-                border: '1px solid rgba(0,0,0,0.1)',
-                pointerEvents: 'none',
-                transition: 'opacity .15s ease',
-                opacity: '0',
-                maxWidth: '480px',
-                maxHeight: '60vh',
-                overflowY: 'auto',
-                backdropFilter: 'blur(10px)'
-            });
-            document.body.appendChild(tooltip);
+    // 为成本价推演表格添加详细计算过程浮窗功能
+    const table = document.getElementById('costExplorationTable');
+    if (table) {
+        // 添加详细计算过程浮窗功能
+        table.addEventListener('mouseover', function(e) {
+            if (e.target.hasAttribute('data-tooltip') && e.target.hasAttribute('data-calculation')) {
+                showCostPriceCalculationTooltip(e, e.target.getAttribute('data-tooltip'), e.target.getAttribute('data-calculation'));
+            } else if (e.target.hasAttribute('data-tooltip')) {
+                showTooltip(e, e.target.getAttribute('data-tooltip'));
+            }
+        });
 
-            const showTooltip = (cell, x, y) => {
-                const tooltipText = cell.getAttribute('data-tooltip');
-                if (!tooltipText) return;
-                
-                // 解析tooltip文本并生成HTML内容
-                const tooltipHtml = generateCostPriceTooltipHtml(tooltipText);
-                tooltip.innerHTML = tooltipHtml;
-                
-                // 设置位置
-                const offset = 15;
-                let left = x + offset;
-                let top = y + offset;
-                
-                // 确保浮窗不超出屏幕边界
-                const viewportWidth = window.innerWidth;
-                if (left + 480 > viewportWidth) {
-                    left = x - 480 - offset;
-                }
-                
-                tooltip.style.left = `${left}px`;
-                tooltip.style.top = `${top}px`;
-                tooltip.style.opacity = '1';
-            };
-
-            const hideTooltip = () => {
-                tooltip.style.opacity = '0';
-            };
-
-            // 事件委托：mouseover/mousemove/mouseleave
-            const onOver = (e) => {
-                const cell = e.target.closest('td[data-tooltip]');
-                if (!cell || !table.contains(cell)) return;
-                showTooltip(cell, e.clientX, e.clientY);
-            };
-
-            const onMove = (e) => {
-                const cell = e.target.closest('td[data-tooltip]');
-                if (!cell || !table.contains(cell)) return hideTooltip();
-                showTooltip(cell, e.clientX, e.clientY);
-            };
-
-            const onLeave = () => hideTooltip();
-
-            table.addEventListener('mouseover', onOver);
-            table.addEventListener('mousemove', onMove);
-            table.addEventListener('mouseleave', onLeave);
-        }
+        // 使用 mouseleave 事件确保鼠标离开表格时浮窗消失
+        table.addEventListener('mouseleave', function(e) {
+            hideTooltip();
+            hideCostPriceCalculationTooltip();
+        });
+        
+        // 为每个单元格添加 mouseout 事件，确保鼠标离开单元格时浮窗消失
+        table.addEventListener('mouseout', function(e) {
+            if (e.target.hasAttribute('data-tooltip')) {
+                // 延迟隐藏，避免在单元格间移动时闪烁
+                setTimeout(() => {
+                    // 检查鼠标是否真的离开了表格区域
+                    const rect = table.getBoundingClientRect();
+                    const mouseX = e.clientX;
+                    const mouseY = e.clientY;
+                    
+                    if (mouseX < rect.left || mouseX > rect.right || mouseY < rect.top || mouseY > rect.bottom) {
+                        hideTooltip();
+                        hideCostPriceCalculationTooltip();
+                    }
+                }, 100);
+            }
+        });
+    }
 }
 
 /**
@@ -11305,7 +11304,23 @@ function generateCostPriceTableHtmlForExploration(results, adRates, targetProfit
                 `销项税: ¥${outputVAT.toFixed(2)}       平台进项抵扣: ¥${platformVatCredit.toFixed(2)}\n` +
                 `实缴增值税: ¥${actualVAT.toFixed(2)}    总成本: ¥${totalCost.toFixed(2)}`;
 
-            return `<td style="padding:12px 16px;text-align:center;font-size:13px;font-weight:500;${cellStyle}" data-tooltip="${tooltip.replace(/"/g, '&quot;')}">
+            // 准备详细的计算过程数据
+            const calculationData = {
+                costPrice: costPrice,              // 推演得到的成本价
+                takeHomePrice: inputs.takeHomePrice, // 目标到手价
+                inputTaxRate: inputs.inputTaxRate,
+                outputTaxRate: inputs.outputTaxRate,
+                salesTaxRate: inputs.salesTaxRate,
+                platformRate: inputs.platformRate,
+                shippingCost: inputs.shippingCost,
+                shippingInsurance: inputs.shippingInsurance,
+                otherCost: inputs.otherCost,
+                returnRate: inputs.returnRate,
+                adRate: adRate,
+                targetRate: targetProfitRate
+            };
+
+            return `<td style="padding:12px 16px;text-align:center;font-size:13px;font-weight:500;${cellStyle}" data-tooltip="${tooltip.replace(/"/g, '&quot;')}" data-calculation="${encodeURIComponent(JSON.stringify(calculationData))}">
                 <div class="price-main" style="font-size:16px; font-weight:700; color:#059669; margin-bottom:2px;">¥${costPrice.toFixed(2)}</div>
                 <div class="roi-info" style="font-size:12px; color:#6b7280; margin-top:1px;">利润率: ${(targetProfitRate * 100).toFixed(1)}%</div>
                 <div class="adrate-info" style="font-size:12px; color:#6b7280; margin-top:1px;">广告: ${(adRate * 100).toFixed(0)}%</div>
@@ -11848,10 +11863,255 @@ function hideTakeHomeCalculationTooltip() {
 }
 
 /**
+ * 显示成本价推演详细计算过程浮窗
+ * @param {Event} event 鼠标事件
+ * @param {string} basicInfo 基础信息
+ * @param {string} calculationDataJson 计算数据JSON
+ */
+function showCostPriceCalculationTooltip(event, basicInfo, calculationDataJson) {
+    // 移除已存在的浮窗
+    hideCostPriceCalculationTooltip();
+
+    try {
+        const data = JSON.parse(decodeURIComponent(calculationDataJson));
+        
+        // 成本价推演的验证逻辑：
+        // 1. 使用推演得到的成本价
+        // 2. 结合其他参数，计算理论到手价
+        // 3. 与目标到手价对比，验证准确性
+        
+        const derivedCostPrice = data.costPrice; // 推演得到的成本价
+        const targetTakeHomePrice = data.takeHomePrice; // 目标到手价
+        const adRate = data.adRate;
+        const targetProfitRate = data.targetRate;
+        
+        // 基于推演成本价，计算理论到手价
+        const theoreticalTakeHomePrice = calculateTakeHomePriceForExploration(
+            derivedCostPrice,
+            adRate,
+            targetProfitRate,
+            {
+                inputTaxRate: data.inputTaxRate,
+                outputTaxRate: data.outputTaxRate,
+                salesTaxRate: data.salesTaxRate,
+                platformRate: data.platformRate,
+                returnRate: data.returnRate,
+                shippingCost: data.shippingCost,
+                shippingInsurance: data.shippingInsurance,
+                otherCost: data.otherCost
+            }
+        );
+        
+        // 计算差异
+        const priceDifference = Math.abs(theoreticalTakeHomePrice - targetTakeHomePrice);
+        const percentageDifference = (priceDifference / targetTakeHomePrice) * 100;
+        
+        // 基于推演成本价进行正向验证计算（用于显示成本构成）
+        const verificationInputs = {
+            costPrice: derivedCostPrice,
+            actualPrice: theoreticalTakeHomePrice, // 使用理论到手价
+            inputTaxRate: data.inputTaxRate,
+            outputTaxRate: data.outputTaxRate,
+            salesTaxRate: data.salesTaxRate,
+            platformRate: data.platformRate,
+            adRate: data.adRate,
+            shippingCost: data.shippingCost,
+            shippingInsurance: data.shippingInsurance,
+            otherCost: data.otherCost,
+            returnRate: data.returnRate
+        };
+        
+        // 使用统一的利润计算函数进行验证
+        const result = calculateProfitUnified(verificationInputs);
+        
+        // 提取计算数据
+        const inputTaxRate = data.inputTaxRate;
+        const outputTaxRate = data.outputTaxRate;
+        const salesTaxRate = data.salesTaxRate;
+        const platformRate = data.platformRate;
+        const returnRate = data.returnRate;
+        
+        const invoiceCost = result.effectiveCost - derivedCostPrice; // 开票成本
+        const actualPurchaseCost = result.effectiveCost; // 实际进货成本
+        const inputTaxCredit = result.purchaseVAT; // 进项税抵扣
+        
+        const effectiveRate = 1 - returnRate; // 有效销售率
+        const fixedCosts = data.shippingCost + data.shippingInsurance + data.otherCost;
+        const fixedCostEffective = fixedCosts / effectiveRate; // 固定成本分摊
+        
+        const advertisingCost = result.adCostEffective; // 广告费用（已分摊）
+        const platformCommission = result.platformFee; // 平台佣金
+        
+        // 税费计算
+        const outputTax = result.outputVAT; // 销项税
+        const advertisingTaxCredit = result.adVAT; // 广告费进项税抵扣
+        const commissionTaxCredit = result.platformVAT; // 佣金进项税抵扣
+        const totalTaxCredits = result.totalVATDeduction; // 总进项税抵扣
+        const actualTaxPayable = result.actualVAT; // 应纳税额
+        
+        // 总成本和利润
+        const totalCost = result.totalCost;
+        const actualProfit = result.profit;
+        const actualProfitRate = result.profitRate * 100;
+        
+        // 生成验证计算过程HTML
+        const calculationHtml = `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.4; max-width: 600px;">
+                <div style="font-weight: 700; color: #1f2937; margin-bottom: 10px; font-size: 15px;">🧮 成本价推演验证计算</div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                    <!-- 推演参数 -->
+                    <div style="background: #f8fafc; padding: 8px; border-radius: 4px;">
+                        <div style="font-weight: 600; color: #374151; margin-bottom: 4px; font-size: 12px;">📊 推演参数</div>
+                        <div style="font-size: 11px; color: #6b7280;">
+                            目标到手价：¥${targetTakeHomePrice.toFixed(2)}<br>
+                            推演成本价：¥${derivedCostPrice.toFixed(2)}<br>
+                            目标利润率：${(targetProfitRate * 100).toFixed(1)}%<br>
+                            付费占比：${(adRate * 100).toFixed(0)}%<br>
+                            退货率：${(returnRate * 100).toFixed(1)}%
+                        </div>
+                    </div>
+
+                    <!-- 成本价计算 -->
+                    <div style="background: #f8fafc; padding: 8px; border-radius: 4px;">
+                        <div style="font-weight: 600; color: #374151; margin-bottom: 4px; font-size: 12px;">💰 成本价构成</div>
+                        <div style="font-size: 11px; color: #6b7280;">
+                            开票成本：¥${invoiceCost.toFixed(2)} (${(inputTaxRate * 100).toFixed(1)}%)<br>
+                            总进货成本：¥${actualPurchaseCost.toFixed(2)}<br>
+                            商品进项税：¥${inputTaxCredit.toFixed(2)} (${(outputTaxRate * 100).toFixed(1)}%)<br>
+                            固定成本：¥${fixedCosts.toFixed(2)}<br>
+                            分摊后成本：¥${fixedCostEffective.toFixed(2)}
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                    <!-- 销售成本 -->
+                    <div style="background: #f8fafc; padding: 8px; border-radius: 4px;">
+                        <div style="font-weight: 600; color: #374151; margin-bottom: 4px; font-size: 12px;">💸 销售成本</div>
+                        <div style="font-size: 11px; color: #6b7280;">
+                            有效率：${(effectiveRate * 100).toFixed(1)}%<br>
+                            广告费：¥${advertisingCost.toFixed(2)}<br>
+                            平台佣金：¥${platformCommission.toFixed(2)}<br>
+                            销项税：¥${outputTax.toFixed(2)}<br>
+                            应纳税额：¥${actualTaxPayable.toFixed(2)}
+                        </div>
+                    </div>
+
+                    <!-- 利润验证结果 -->
+                    <div style="background: #f8fafc; padding: 8px; border-radius: 4px;">
+                        <div style="font-weight: 600; color: #374151; margin-bottom: 4px; font-size: 12px;">📈 利润验证结果</div>
+                        <div style="font-size: 11px; color: #6b7280;">
+                            计算利润：¥${actualProfit.toFixed(2)}<br>
+                            利润率：${actualProfitRate.toFixed(2)}%<br>
+                            目标差异：${Math.abs(actualProfitRate - targetProfitRate * 100).toFixed(2)}%<br>
+                            理论到手价：¥${theoreticalTakeHomePrice.toFixed(2)}<br>
+                            目标差异：¥${priceDifference.toFixed(2)}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 计算说明 -->
+                <div style="background: #e0f2fe; padding: 8px; border-radius: 4px; border-left: 3px solid #0ea5e9;">
+                    <div style="font-size: 11px; color: #0c4a6e; line-height: 1.3;">
+                        <div style="font-weight: 600; margin-bottom: 2px;">💡 计算说明：</div>
+                        <div>• 基于推演成本价，使用正向计算验证目标利润率</div>
+                        <div>• 成本价推演使用闭式解或二分查找算法</div>
+                        <div>• 浮窗显示的是基于推演成本价的正向验证计算</div>
+                    </div>
+                </div>
+
+                <!-- 验证结果 -->
+                ${percentageDifference < 0.1 ?
+                    `<div style="background: #d1fae5; padding: 8px; border-radius: 4px; border-left: 3px solid #10b981; margin-top: 8px;">
+                        <div style="font-size: 11px; color: #065f46; line-height: 1.3;">
+                            <div style="font-weight: 600; margin-bottom: 2px;">✅ 验证通过：</div>
+                            <div>• 推演算法准确，理论到手价与目标一致</div>
+                            <div>• 成本价：¥${derivedCostPrice.toFixed(2)} 符合目标要求</div>
+                        </div>
+                    </div>` :
+                    `<div style="background: #fef2f2; padding: 8px; border-radius: 4px; border-left: 3px solid #ef4444; margin-top: 8px;">
+                        <div style="font-size: 11px; color: #991b1b; line-height: 1.3;">
+                            <div style="font-weight: 600; margin-bottom: 2px;">⚠️ 验证异常：</div>
+                            <div>• 理论到手价偏差：¥${priceDifference.toFixed(2)} (${percentageDifference.toFixed(2)}%)</div>
+                            <div>• 可能需要调整算法精度或参数</div>
+                        </div>
+                    </div>`
+                }
+            </div>
+        `;
+        
+        // 创建浮窗元素
+        const tooltip = document.createElement('div');
+        tooltip.id = 'cost-price-calculation-tooltip';
+
+        Object.assign(tooltip.style, {
+            position: 'fixed',
+            zIndex: '10002',
+            padding: '12px',
+            borderRadius: '10px',
+            background: 'rgba(255, 255, 255, 0.98)',
+            color: '#1f2937',
+            fontSize: '12px',
+            lineHeight: '1.4',
+            boxShadow: '0 8px 20px rgba(0,0,0,0.15), 0 4px 8px rgba(0,0,0,0.1)',
+            border: '1px solid rgba(0,0,0,0.1)',
+            pointerEvents: 'none',
+            transition: 'opacity .15s ease',
+            opacity: '0',
+            maxWidth: '480px',
+            maxHeight: '60vh',
+            overflowY: 'auto',
+            backdropFilter: 'blur(10px)'
+        });
+
+        tooltip.innerHTML = calculationHtml;
+        document.body.appendChild(tooltip);
+
+        // 显示浮窗并设置位置
+        const offset = 15;
+        const mouseX = event.clientX;
+        const mouseY = event.clientY;
+
+        // 确保浮窗不超出屏幕边界
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+
+        let left = mouseX + offset;
+        let top = mouseY + offset;
+
+        if (left + 480 > viewportWidth) {
+            left = mouseX - 480 - offset;
+        }
+
+        if (top + tooltip.offsetHeight > viewportHeight) {
+            top = mouseY - tooltip.offsetHeight - offset;
+        }
+
+        tooltip.style.left = `${left}px`;
+        tooltip.style.top = `${top}px`;
+        tooltip.style.opacity = '1';
+
+    } catch (error) {
+        console.error('显示成本价推演验证浮窗失败:', error);
+    }
+}
+
+/**
+ * 隐藏成本价推演计算过程浮窗
+ */
+function hideCostPriceCalculationTooltip() {
+    const tooltip = document.getElementById('cost-price-calculation-tooltip');
+    if (tooltip) {
+        tooltip.remove();
+    }
+}
+
+/**
  * 隐藏成本价推演详细计算过程浮窗
  */
 function hideCostPriceCalculationTooltip() {
-    const tooltip = document.getElementById('cost-exploration-tooltip');
+    const tooltip = document.getElementById('cost-price-calculation-tooltip');
     if (tooltip) {
         tooltip.remove();
     }
