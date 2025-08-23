@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>电商保本计算器｜利润 / 保本ROI / 保本广告占比</title>
+  <style>
+    :root{
+      --bg:#0b0f14;
+      --card:#121923;
+      --ink:#e6eef7;
+      --muted:#9fb0c3;
+      --accent:#3ea6ff;
+      --accent-2:#7c4dff;
+      --ok:#22c55e;
+      --warn:#f59e0b;
+      --bad:#ef4444;
+      --grid: 12px;
+      --radius: 14px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    }
+    html,body{height:100%}
+    body{
+      margin:0; background:radial-gradient(1200px 600px at 80% -10%, #20304455 0, transparent 60%), linear-gradient(180deg, #0b0f14, #0e141c);
+      color:var(--ink); font-family:var(--sans);
+    }
+    header{ padding:24px 24px 0; }
+    h1{ margin:0 0 6px 0; font-size:22px; letter-spacing:.3px; }
+    .sub{ color:var(--muted); font-size:13px; }
+    main{ padding:24px; }
+    .wrap{ display:grid; grid-template-columns: 1.1fr .9fr; gap:24px; }
+    @media (max-width: 980px){ .wrap{ grid-template-columns: 1fr; } }
+    .card{
+      background:linear-gradient(180deg, #101722, #0f1620);
+      border:1px solid #1e2a39; border-radius:14px;
+      box-shadow: 0 20px 60px #00000050 inset, 0 1px 0 #243244;
+    }
+    .card h2{
+      font-size:16px; margin:0; padding:16px 16px 10px 16px; border-bottom:1px solid #1c2837;
+      background: linear-gradient(180deg, #0f1620, #121a25);
+      border-top-left-radius:14px; border-top-right-radius:14px;
+    }
+    .content{ padding:16px; }
+    .grid{ display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:16px; }
+    @media (max-width: 640px){ .grid{ grid-template-columns: 1fr; } }
+    label{ font-size:12px; color:var(--muted); display:block; margin:0 0 6px 2px; }
+    .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .input{
+      background:#0b121a; border:1px solid #1d2a3a; color:var(--ink);
+      border-radius:10px; padding:14px 12px; width:90%;
+      outline:none; font-size:16px; font-weight:600;
+    }
+    .input:focus{ border-color:#2d8cff; box-shadow:0 0 0 3px #2d8cff33; }
+    .switch{
+      display:inline-flex; align-items:center; gap:8px; background:#0b121a; border:1px solid #1d2a3a; padding:8px 10px; border-radius:999px;
+    }
+    .btn{
+      appearance:none; border:0; background:linear-gradient(135deg, var(--accent), var(--accent-2)); color:white;
+      padding:12px 16px; border-radius:12px; font-weight:600; cursor:pointer; font-size:14px;
+      box-shadow: 0 8px 20px #3ea6ff44, inset 0 0 0 1px #ffffff33;
+    }
+    .btn:active{ transform: translateY(1px); }
+    .muted{ color:var(--muted); font-size:12px; }
+    .kpi{ display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:10px; }
+    @media (max-width: 640px){ .kpi{ grid-template-columns: 1fr; } }
+    .kpi .box{ background:#0b121a; border:1px solid #1d2a3a; border-radius:12px; padding:12px; }
+    .kpi .label{ color:var(--muted); font-size:12px; }
+    .kpi .value{ font-family:var(--mono); font-size:20px; margin-top:8px; }
+    .good{ color:#22c55e } .bad{ color:#ef4444 }
+    table{ width:100%; border-collapse:collapse; font-size:13px; }
+    th, td{ border-bottom:1px dashed #263343; padding:8px 6px; text-align:right; }
+    th:first-child, td:first-child{ text-align:left; }
+    .note{ font-size:11px; color:#8ba0b8; line-height:1.6; }
+    .sep{ height:1px; background:linear-gradient(90deg, #253346, transparent); margin:12px 0; }
+    .pill{ padding:2px 8px; border-radius:999px; background:#132031; font-size:11px; color:#9bc3ff; border:1px solid #1d2a3a; }
+    .mono{ font-family: var(--mono); }
+    /* two-column layout for the explanation card */
+    .explain-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+    @media (max-width: 980px){ .explain-grid{ grid-template-columns: 1fr; } }
+    .explain-col{ display:flex; flex-direction:column; gap:10px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>电商保本计算器</h1>
+    <div class="sub">计算 <strong>利润</strong>、<strong>保本广告占比</strong>、<strong>保本 ROI</strong>（采用「有效营收口径」；可切换进货是否分摊）。</div>
+  </header>
+
+  <main>
+    <div class="wrap">
+      <section class="card">
+        <h2>参数输入</h2>
+        <div class="content">
+          <div class="row" style="margin-bottom:10px">
+            <span class="pill">口径</span>
+            <label class="switch"><input type="radio" name="goodsMode" value="canReturn" checked> 进货可退（不分摊）</label>
+            <label class="switch"><input type="radio" name="goodsMode" value="cannotReturn"> 进货不可退（分摊）</label>
+          </div>
+          <div class="grid">
+            <div>
+              <label>售价（sellingPrice）</label>
+              <input id="sellingPrice" class="input" type="number" step="0.01" value="79.8">
+            </div>
+            <div>
+              <label>退货率（returnRate）%</label>
+              <input id="returnRate" class="input" type="number" step="0.01" value="12">
+            </div>
+            <div>
+              <label>进货价（costPrice）</label>
+              <input id="costPrice" class="input" type="number" step="0.01" value="38">
+            </div>
+            <div>
+              <label>开票成本比例（inputTaxRate）%</label>
+              <input id="inputTaxRate" class="input" type="number" step="0.01" value="6">
+            </div>
+            <div>
+              <label>商品进项税率（outputTaxRate）%</label>
+              <input id="outputTaxRate" class="input" type="number" step="0.01" value="13">
+            </div>
+            <div>
+              <label>平台佣金率（platformRate）%</label>
+              <input id="platformRate" class="input" type="number" step="0.01" value="5.5">
+            </div>
+            <div>
+              <label>物流费（shippingCost）</label>
+              <input id="shippingCost" class="input" type="number" step="0.01" value="2.8">
+            </div>
+            <div>
+              <label>运费险（shippingInsurance）</label>
+              <input id="shippingInsurance" class="input" type="number" step="0.01" value="1.5">
+            </div>
+            <div>
+              <label>其他成本（otherCost）</label>
+              <input id="otherCost" class="input" type="number" step="0.01" value="2.5">
+            </div>
+            <div>
+              <label>销项税率（salesTaxRate）%</label>
+              <input id="salesTaxRate" class="input" type="number" step="0.01" value="13">
+            </div>
+            <div>
+              <label>服务费税率（serviceVATRate）% <span class="muted">(佣金/广告，通常为6%)</span></label>
+              <input id="serviceVATRate" class="input" type="number" step="0.01" value="6">
+            </div>
+            <div>
+              <label>广告输入方式</label>
+              <div class="row">
+                <label class="switch"><input type="radio" name="adMode" value="rate" checked> 广告费占比（adRate）%</label>
+                <label class="switch"><input type="radio" name="adMode" value="cost"> 广告费金额（adCost）</label>
+              </div>
+            </div>
+            <div id="adRateWrap">
+              <label>广告费占比（adRate）%</label>
+              <input id="adRate" class="input" type="number" step="0.01" placeholder="例如 25">
+              <div id="adRateEquivWrap" class="muted" style="margin-top:6px">
+                等价到 <span id="adRateEquivTarget">GMV</span> 口径：<span id="adRateEquiv">—</span>
+              </div>
+            </div>
+            <div id="adRateBasisWrap">
+              <label>占比口径（adRate 基数）</label>
+              <div class="row">
+                <label class="switch">
+                  <input type="radio" name="adRateBasis" value="effective" checked>
+                  按有效营收（售价 × (1 - 退货率)）
+                </label>
+                <label class="switch">
+                  <input type="radio" name="adRateBasis" value="gmv">
+                  按 GMV（含税售价）
+                </label>
+              </div>
+            </div>
+            <div id="adCostWrap" style="display:none">
+              <label>广告费（adCost）</label>
+              <input id="adCost" class="input" type="number" step="0.01" placeholder="留空则仅计算保本指标">
+            </div>
+          </div>
+
+          <div class="sep"></div>
+          <div class="row">
+            <button class="btn" id="calc">计算</button>
+            <span class="muted">提示：所有 % 将自动换算为小数参与计算。</span>
+          </div>
+        </div>
+      </section>
+
+
+      <section class="card">
+        <h2>结果</h2>
+        <div class="content">
+          <div class="kpi">
+            <div class="box">
+              <div class="label">保本广告占比（有效营收口径）</div>
+              <div class="value" id="kpiAdRate">—</div>
+              <div class="muted">= 保本广告费 ÷ [售价 × (1 - 退货率)]</div>
+            </div>
+            <div class="box">
+              <div class="label">保本 ROI（有效营收口径）</div>
+              <div class="value" id="kpiROI">—</div>
+              <div class="muted">= 1 ÷ 保本广告占比</div>
+            </div>
+            <div class="box">
+              <div class="label">利润（给定广告）</div>
+              <div class="value" id="kpiProfit">—</div>
+              <div class="muted">若未输入广告费/占比，则显示“—”</div>
+              <div class="muted">利润率：<span id="kpiProfitMargin">—</span></div>
+            </div>
+          </div>
+          <div class="kpi" style="margin-top:10px">
+            <div class="box">
+              <div class="label">保本广告占比（GMV 口径）</div>
+              <div class="value" id="kpiAdRateGMV">—</div>
+              <div class="muted">= 保本广告费 ÷ 售价</div>
+            </div>
+            <div class="box">
+              <div class="label">保本 ROI（GMV 口径）</div>
+              <div class="value" id="kpiROIGMV">—</div>
+              <div class="muted">= 1 ÷ （保本广告占比（GMV））</div>
+            </div>
+          </div>
+
+          <div class="sep"></div>
+          <h3 style="margin:6px 0 8px; font-size:14px">分解明细</h3>
+          <table>
+            <tbody id="detailRows"></tbody>
+          </table>
+
+          <div class="sep"></div>
+        </div>
+      </section>
+    </div>
+      <section class="card" style="margin-top:16px">
+        <h2>口径说明 / 推导</h2>
+        <div class="content">
+          <div class="explain-grid">
+            <!-- Left column: ①定义, ②保本指标, ③规则, ⑤建议 -->
+            <div class="explain-col">
+              <div class="muted" style="margin-bottom:6px">本工具展示两种口径，并解释常见疑问：</div>
+
+              <h4 style="font-size:13px; margin:8px 0 4px">① 两套口径的定义</h4>
+              <ul class="muted" style="margin:0 0 8px 18px">
+                <li><strong>有效营收口径</strong>：分母 = 售价 × (1 − 退货率)，更贴近实际入账收入，用于经营决策。</li>
+                <li><strong>GMV 口径</strong>：分母 = 售价（含税），与广告平台报表对齐，便于外部沟通。</li>
+              </ul>
+
+              <h4 style="font-size:13px; margin:8px 0 4px">② 保本广告占比与 ROI</h4>
+              <ul class="muted" style="margin:0 0 8px 18px">
+                <li>保本广告占比（有效营收） = <span class="mono">X ÷ [售价 × (1 − 退货率)]</span></li>
+                <li>保本广告占比（GMV） = <span class="mono">X ÷ 售价</span> = 上式 × <span class="mono">(1 − 退货率)</span></li>
+                <li>ROI = 各自占比的倒数。判断盈亏时，务必在<strong>同一口径</strong>下比较。</li>
+              </ul>
+
+              <h4 style="font-size:13px; margin:8px 0 4px">③ 成本与税的口径规则</h4>
+              <div class="note" style="margin-bottom:8px">
+                ① 进货可退：进货成本与其进项抵扣按 ×r；不可退：按 ×1（出货即耗用）。<br>
+                ② 快递/运费险/其他：发货即发生，按 ×1。<br>
+                ③ 平台佣金：仅成交发生，按 ×r；佣金进项抵扣需价内还原。<br>
+                ④ 广告费：按 ×1 入账；广告进项抵扣需价内还原。<br>
+                ⑤ 销项税：按有效营收做价内扣除。
+              </div>
+
+              <h4 style="font-size:13px; margin:8px 0 4px">⑤ 建议</h4>
+              <div class="note">
+                <strong>经营决策优先</strong>：关注有效营收口径（更贴近真实利润）。<br>
+                <strong>报表对齐</strong>：GMV 口径用于与平台 ROI 对比。两者应同时监控，但不要跨口径直接比较。
+              </div>
+
+              <h4 style="font-size:13px; margin:8px 0 4px">④ 常见疑问</h4>
+              <div class="note">
+                <strong>疑问：</strong>为何选择 GMV 口径输入广告费占比时，利润更少？<br>
+                <strong>解释：</strong>因为 GMV > 有效营收，相同的 % 换算成的广告金额更大。利润恒等式未变，是<strong>输入口径分母不同</strong>导致。<br>
+                提示：跨口径换算关系—— 占比(GMV) = 占比(有效) × r； ROI(GMV) = ROI(有效) ÷ r。
+              </div>
+            </div>
+
+            <!-- Right column: ④常见疑问, 完整利润式, 要点, 退货处理表, 回代验证 -->
+            <div class="explain-col">
+              <div class="sep"></div>
+              <div class="muted" style="margin:6px 0">完整利润恒等式（以「出货 1 单」为基准件）：</div>
+              <pre class="mono" style="font-size:12px; line-height:1.65; white-space:pre-wrap; background:#0b121a; border:1px solid #1d2a3a; border-radius:10px; padding:10px;">
+Profit = Rev
+  - [goodsCost + othersCost + commission + X]
+  - (VAT_out - VAT_in_goods - VAT_in_comm - VAT_in_ad)
+
+其中：
+Rev = 售价 × (1 − 退货率)
+ goodsCost = 进货价 × (1 + 开票成本比例) × {可退: ×r；不可退: ×1}
+ othersCost = 物流费 + 运费险 + 其他成本  （发货即发生）
+ commission = 售价 × 平台佣金率 × r
+ VAT_out = Rev ÷ (1 + 销项税率) × 销项税率
+ VAT_in_goods = 进货价 × 商品进项税率 × {可退: ×r；不可退: ×1}
+ VAT_in_comm  = commission ÷ (1 + 服务费税率) × 服务费税率
+ VAT_in_ad    = X ÷ (1 + 服务费税率) × 服务费税率
+
+将与 X 有关的项合并，可得：
+Profit = A − X/(1 + 服务费税率)
+⇒ 保本广告费 X = (1 + 服务费税率) × A
+A = Rev − (goodsCost + othersCost + commission) − VAT_out + VAT_in_goods + VAT_in_comm
+              </pre>
+
+              <div class="muted" style="margin-top:8px">要点：
+                <ul style="margin:6px 0 0 18px; padding:0 0 0 0">
+                  <li>进货可退：成本与进项抵扣按 <span class="mono">× r</span>；不可退：按 <span class="mono">×1</span>。</li>
+                  <li>快递/险/其他为发货即发生，<strong>不随 r 分摊</strong>（因“出货基准件”）。</li>
+                  <li>佣金仅在成交时发生，按 <span class="mono">× r</span>；广告抵扣需做价内还原。</li>
+                </ul>
+              </div>
+
+              <div class="sep"></div>
+              <div class="muted" style="margin:6px 0">成本/费用的退货处理方式：</div>
+              <table style="width:100%; font-size:12px; border-collapse:collapse; margin-bottom:10px">
+                <thead>
+                  <tr style="text-align:left; color:#9fb0c3">
+                    <th style="padding:4px 6px; border-bottom:1px dashed #263343">类别</th>
+                    <th style="padding:4px 6px; border-bottom:1px dashed #263343">处理方式</th>
+                    <th style="padding:4px 6px; border-bottom:1px dashed #263343">说明</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style="padding:4px 6px">进货成本</td>
+                    <td style="padding:4px 6px">可退：×r<br>不可退：×1</td>
+                    <td style="padding:4px 6px">退货时货值可退回，不需分摊；若不可退则摊到全部出货</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:4px 6px">快递/运费险/其他</td>
+                    <td style="padding:4px 6px">×1 （发货即发生）</td>
+                    <td style="padding:4px 6px">退货也不退回，需摊到所有出货</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:4px 6px">平台佣金</td>
+                    <td style="padding:4px 6px">×r</td>
+                    <td style="padding:4px 6px">佣金仅对成交有效，退货可退</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:4px 6px">广告费</td>
+                    <td style="padding:4px 6px">×1 （出货即确认）</td>
+                    <td style="padding:4px 6px">退货不退广告，必须摊到所有出货</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div class="sep"></div>
+              <div class="muted" style="margin:6px 0">回代验证：</div>
+              <div class="note">系统会将计算出的保本广告费 X 带回利润恒等式进行检验，若 Profit≈0，则说明公式和逻辑闭合无误。</div>
+            </div>
+          </div>
+        </div>
+      </section>
+  </main>
+
+  <footer>
+    © 2025 Breakeven Calculator · 使用仅作测算参考，实际以贵司财务/税务规则为准。
+  </footer>
+
+  <script>
+    const $ = (id)=>document.getElementById(id);
+    const fmt = (n, p=2)=> isFinite(n) ? n.toLocaleString('zh-CN',{minimumFractionDigits:p, maximumFractionDigits:p}) : '—';
+    const pct = (n, p=2)=> isFinite(n) ? (n*100).toLocaleString('zh-CN',{minimumFractionDigits:p, maximumFractionDigits:p}) + '%' : '—';
+
+    function valNum(id){
+      const el = $(id);
+      const v = parseFloat(el.value);
+      return isFinite(v) ? v : 0;
+    }
+    function valRate(id){ // percent to decimal
+      return valNum(id) / 100;
+    }
+
+    // Switch ad input mode UI
+    function updateAdMode(){
+      const mode = document.querySelector('input[name="adMode"]:checked').value;
+      $('adRateWrap').style.display = mode==='rate' ? '' : 'none';
+      $('adCostWrap').style.display = mode==='cost' ? '' : 'none';
+      const basis = $('adRateBasisWrap');
+      if (basis) basis.style.display = mode==='rate' ? '' : 'none';
+    }
+    document.querySelectorAll('input[name="adMode"]').forEach(el=>el.addEventListener('change', updateAdMode));
+
+    function compute(){
+      // Inputs
+      const sellingPrice = valNum('sellingPrice');
+      const returnRate = valRate('returnRate');
+      const costPrice = valNum('costPrice');
+      const inputTaxRate = valRate('inputTaxRate');
+      const outputTaxRate = valRate('outputTaxRate');
+      const platformRate = valRate('platformRate');
+      const shippingCost = valNum('shippingCost');
+      const shippingInsurance = valNum('shippingInsurance');
+      const otherCost = valNum('otherCost');
+      const salesTaxRate = valRate('salesTaxRate');
+      const serviceVATRate = valRate('serviceVATRate');
+      const goodsMode = document.querySelector('input[name="goodsMode"]:checked').value;
+
+      const r = Math.max(0, 1 - returnRate); // 有效比例
+      const Rev = sellingPrice * r;           // 有效含税营收
+
+      // 成本（采用“出货基准单”口径）：
+      // 进货可退 → 仅在成交时耗用（× r）；不可退 → 出货即耗用（× 1）
+      const goodsCost = costPrice * (1 + inputTaxRate) * (goodsMode==='canReturn' ? r : 1);
+      // 发货即发生的固定成本：不随 r 放大/缩小（因为以出货为基准件）
+      const othersCost = (shippingCost + shippingInsurance + otherCost);
+      // 佣金：只在成交时发生（× r）
+      const commission = sellingPrice * platformRate * r;
+
+      // 税额（以出货基准单计）：
+      const VAT_out = Rev / (1 + salesTaxRate) * salesTaxRate;
+      const VAT_in_goods = costPrice * outputTaxRate * (goodsMode==='canReturn' ? r : 1); // 进货抵扣：可退×r，不可退×1
+      const VAT_in_comm  = commission / (1 + serviceVATRate) * serviceVATRate;             // 佣金抵扣（佣金已含 r）
+
+      // 给定广告（可选；按出货基准单计）
+      const adMode = document.querySelector('input[name="adMode"]:checked').value;
+      let adCostGiven = 0;
+
+      // 占比口径（effective / gmv）
+      let adRateBasis = 'effective';
+      const basisEl = document.querySelector('input[name="adRateBasis"]:checked');
+      if (basisEl) adRateBasis = basisEl.value;
+
+      // 基数（用于把占比换成金额）
+      let adRateBaseValue = Rev; // 默认：有效营收（售价 × r）
+      let adRateBaseLabel = '有效营收（售价 × r）';
+      if (adRateBasis === 'gmv') {
+        adRateBaseValue = sellingPrice;         // GMV：含税售价
+        adRateBaseLabel = 'GMV（含税售价）';
+      }
+
+      if(adMode === 'rate'){
+        const adRate = valRate('adRate');
+        adCostGiven = adRateBaseValue * adRate; // 按所选口径换算
+      }else{
+        adCostGiven = valNum('adCost');         // 金额直填
+      }
+
+      // === 等价占比（另一口径）的实时显示 ===
+      (function renderAdRateEquivalence(){
+        const wrap = $('adRateEquivWrap');
+        if(!wrap){ return; }
+        // 仅在“占比”模式下显示；金额模式隐藏
+        wrap.style.display = adMode==='rate' ? '' : 'none';
+        if(adMode !== 'rate') return;
+
+        const rateInput = valRate('adRate'); // 当前输入占比（小数）
+        let targetLabel = adRateBasis==='effective' ? 'GMV' : '有效营收';
+        let eqRate = NaN;
+        if(adRateBasis==='effective'){
+          // 占比(GMV) = 占比(有效) × r
+          eqRate = rateInput * r;
+        }else{
+          // 占比(有效) = 占比(GMV) ÷ r
+          eqRate = r>0 ? rateInput / r : NaN;
+        }
+        $('adRateEquivTarget').textContent = targetLabel;
+        $('adRateEquiv').textContent = isFinite(eqRate) ? pct(eqRate, 2) : '—';
+      })();
+      const VAT_in_ad_given = (adCostGiven) / (1 + serviceVATRate) * serviceVATRate; // 广告抵扣（价内还原）
+
+      let Profit = NaN;
+      if(adCostGiven > 0){
+        Profit = Rev
+          - (goodsCost + othersCost + commission + adCostGiven)
+          - (VAT_out - VAT_in_goods - VAT_in_comm - VAT_in_ad_given);
+      }
+
+      // 保本广告费（解 Profit=0；出货基准单口径）
+      const A = Rev
+        - (goodsCost + othersCost + commission)
+        - VAT_out
+        + VAT_in_goods + VAT_in_comm;
+      const adCostBreakEven = (1 + serviceVATRate) * A;
+      const adRateBreakEven = adCostBreakEven / Rev; // 有效营收口径
+      const ROIBreakEven = adRateBreakEven>0 ? 1 / adRateBreakEven : NaN;
+
+      // GMV-based metrics (platform ROI denominator = 售价)
+      const adRateBreakEvenGMV = sellingPrice > 0 ? adCostBreakEven / sellingPrice : NaN;
+      const ROIBreakEvenGMV = adRateBreakEvenGMV > 0 ? 1 / adRateBreakEvenGMV : NaN;
+
+      // Render KPI
+      $('kpiAdRate').textContent = pct(adRateBreakEven, 2);
+      $('kpiROI').textContent = isFinite(ROIBreakEven) ? fmt(ROIBreakEven, 2) : '—';
+      $('kpiProfit').textContent = isFinite(Profit) ? (Profit>=0?'+':'') + fmt(Profit, 2) + ' 元' : '—';
+      $('kpiProfit').className = 'value ' + (isFinite(Profit) ? (Profit>0?'good':(Profit<0?'bad':'')) : '');
+      const profitMargin = isFinite(Profit) && Rev>0 ? Profit/Rev : NaN;
+      $('kpiProfitMargin').textContent = isFinite(profitMargin) ? pct(profitMargin,2) : '—';
+
+      $('kpiAdRateGMV').textContent = pct(adRateBreakEvenGMV, 2);
+      $('kpiROIGMV').textContent = isFinite(ROIBreakEvenGMV) ? fmt(ROIBreakEvenGMV, 2) : '—';
+
+      // Details table
+      const rows = [
+        ['有效比例 r', pct(r,2), ''],
+        ['有效含税营收（售价 × r）', fmt(Rev), '元'],
+        ['GMV（含税售价）', fmt(sellingPrice), '元/单'],
+        ['— 口径提示：GMV 用于平台ROI分母', '', ''],
+        ['进货成本（可退×r，不可退×1）', fmt(goodsCost), '元'],
+        ['其它固定成本（发货即发生）', fmt(othersCost), '元'],
+        ['平台佣金（× r）', fmt(commission), '元'],
+        ['广告费（给定）', isFinite(adCostGiven)?fmt(adCostGiven):'—', '元'],
+        ['— 占比口径基数', adMode==='rate' ? `${adRateBaseLabel} = ${fmt(adRateBaseValue)}` : '—', ''],
+        ['销项税（价内）', fmt(VAT_out), '元'],
+        ['进货抵扣（VAT_in_goods）', fmt(VAT_in_goods), '元'],
+        ['佣金抵扣（VAT_in_comm）', fmt(VAT_in_comm), '元'],
+        ['广告抵扣（给定）', isFinite(Profit)?fmt(VAT_in_ad_given):'—', '元'],
+        ['A（用于解保本广告）', fmt(A), '元'],
+        ['保本广告费', fmt(adCostBreakEven), '元'],
+        ['保本广告占比（有效营收口径）', pct(adRateBreakEven,2), ''],
+        ['保本 ROI（有效营收口径）', isFinite(ROIBreakEven)?fmt(ROIBreakEven,2):'—', ''],
+        ['保本广告占比（GMV 口径）', pct(adRateBreakEvenGMV,2), ''],
+        ['保本 ROI（GMV 口径）', isFinite(ROIBreakEvenGMV)?fmt(ROIBreakEvenGMV,2):'—', '']
+      ];
+      const tbody = $('detailRows');
+      tbody.innerHTML = rows.map(([k,v,u])=>`<tr><td>${k}</td><td>${v}</td><td>${u}</td></tr>`).join('');
+    }
+
+    // Wire up
+
+    document.getElementById('calc').addEventListener('click', compute);
+    document.querySelectorAll('input').forEach(el=>{
+      el.addEventListener('input', ()=>{ clearTimeout(el._t); el._t=setTimeout(compute,120); });
+    });
+    document.querySelectorAll('input[name="goodsMode"]').forEach(el=> el.addEventListener('change', compute));
+    document.querySelectorAll('input[name="adRateBasis"]').forEach(el=> el.addEventListener('change', compute));
+    compute();
+    updateAdMode();
+  </script>
+</body>
+</html>
