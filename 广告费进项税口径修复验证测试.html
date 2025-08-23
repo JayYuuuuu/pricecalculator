@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>广告费进项税口径修复验证测试</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; margin: 40px; background: #f8fafc; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        h1 { color: #1e293b; margin-bottom: 10px; font-size: 24px; }
+        .test-section { margin-bottom: 30px; padding: 20px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .test-case { margin-bottom: 20px; padding: 15px; background: white; border-radius: 6px; border: 1px solid #cbd5e1; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        th, td { padding: 12px; text-align: left; border: 1px solid #cbd5e1; }
+        th { background: #f1f5f9; font-weight: 600; color: #334155; }
+        button { background: #3b82f6; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; }
+        button:hover { background: #2563eb; }
+        .result { margin-top: 15px; padding: 15px; border-radius: 6px; }
+        .success { background: #dcfce7; border: 1px solid #16a34a; color: #15803d; }
+        .error { background: #fef2f2; border: 1px solid #ef4444; color: #dc2626; }
+        .diff { background: #fef3c7; border: 1px solid #f59e0b; color: #d97706; }
+        .detail { font-size: 12px; margin-top: 8px; color: #64748b; }
+        .highlight { background: #fbbf24; padding: 2px 4px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>广告费进项税口径修复验证测试</h1>
+        <p>此测试页面用于验证广告费进项税抵扣口径修复的正确性，确保与 adCost 的分摊逻辑保持一致。</p>
+
+        <div class="test-section">
+            <h2>修复说明</h2>
+            <div style="background: #e0f2fe; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+                <strong>问题：</strong>广告费成本使用了 ÷E（有效销售率）的退货摊销口径，但广告费进项税抵扣却没有使用相同的 ÷E 口径。<br>
+                <strong>修复原则：</strong>任何被用 ÷E 摊到"每个有效成交"的支出，其对应的可抵扣进项税额也要用同一口径摊到"每个有效成交"。
+            </div>
+            <table>
+                <tr><th>函数</th><th>修复前</th><th>修复后</th></tr>
+                <tr>
+                    <td>calculateProfitCorrect</td>
+                    <td><code>(sellingPrice * adRate) * (SERVICE_VAT / (1 + SERVICE_VAT))</code></td>
+                    <td><code class="highlight">adCost * (SERVICE_VAT / (1 + SERVICE_VAT))</code></td>
+                </tr>
+                <tr>
+                    <td>calculateSalesCost</td>
+                    <td><code>(adCost / effectiveRate) * VAT_RATE</code></td>
+                    <td><code class="highlight">adCostEffective * (VAT_RATE / (1 + VAT_RATE))</code></td>
+                </tr>
+                <tr>
+                    <td>calculatePrices</td>
+                    <td colspan="2" style="text-align:center; color:#16a34a;">✓ 已经正确，无需修改</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="test-section">
+            <h2>测试用例</h2>
+            
+            <div class="test-case">
+                <h3>测试用例1：用户提供的验证数据</h3>
+                <table>
+                    <tr><th>参数</th><th>值</th><th>说明</th></tr>
+                    <tr><td>进货价（不含税）</td><td>40</td><td>costPrice</td></tr>
+                    <tr><td>开票成本比例</td><td>6%</td><td>inputTaxRate</td></tr>
+                    <tr><td>商品进项税率</td><td>13%</td><td>outputTaxRate</td></tr>
+                    <tr><td>含税售价</td><td>79.8</td><td>sellingPrice</td></tr>
+                    <tr><td>销项税率</td><td>13%</td><td>salesTaxRate</td></tr>
+                    <tr><td>平台佣金率</td><td>5.5%</td><td>platformRate</td></tr>
+                    <tr><td>广告费占比</td><td>20%</td><td>adRate</td></tr>
+                    <tr><td>物流费</td><td>3</td><td>shippingCost</td></tr>
+                    <tr><td>运费险</td><td>2</td><td>shippingInsurance</td></tr>
+                    <tr><td>其他成本</td><td>3</td><td>otherCost</td></tr>
+                    <tr><td>退货率</td><td>12%</td><td>returnRate</td></tr>
+                </table>
+                <div style="margin: 15px 0;">
+                    <strong>预期结果：</strong>
+                    <ul>
+                        <li>有效销售率 E = 0.88</li>
+                        <li>分摊后广告费 = (79.8 × 20%) ÷ 0.88 = 18.1364元</li>
+                        <li>广告费进项税 = 18.1364 × (6% ÷ (1+6%)) ≈ 1.0266元</li>
+                        <li>利润 ≈ 6.30元（vs 修复前6.18元）</li>
+                    </ul>
+                </div>
+                <button onclick="runTestCase1()">运行测试用例1</button>
+                <div id="testResult1"></div>
+            </div>
+
+            <div class="test-case">
+                <h3>测试用例2：高退货率场景</h3>
+                <table>
+                    <tr><th>参数</th><th>值</th><th>说明</th></tr>
+                    <tr><td>进货价（不含税）</td><td>50</td><td>costPrice</td></tr>
+                    <tr><td>开票成本比例</td><td>6%</td><td>inputTaxRate</td></tr>
+                    <tr><td>商品进项税率</td><td>13%</td><td>outputTaxRate</td></tr>
+                    <tr><td>含税售价</td><td>150</td><td>sellingPrice</td></tr>
+                    <tr><td>销项税率</td><td>13%</td><td>salesTaxRate</td></tr>
+                    <tr><td>平台佣金率</td><td>6%</td><td>platformRate</td></tr>
+                    <tr><td>广告费占比</td><td>15%</td><td>adRate</td></tr>
+                    <tr><td>物流费</td><td>5</td><td>shippingCost</td></tr>
+                    <tr><td>运费险</td><td>2</td><td>shippingInsurance</td></tr>
+                    <tr><td>其他成本</td><td>3</td><td>otherCost</td></tr>
+                    <tr><td>退货率</td><td>25%</td><td>returnRate（高退货率）</td></tr>
+                </table>
+                <button onclick="runTestCase2()">运行测试用例2</button>
+                <div id="testResult2"></div>
+            </div>
+
+            <div class="test-case">
+                <h3>测试用例3：低退货率场景</h3>
+                <table>
+                    <tr><th>参数</th><th>值</th><th>说明</th></tr>
+                    <tr><td>进货价（不含税）</td><td>80</td><td>costPrice</td></tr>
+                    <tr><td>开票成本比例</td><td>6%</td><td>inputTaxRate</td></tr>
+                    <tr><td>商品进项税率</td><td>13%</td><td>outputTaxRate</td></tr>
+                    <tr><td>含税售价</td><td>200</td><td>sellingPrice</td></tr>
+                    <tr><td>销项税率</td><td>13%</td><td>salesTaxRate</td></tr>
+                    <tr><td>平台佣金率</td><td>4%</td><td>platformRate</td></tr>
+                    <tr><td>广告费占比</td><td>12%</td><td>adRate</td></tr>
+                    <tr><td>物流费</td><td>8</td><td>shippingCost</td></tr>
+                    <tr><td>运费险</td><td>1</td><td>shippingInsurance</td></tr>
+                    <tr><td>其他成本</td><td>2</td><td>otherCost</td></tr>
+                    <tr><td>退货率</td><td>5%</td><td>returnRate（低退货率）</td></tr>
+                </table>
+                <button onclick="runTestCase3()">运行测试用例3</button>
+                <div id="testResult3"></div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>函数一致性验证</h2>
+            <p>验证三个核心函数在相同参数下的计算结果是否一致：</p>
+            <button onclick="runConsistencyTest()">运行一致性测试</button>
+            <div id="consistencyResult"></div>
+        </div>
+    </div>
+
+    <script src="js/calculator.js"></script>
+    <script>
+        // 辅助函数：格式化测试结果
+        function formatResult(resultDiv, success, title, details, expected = null, actual = null) {
+            const className = success ? 'success' : 'error';
+            let html = `<div class="result ${className}">
+                <strong>${success ? '✓' : '✗'} ${title}</strong>`;
+            
+            if (details) {
+                html += `<div class="detail">${details}</div>`;
+            }
+            
+            if (expected !== null && actual !== null) {
+                html += `<div class="detail">预期：${expected}</div>`;
+                html += `<div class="detail">实际：${actual}</div>`;
+                if (!success) {
+                    html += `<div class="detail">差异：${(Math.abs(actual - expected)).toFixed(4)}</div>`;
+                }
+            }
+            
+            html += '</div>';
+            document.getElementById(resultDiv).innerHTML = html;
+        }
+
+        // 测试用例1：用户提供的验证数据
+        function runTestCase1() {
+            try {
+                const params = {
+                    costPrice: 40,
+                    inputTaxRate: 0.06,
+                    outputTaxRate: 0.13,
+                    sellingPrice: 79.8,
+                    salesTaxRate: 0.13,
+                    platformRate: 0.055,
+                    adRate: 0.20,
+                    shippingCost: 3,
+                    shippingInsurance: 2,
+                    otherCost: 3,
+                    returnRate: 0.12
+                };
+
+                const result = calculateProfitCorrect(params);
+                
+                // 验证关键计算结果
+                const expectedE = 0.88;
+                const expectedAdCost = (79.8 * 0.20) / 0.88; // 18.1364
+                const expectedAdVAT = expectedAdCost * (0.06 / (1 + 0.06)); // 约1.0266
+                const expectedProfit = 6.30; // 用户提供的预期值
+
+                const actualE = result.breakdown.E;
+                const actualAdCost = result.breakdown.adCost;
+                const actualAdVAT = result.breakdown.inputVAT_ad;
+                const actualProfit = result.profit;
+
+                // 检查各项指标
+                const eMatches = Math.abs(actualE - expectedE) < 0.001;
+                const adCostMatches = Math.abs(actualAdCost - expectedAdCost) < 0.001;
+                const adVATMatches = Math.abs(actualAdVAT - expectedAdVAT) < 0.01;
+                const profitMatches = Math.abs(actualProfit - expectedProfit) < 0.15; // 允许小幅误差
+
+                const success = eMatches && adCostMatches && adVATMatches && profitMatches;
+
+                let details = `
+                    有效销售率 E: ${actualE.toFixed(4)} (预期: ${expectedE})<br>
+                    分摊后广告费: ${actualAdCost.toFixed(4)} (预期: ${expectedAdCost.toFixed(4)})<br>
+                    广告费进项税: ${actualAdVAT.toFixed(4)} (预期: ${expectedAdVAT.toFixed(4)})<br>
+                    利润: ${actualProfit.toFixed(2)} (预期: 约${expectedProfit})
+                `;
+
+                formatResult('testResult1', success, '测试用例1验证', details);
+
+            } catch (error) {
+                formatResult('testResult1', false, '测试用例1失败', `错误：${error.message}`);
+            }
+        }
+
+        // 测试用例2：高退货率场景
+        function runTestCase2() {
+            try {
+                const params = {
+                    costPrice: 50,
+                    inputTaxRate: 0.06,
+                    outputTaxRate: 0.13,
+                    sellingPrice: 150,
+                    salesTaxRate: 0.13,
+                    platformRate: 0.06,
+                    adRate: 0.15,
+                    shippingCost: 5,
+                    shippingInsurance: 2,
+                    otherCost: 3,
+                    returnRate: 0.25 // 25%退货率
+                };
+
+                const result = calculateProfitCorrect(params);
+                
+                const E = result.breakdown.E; // 0.75
+                const adCost = result.breakdown.adCost;
+                const expectedAdCost = (150 * 0.15) / 0.75; // 30
+                const adVAT = result.breakdown.inputVAT_ad;
+                const expectedAdVAT = expectedAdCost * (0.06 / (1 + 0.06));
+
+                const adCostMatches = Math.abs(adCost - expectedAdCost) < 0.001;
+                const adVATMatches = Math.abs(adVAT - expectedAdVAT) < 0.01;
+
+                const success = adCostMatches && adVATMatches;
+
+                let details = `
+                    有效销售率 E: ${E.toFixed(4)}<br>
+                    分摊后广告费: ${adCost.toFixed(4)} (预期: ${expectedAdCost.toFixed(4)})<br>
+                    广告费进项税: ${adVAT.toFixed(4)} (预期: ${expectedAdVAT.toFixed(4)})<br>
+                    利润: ${result.profit.toFixed(2)}
+                `;
+
+                formatResult('testResult2', success, '测试用例2验证（高退货率）', details);
+
+            } catch (error) {
+                formatResult('testResult2', false, '测试用例2失败', `错误：${error.message}`);
+            }
+        }
+
+        // 测试用例3：低退货率场景
+        function runTestCase3() {
+            try {
+                const params = {
+                    costPrice: 80,
+                    inputTaxRate: 0.06,
+                    outputTaxRate: 0.13,
+                    sellingPrice: 200,
+                    salesTaxRate: 0.13,
+                    platformRate: 0.04,
+                    adRate: 0.12,
+                    shippingCost: 8,
+                    shippingInsurance: 1,
+                    otherCost: 2,
+                    returnRate: 0.05 // 5%退货率
+                };
+
+                const result = calculateProfitCorrect(params);
+                
+                const E = result.breakdown.E; // 0.95
+                const adCost = result.breakdown.adCost;
+                const expectedAdCost = (200 * 0.12) / 0.95; // 约25.26
+                const adVAT = result.breakdown.inputVAT_ad;
+                const expectedAdVAT = expectedAdCost * (0.06 / (1 + 0.06));
+
+                const adCostMatches = Math.abs(adCost - expectedAdCost) < 0.001;
+                const adVATMatches = Math.abs(adVAT - expectedAdVAT) < 0.01;
+
+                const success = adCostMatches && adVATMatches && result.profit > 0;
+
+                let details = `
+                    有效销售率 E: ${E.toFixed(4)}<br>
+                    分摊后广告费: ${adCost.toFixed(4)} (预期: ${expectedAdCost.toFixed(4)})<br>
+                    广告费进项税: ${adVAT.toFixed(4)} (预期: ${expectedAdVAT.toFixed(4)})<br>
+                    利润: ${result.profit.toFixed(2)}
+                `;
+
+                formatResult('testResult3', success, '测试用例3验证（低退货率）', details);
+
+            } catch (error) {
+                formatResult('testResult3', false, '测试用例3失败', `错误：${error.message}`);
+            }
+        }
+
+        // 函数一致性验证
+        function runConsistencyTest() {
+            try {
+                // 使用相同参数测试不同函数
+                const testParams = {
+                    costPrice: 60,
+                    inputTaxRate: 0.06,
+                    outputTaxRate: 0.13,
+                    sellingPrice: 180,
+                    salesTaxRate: 0.13,
+                    platformRate: 0.05,
+                    adRate: 0.18,
+                    shippingCost: 6,
+                    shippingInsurance: 2,
+                    otherCost: 4,
+                    returnRate: 0.15
+                };
+
+                // 测试 calculateProfitCorrect
+                const profitResult = calculateProfitCorrect(testParams);
+
+                // 构造 calculateSalesCost 所需参数
+                const adCost = testParams.sellingPrice * testParams.adRate; // 32.4
+                const purchaseCost = {
+                    effectiveCost: testParams.costPrice * (1 + testParams.inputTaxRate),
+                    purchaseVAT: testParams.costPrice * testParams.outputTaxRate
+                };
+                const salesCostResult = calculateSalesCost(testParams, adCost, purchaseCost);
+
+                // 比较关键指标
+                const profitAdVAT = profitResult.breakdown.inputVAT_ad;
+                const salesAdVAT = salesCostResult.adVAT;
+
+                const vatsMatch = Math.abs(profitAdVAT - salesAdVAT) < 0.01;
+
+                let details = `
+                    calculateProfitCorrect 广告费进项税: ${profitAdVAT.toFixed(4)}<br>
+                    calculateSalesCost 广告费进项税: ${salesAdVAT.toFixed(4)}<br>
+                    差异: ${Math.abs(profitAdVAT - salesAdVAT).toFixed(4)}<br>
+                    口径一致性: ${vatsMatch ? '✓ 一致' : '✗ 不一致'}
+                `;
+
+                formatResult('consistencyResult', vatsMatch, '函数一致性验证', details);
+
+            } catch (error) {
+                formatResult('consistencyResult', false, '一致性测试失败', `错误：${error.message}`);
+            }
+        }
+
+        // 页面加载完成后自动运行测试用例1
+        window.addEventListener('load', function() {
+            setTimeout(runTestCase1, 500);
+        });
+    </script>
+</body>
+</html>
