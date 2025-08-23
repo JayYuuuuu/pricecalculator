@@ -1,3 +1,89 @@
+// 服务类（广告/平台）增值税税率：6%（可抵扣）
+const SERVICE_VAT = 0.06;
+
+/** 百分比参数容错：既支持 0.13 也支持 13 */
+function pct(x) {
+  if (x == null || isNaN(x)) return 0;
+  return x > 1 ? x / 100 : x;
+}
+
+/**
+ * 利润（每个"有效成交"）计算；
+ * 仅使用《系统参数字段对照表》里的字段名。
+ *
+ * @param {{
+ *   costPrice:number, inputTaxRate:number, outputTaxRate:number,
+ *   sellingPrice:number, salesTaxRate:number, platformRate:number, adRate:number,
+ *   shippingCost:number, shippingInsurance:number, otherCost:number,
+ *   returnRate:number
+ * }} p
+ * @returns {{
+ *   profit:number,
+ *   breakdown:{
+ *     E:number, goodsCost:number, fixCost:number, adCost:number, platformCost:number,
+ *     outputVAT:number, inputVAT_goods:number, inputVAT_ad:number, inputVAT_platform:number,
+ *     inputVAT_total:number, netTax:number, totalCost:number
+ *   }
+ * }}
+ */
+function calculateProfitCorrect(p) {
+  // 1) 读取并标准化百分比
+  const costPrice          = +p.costPrice;
+  const inputTaxRate       = pct(p.inputTaxRate);
+  const outputTaxRate      = pct(p.outputTaxRate);
+  const sellingPrice       = +p.sellingPrice;
+  const salesTaxRate       = pct(p.salesTaxRate);
+  const platformRate       = pct(p.platformRate);
+  const adRate             = pct(p.adRate);
+  const shippingCost       = +p.shippingCost;
+  const shippingInsurance  = +p.shippingInsurance;
+  const otherCost          = +p.otherCost;
+  const returnRate         = pct(p.returnRate);
+
+  // 2) 有效率（防守）
+  const E = Math.max(0, Math.min(1, 1 - returnRate));
+  if (E === 0) {
+    return {
+      profit: -Infinity, // 无法成交
+      breakdown: { E, goodsCost:0, fixCost:0, adCost:0, platformCost:0,
+        outputVAT:0, inputVAT_goods:0, inputVAT_ad:0, inputVAT_platform:0,
+        inputVAT_total:0, netTax:0, totalCost:0 }
+    };
+  }
+
+  // 3) 成本（不含税口径）与摊销
+  const goodsCost  = costPrice * (1 + inputTaxRate); // 进货净成本（不再减进项税）
+  const fixCost    = (shippingCost + shippingInsurance + otherCost) / E; // 随发货摊到有效单
+  const adCost     = (sellingPrice * adRate) / E; // 广告费也按发货摊到有效单（含税金额，见税金处理）
+  const platformCost = sellingPrice * platformRate; // 平台佣金按成交计（含税金额）
+
+  // 4) 税金（价内口径）
+  // 销项税额：从含税售价拆出的税额
+  const outputVAT = sellingPrice * (salesTaxRate / (1 + salesTaxRate));
+  // 进项税抵扣（金额）：商品 + 广告 + 平台
+  const inputVAT_goods    = costPrice * outputTaxRate; // 因 costPrice 为不含税
+  const inputVAT_ad       = (sellingPrice * adRate) * (SERVICE_VAT / (1 + SERVICE_VAT));
+  const inputVAT_platform = platformCost * (SERVICE_VAT / (1 + SERVICE_VAT));
+  const inputVAT_total    = inputVAT_goods + inputVAT_ad + inputVAT_platform;
+
+  const netTax = outputVAT - inputVAT_total; // 税负净额（可能为负，表示抵扣富余）
+
+  // 5) 显性成本合计（注意：adCost/platformCost为含税支出）
+  const totalCost = goodsCost + fixCost + adCost + platformCost;
+
+  // 6) 利润（每个有效成交）
+  const profit = sellingPrice - totalCost - netTax;
+
+  return {
+    profit,
+    breakdown: {
+      E, goodsCost, fixCost, adCost, platformCost,
+      outputVAT, inputVAT_goods, inputVAT_ad, inputVAT_platform,
+      inputVAT_total, netTax, totalCost
+    }
+  };
+}
+
 // 价格指标计算过程浮窗函数（主页面价格指标专用）
 function showPriceMetricTooltip(event, metricType) {
     // 移除已存在的浮层
@@ -184,80 +270,49 @@ function hideCatalogTooltip() {
 	}
 }
 
-// 统一的利润计算函数（与利润率计算tab完全一致）
+// 统一的利润计算函数（基于正确算法）
 function calculateProfitUnified(inputs) {
     try {
-        const {
-            costPrice,           // 进货价（不含税）
-            actualPrice,         // 实际售价（含税）
-            inputTaxRate,        // 开票成本比例
-            outputTaxRate,       // 商品进项税率
-            salesTaxRate,        // 销项税率
-            platformRate,        // 平台佣金比例
-            shippingCost,        // 物流费
-            shippingInsurance,   // 运费险
-            adRate,              // 广告费占比
-            otherCost,           // 其他成本
-            returnRate           // 退货率
-        } = inputs;
-
-        // 计算进货成本（与利润率计算tab完全一致）
-        const invoiceCost = costPrice * inputTaxRate; // 开票成本
-        const totalPurchaseCost = costPrice + invoiceCost; // 总进货成本（实际支付给供应商的金额）
-        const purchaseVAT = costPrice * outputTaxRate; // 进项税额（用于抵减销项税）
-        const effectiveCost = totalPurchaseCost; // 实际成本就是进货价+开票费用
-
-        // 计算有效销售率
-        const effectiveRate = 1 - returnRate;
-
-        // 计算销售相关费用（考虑退货率，与利润率计算tab完全一致）
-        const platformFee = actualPrice * platformRate; // 平台佣金（可退回）
-        const adCost = actualPrice * adRate; // 广告费（不可退回，需分摊）
-        const adCostEffective = adCost / effectiveRate; // 分摊后的广告费
-        const adVAT = adCostEffective * 0.06 / 1.06; // 广告费可抵扣进项税（6%）：从含税金额中剥离税额
+        // 参数映射：将系统字段映射到标准字段
+        const params = {
+            costPrice: inputs.costPrice,
+            inputTaxRate: inputs.inputTaxRate, 
+            outputTaxRate: inputs.outputTaxRate,
+            sellingPrice: inputs.actualPrice, // 注意字段映射
+            salesTaxRate: inputs.salesTaxRate,
+            platformRate: inputs.platformRate,
+            adRate: inputs.adRate,
+            shippingCost: inputs.shippingCost,
+            shippingInsurance: inputs.shippingInsurance,
+            otherCost: inputs.otherCost,
+            returnRate: inputs.returnRate
+        };
         
-        // 运营成本（不可退回，需分摊）
-        const operationalCostBase = shippingCost + shippingInsurance + otherCost;
-        const operationalCost = operationalCostBase / effectiveRate;
-
-        // 计算销项税
-        const netPrice = actualPrice / (1 + salesTaxRate); // 不含税售价
-        const outputVAT = netPrice * salesTaxRate; // 销项税额
-
-        // 计算总可抵扣进项税（与利润率计算tab完全一致）
-        const totalVATDeduction = purchaseVAT + adVAT + (platformFee * 0.06 / 1.06); // 商品+广告+平台佣金的进项税：平台佣金从含税金额中剥离税额
-        const actualVAT = outputVAT - totalVATDeduction; // 实际应缴税额
-
-        // 计算总成本（分别计算各项不可退回成本的分摊，与利润率计算tab完全一致）
-        const shippingCostEffective = shippingCost / effectiveRate;  // 物流费分摊
-        const insuranceCostEffective = shippingInsurance / effectiveRate;  // 运费险分摊
-        const otherCostEffective = otherCost / effectiveRate;  // 其他成本分摊
-        const totalCost = effectiveCost + platformFee + adCostEffective + shippingCostEffective + insuranceCostEffective + otherCostEffective + actualVAT;
-
-        // 计算利润
-        const profit = actualPrice - totalCost;
-        const profitRate = profit / actualPrice;
-
+        // 调用正确的利润计算函数
+        const result = calculateProfitCorrect(params);
+        
+        // 为了兼容现有代码，转换返回格式
+        const fixedCostTotal = inputs.shippingCost + inputs.shippingInsurance + inputs.otherCost;
         return {
-            profit,
-            profitRate,
-            totalCost,
-            actualVAT,
-            totalVATDeduction,
-            purchaseVAT,
-            adVAT,
-            platformVAT: platformFee * 0.06 / 1.06,
-            effectiveCost,
-            platformFee,
-            adCostEffective,
-            shippingCostEffective,
-            insuranceCostEffective,
-            otherCostEffective,
-            netPrice,
-            outputVAT
+            profit: result.profit,
+            profitRate: result.profit / inputs.actualPrice,
+            totalCost: result.breakdown.totalCost,
+            actualVAT: result.breakdown.netTax,
+            totalVATDeduction: result.breakdown.inputVAT_total,
+            purchaseVAT: result.breakdown.inputVAT_goods,
+            adVAT: result.breakdown.inputVAT_ad,
+            platformVAT: result.breakdown.inputVAT_platform,
+            effectiveCost: result.breakdown.goodsCost,
+            platformFee: result.breakdown.platformCost,
+            adCostEffective: result.breakdown.adCost,
+            shippingCostEffective: fixedCostTotal > 0 ? result.breakdown.fixCost * inputs.shippingCost / fixedCostTotal : 0,
+            insuranceCostEffective: fixedCostTotal > 0 ? result.breakdown.fixCost * inputs.shippingInsurance / fixedCostTotal : 0,
+            otherCostEffective: fixedCostTotal > 0 ? result.breakdown.fixCost * inputs.otherCost / fixedCostTotal : 0,
+            netPrice: inputs.actualPrice / (1 + inputs.salesTaxRate),
+            outputVAT: result.breakdown.outputVAT
         };
     } catch (error) {
-        console.error('统一利润计算函数错误:', error);
+        console.error('正确利润计算函数错误:', error);
         return {
             profit: NaN,
             profitRate: NaN,

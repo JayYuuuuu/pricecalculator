@@ -82,7 +82,90 @@ function pct(x) {
 }
 ```
 
-### 3.2 标准参数映射
+### 3.2 标准利润计算函数（用户提供的正确版本）
+
+这是用户提供的正确利润计算算法，需要完全替换系统当前的实现：
+
+```javascript
+/**
+ * 利润（每个"有效成交"）计算；
+ * 仅使用《系统参数字段对照表》里的字段名。
+ *
+ * @param {{
+ *   costPrice:number, inputTaxRate:number, outputTaxRate:number,
+ *   sellingPrice:number, salesTaxRate:number, platformRate:number, adRate:number,
+ *   shippingCost:number, shippingInsurance:number, otherCost:number,
+ *   returnRate:number
+ * }} p
+ * @returns {{
+ *   profit:number,
+ *   breakdown:{
+ *     E:number, goodsCost:number, fixCost:number, adCost:number, platformCost:number,
+ *     outputVAT:number, inputVAT_goods:number, inputVAT_ad:number, inputVAT_platform:number,
+ *     inputVAT_total:number, netTax:number, totalCost:number
+ *   }
+ * }}
+ */
+function calculateProfit(p) {
+  // 1) 读取并标准化百分比
+  const costPrice          = +p.costPrice;
+  const inputTaxRate       = pct(p.inputTaxRate);
+  const outputTaxRate      = pct(p.outputTaxRate);
+  const sellingPrice       = +p.sellingPrice;
+  const salesTaxRate       = pct(p.salesTaxRate);
+  const platformRate       = pct(p.platformRate);
+  const adRate             = pct(p.adRate);
+  const shippingCost       = +p.shippingCost;
+  const shippingInsurance  = +p.shippingInsurance;
+  const otherCost          = +p.otherCost;
+  const returnRate         = pct(p.returnRate);
+
+  // 2) 有效率（防守）
+  const E = Math.max(0, Math.min(1, 1 - returnRate));
+  if (E === 0) {
+    return {
+      profit: -Infinity, // 无法成交
+      breakdown: { E, goodsCost:0, fixCost:0, adCost:0, platformCost:0,
+        outputVAT:0, inputVAT_goods:0, inputVAT_ad:0, inputVAT_platform:0,
+        inputVAT_total:0, netTax:0, totalCost:0 }
+    };
+  }
+
+  // 3) 成本（不含税口径）与摊销
+  const goodsCost  = costPrice * (1 + inputTaxRate); // 进货净成本（不再减进项税）
+  const fixCost    = (shippingCost + shippingInsurance + otherCost) / E; // 随发货摊到有效单
+  const adCost     = (sellingPrice * adRate) / E; // 广告费也按发货摊到有效单（含税金额，见税金处理）
+  const platformCost = sellingPrice * platformRate; // 平台佣金按成交计（含税金额）
+
+  // 4) 税金（价内口径）
+  // 销项税额：从含税售价拆出的税额
+  const outputVAT = sellingPrice * (salesTaxRate / (1 + salesTaxRate));
+  // 进项税抵扣（金额）：商品 + 广告 + 平台
+  const inputVAT_goods    = costPrice * outputTaxRate; // 因 costPrice 为不含税
+  const inputVAT_ad       = (sellingPrice * adRate) * (SERVICE_VAT / (1 + SERVICE_VAT));
+  const inputVAT_platform = platformCost * (SERVICE_VAT / (1 + SERVICE_VAT));
+  const inputVAT_total    = inputVAT_goods + inputVAT_ad + inputVAT_platform;
+
+  const netTax = outputVAT - inputVAT_total; // 税负净额（可能为负，表示抵扣富余）
+
+  // 5) 显性成本合计（注意：adCost/platformCost为含税支出）
+  const totalCost = goodsCost + fixCost + adCost + platformCost;
+
+  // 6) 利润（每个有效成交）
+  const profit = sellingPrice - totalCost - netTax;
+
+  return {
+    profit,
+    breakdown: {
+      E, goodsCost, fixCost, adCost, platformCost,
+      outputVAT, inputVAT_goods, inputVAT_ad, inputVAT_platform,
+      inputVAT_total, netTax, totalCost
+    }
+  };
+}
+```
+
+### 3.3 标准参数映射
 
 #### 输入参数标准化
 | 正确算法字段 | 系统字段 | 说明 |
@@ -99,7 +182,54 @@ function pct(x) {
 | `otherCost` | `otherCost` / `profitOtherCost` | 其他成本 |
 | `returnRate` | `returnRate` / `profitReturnRate` | 退货率 |
 
-### 3.3 核心计算逻辑
+### 3.4 核心计算逻辑对比分析
+
+#### 当前系统 vs 正确算法的关键差异
+
+**差异1：进货成本处理**
+```javascript
+// 当前系统（错误）
+const invoiceCost = costPrice * inputTaxRate;
+const totalPurchaseCost = costPrice + invoiceCost;
+const effectiveCost = totalPurchaseCost; // 混乱的变量命名
+
+// 正确算法（用户提供）
+const goodsCost = costPrice * (1 + inputTaxRate); // 明确的进货净成本
+```
+
+**差异2：成本分摊逻辑**
+```javascript
+// 当前系统（不规范）
+const operationalCost = operationalCostBase / effectiveRate;
+const adCostEffective = adCost / effectiveRate;
+
+// 正确算法（规范）
+const fixCost = (shippingCost + shippingInsurance + otherCost) / E;
+const adCost = (sellingPrice * adRate) / E;
+```
+
+**差异3：税金计算方式**
+```javascript
+// 当前系统（复杂且易错）
+const netPrice = actualPrice / (1 + salesTaxRate);
+const outputVAT = netPrice * salesTaxRate;
+const adVAT = adCostEffective * 0.06 / 1.06;
+
+// 正确算法（简洁准确）
+const outputVAT = sellingPrice * (salesTaxRate / (1 + salesTaxRate));
+const inputVAT_ad = (sellingPrice * adRate) * (SERVICE_VAT / (1 + SERVICE_VAT));
+```
+
+**差异4：最终利润计算**
+```javascript
+// 当前系统（混乱的成本累加）
+const totalCost = effectiveCost + platformFee + adCostEffective + /* 各种分摊成本 */ + actualVAT;
+const profit = actualPrice - totalCost;
+
+// 正确算法（清晰的逻辑）
+const totalCost = goodsCost + fixCost + adCost + platformCost;
+const profit = sellingPrice - totalCost - netTax;
+```
 
 #### 第一步：参数标准化与有效率计算
 ```javascript
@@ -143,7 +273,173 @@ const profit = sellingPrice - totalCost - netTax;
 
 ## 4. 实现方案
 
-### 4.1 核心函数重构
+### 4.1 核心函数替换计划
+
+#### 第一步：添加正确的利润计算函数
+
+首先在`js/calculator.js`中添加用户提供的正确利润计算函数：
+
+```javascript
+// 服务类（广告/平台）增值税税率：6%（可抵扣）
+const SERVICE_VAT = 0.06;
+
+/** 百分比参数容错：既支持 0.13 也支持 13 */
+function pct(x) {
+  if (x == null || isNaN(x)) return 0;
+  return x > 1 ? x / 100 : x;
+}
+
+/**
+ * 正确的利润计算函数（用户提供版本）
+ * 仅使用《系统参数字段对照表》里的字段名。
+ */
+function calculateProfitCorrect(p) {
+  // 1) 读取并标准化百分比
+  const costPrice          = +p.costPrice;
+  const inputTaxRate       = pct(p.inputTaxRate);
+  const outputTaxRate      = pct(p.outputTaxRate);
+  const sellingPrice       = +p.sellingPrice;
+  const salesTaxRate       = pct(p.salesTaxRate);
+  const platformRate       = pct(p.platformRate);
+  const adRate             = pct(p.adRate);
+  const shippingCost       = +p.shippingCost;
+  const shippingInsurance  = +p.shippingInsurance;
+  const otherCost          = +p.otherCost;
+  const returnRate         = pct(p.returnRate);
+
+  // 2) 有效率（防守）
+  const E = Math.max(0, Math.min(1, 1 - returnRate));
+  if (E === 0) {
+    return {
+      profit: -Infinity, // 无法成交
+      breakdown: { E, goodsCost:0, fixCost:0, adCost:0, platformCost:0,
+        outputVAT:0, inputVAT_goods:0, inputVAT_ad:0, inputVAT_platform:0,
+        inputVAT_total:0, netTax:0, totalCost:0 }
+    };
+  }
+
+  // 3) 成本（不含税口径）与摊销
+  const goodsCost  = costPrice * (1 + inputTaxRate); // 进货净成本（不再减进项税）
+  const fixCost    = (shippingCost + shippingInsurance + otherCost) / E; // 随发货摊到有效单
+  const adCost     = (sellingPrice * adRate) / E; // 广告费也按发货摊到有效单
+  const platformCost = sellingPrice * platformRate; // 平台佣金按成交计
+
+  // 4) 税金（价内口径）
+  const outputVAT = sellingPrice * (salesTaxRate / (1 + salesTaxRate));
+  const inputVAT_goods    = costPrice * outputTaxRate; // 因 costPrice 为不含税
+  const inputVAT_ad       = (sellingPrice * adRate) * (SERVICE_VAT / (1 + SERVICE_VAT));
+  const inputVAT_platform = platformCost * (SERVICE_VAT / (1 + SERVICE_VAT));
+  const inputVAT_total    = inputVAT_goods + inputVAT_ad + inputVAT_platform;
+  const netTax = outputVAT - inputVAT_total; // 税负净额
+
+  // 5) 显性成本合计（注意：adCost/platformCost为含税支出）
+  const totalCost = goodsCost + fixCost + adCost + platformCost;
+
+  // 6) 利润（每个有效成交）
+  const profit = sellingPrice - totalCost - netTax;
+
+  return {
+    profit,
+    breakdown: {
+      E, goodsCost, fixCost, adCost, platformCost,
+      outputVAT, inputVAT_goods, inputVAT_ad, inputVAT_platform,
+      inputVAT_total, netTax, totalCost
+    }
+  };
+}
+```
+
+#### 第二步：替换calculateProfitUnified函数
+
+将现有的`calculateProfitUnified`函数（约187-279行）完全替换：
+
+```javascript
+// 新的统一利润计算函数（基于正确算法）
+function calculateProfitUnified(inputs) {
+    try {
+        // 参数映射：将系统字段映射到标准字段
+        const params = {
+            costPrice: inputs.costPrice,
+            inputTaxRate: inputs.inputTaxRate, 
+            outputTaxRate: inputs.outputTaxRate,
+            sellingPrice: inputs.actualPrice, // 注意字段映射
+            salesTaxRate: inputs.salesTaxRate,
+            platformRate: inputs.platformRate,
+            adRate: inputs.adRate,
+            shippingCost: inputs.shippingCost,
+            shippingInsurance: inputs.shippingInsurance,
+            otherCost: inputs.otherCost,
+            returnRate: inputs.returnRate
+        };
+        
+        // 调用正确的利润计算函数
+        const result = calculateProfitCorrect(params);
+        
+        // 为了兼容现有代码，转换返回格式
+        return {
+            profit: result.profit,
+            profitRate: result.profit / inputs.actualPrice,
+            totalCost: result.breakdown.totalCost,
+            actualVAT: result.breakdown.netTax,
+            totalVATDeduction: result.breakdown.inputVAT_total,
+            purchaseVAT: result.breakdown.inputVAT_goods,
+            adVAT: result.breakdown.inputVAT_ad,
+            platformVAT: result.breakdown.inputVAT_platform,
+            effectiveCost: result.breakdown.goodsCost,
+            platformFee: result.breakdown.platformCost,
+            adCostEffective: result.breakdown.adCost,
+            shippingCostEffective: result.breakdown.fixCost * inputs.shippingCost / (inputs.shippingCost + inputs.shippingInsurance + inputs.otherCost),
+            insuranceCostEffective: result.breakdown.fixCost * inputs.shippingInsurance / (inputs.shippingCost + inputs.shippingInsurance + inputs.otherCost),
+            otherCostEffective: result.breakdown.fixCost * inputs.otherCost / (inputs.shippingCost + inputs.shippingInsurance + inputs.otherCost),
+            netPrice: inputs.actualPrice / (1 + inputs.salesTaxRate),
+            outputVAT: result.breakdown.outputVAT
+        };
+    } catch (error) {
+        console.error('正确利润计算函数错误:', error);
+        return {
+            profit: NaN,
+            profitRate: NaN,
+            totalCost: NaN,
+            actualVAT: NaN
+        };
+    }
+}
+```
+
+#### 第三步：更新主calculateProfit函数
+
+修改主利润计算函数（约459行开始）以使用正确的算法：
+
+```javascript
+function calculateProfit() {
+    try {
+        // 获取基础输入（保持现有逻辑）
+        const inputs = {
+            costPrice: validateInput(parseFloat(document.getElementById('profitCostPrice').value), 0.01, 1000000, "进货价"),
+            actualPrice: validateInput(parseFloat(document.getElementById('actualPrice').value), 0.01, 1000000, "实际售价"),
+            inputTaxRate: validateInput(parseFloat(document.getElementById('profitInputTaxRate').value), 0, 100, "开票成本") / 100,
+            outputTaxRate: validateInput(parseFloat(document.getElementById('profitOutputTaxRate').value), 0, 100, "商品进项税率") / 100,
+            salesTaxRate: validateInput(parseFloat(document.getElementById('profitSalesTaxRate').value), 0, 100, "销项税率") / 100,
+            platformRate: validateInput(parseFloat(document.getElementById('profitPlatformRate').value), 0, 100, "平台抽佣比例") / 100,
+            shippingCost: validateInput(parseFloat(document.getElementById('profitShippingCost').value), 0, 10000, "物流费"),
+            shippingInsurance: validateInput(parseFloat(document.getElementById('profitShippingInsurance').value), 0, 100, "运费险"),
+            adRate: validateInput(parseFloat(document.getElementById('profitAdRate').value), 0, 100, "全店付费占比") / 100,
+            otherCost: validateInput(parseFloat(document.getElementById('profitOtherCost').value), 0, 10000, "其他成本"),
+            returnRate: validateInput(parseFloat(document.getElementById('profitReturnRate').value), 0, 100, "退货率") / 100
+        };
+
+        // 使用正确的利润计算函数
+        const result = calculateProfitUnified(inputs);
+        
+        // 其余UI更新逻辑保持不变...
+        // ...
+    } catch (error) {
+        document.getElementById('result').innerHTML = `
+            <div class="error">${error.message}</div>
+        `;
+    }
+}
+```
 
 #### 重构calculateProfit函数
 ```mermaid
