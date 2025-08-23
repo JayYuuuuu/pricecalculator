@@ -270,6 +270,48 @@ function hideCatalogTooltip() {
 	}
 }
 
+// 全局tooltip函数（用于到手价推演表格）
+function showTooltip(event, text) {
+	// 移除已存在的浮层
+	hideTooltip();
+	
+	// 创建浮层元素
+	const tooltip = document.createElement('div');
+	tooltip.id = 'global-tooltip';
+	Object.assign(tooltip.style, {
+		position: 'fixed',
+		zIndex: '10001',
+		padding: '8px 10px',
+		borderRadius: '8px',
+		background: 'rgba(17,24,39,0.92)',
+		color: '#fff',
+		fontSize: '12px',
+		lineHeight: '1.4',
+		boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+		pointerEvents: 'none',
+		whiteSpace: 'pre',
+		transition: 'opacity .08s ease',
+		opacity: '1',
+		maxWidth: '360px'
+	});
+	tooltip.textContent = text;
+	
+	// 添加到页面
+	document.body.appendChild(tooltip);
+	
+	// 基于鼠标位置定位浮层
+	const offset = 12;
+	tooltip.style.left = `${event.clientX + offset}px`;
+	tooltip.style.top = `${event.clientY + offset}px`;
+}
+
+function hideTooltip() {
+	const tooltip = document.getElementById('global-tooltip');
+	if (tooltip) {
+		tooltip.remove();
+	}
+}
+
 // 统一的利润计算函数（基于正确算法）
 function calculateProfitUnified(inputs) {
     try {
@@ -1088,65 +1130,75 @@ function calculateSalesCost(inputs, adCost, purchaseCost) {
     };
 }
 
-// 计算最终价格和相关费用
+/**
+ * 计算最终价格和相关费用 - 使用正确的利润线性函数模型
+ * 
+ * 基于正确的数学推导：profit(P) = A×P - K₀
+ * 其中：
+ * A = 1 - α - β/E - t/(1+t) + v/(1+v)(α+β)
+ * K₀ = C_goods + C_fix - VAT_in,goods
+ * 
+ * @param {{effectiveCost:number, purchaseVAT:number}} purchaseCost 进货成本结构
+ * @param {{effectiveRate:number}} salesCost 销售成本结构 
+ * @param {{costPrice:number, inputTaxRate:number, outputTaxRate:number, salesTaxRate:number, platformRate:number, adRate:number, targetProfitRate:number, shippingCost:number, shippingInsurance:number, otherCost:number}} inputs 输入参数
+ * @returns {{finalPrice:number, netPrice:number, platformFee:number, outputVAT:number, actualVAT:number, profit:number, profitRate:string, adCost:number, adVAT:number, platformVAT:number, totalVATDeduction:number, A:number, K0:number, feasible:boolean}} 计算结果
+ */
 function calculatePrices(purchaseCost, salesCost, inputs) {
-    // 1. 计算固定成本（考虑退货率）
-    // 按新规则：仅对"不可退回"的固定成本（物流、运费险、其他）按有效销售率分摊
-    // 进货成本C不随退货率分摊，原因：退货后商品可回收再售，成本不被损耗
-    const fixedCosts = (inputs.shippingCost + inputs.shippingInsurance + inputs.otherCost) / salesCost.effectiveRate;
+    // 1. 定义中间量（使用正确的字段映射）
+    const E = salesCost.effectiveRate; // 有效率 = 1 - returnRate
+    const C_goods = purchaseCost.effectiveCost; // 进货净成本 = costPrice × (1 + inputTaxRate)
+    const C_fix = (inputs.shippingCost + inputs.shippingInsurance + inputs.otherCost) / E; // 固定成本摊到有效单
+    const VAT_in_goods = purchaseCost.purchaseVAT; // 商品进项税额（可抵扣）
     
-    // 2. 利润率按定义：(最终售价-所有成本和税费)/最终售价 = 目标利润率
-    // 将基于最终价计提的销项税等比例项换算为"最终价的占比"
-    const VAT_RATE = 0.06; // 现代服务业增值税率6%
-    const taxFactorOnFinal = inputs.salesTaxRate / (1 + inputs.salesTaxRate); // 销项税占最终售价比例
-    const adFactorEffective = inputs.adRate / salesCost.effectiveRate;       // 广告费分摊（不可退回）
-    // 修正：广告费进项税抵扣基于不含税金额计算
-    const adVatCreditFactor = (adFactorEffective / (1 + VAT_RATE)) * VAT_RATE;  // 不含税广告费 × 进项税率
-    // 修正：平台佣金进项税抵扣基于不含税金额计算  
-    const platformVatCreditFactor = (inputs.platformRate / (1 + VAT_RATE)) * VAT_RATE; // 不含税平台佣金 × 进项税率
-    const profitFactorEffective = inputs.targetProfitRate;                   // 目标利润率按最终售价口径，不随退货分摊
+    // 2. 定义系数和税率
+    const α = inputs.platformRate; // 平台佣金率
+    const β = inputs.adRate; // 广告费率
+    const t = inputs.salesTaxRate; // 销项税率
+    const v = 0.06; // 服务业税率（广告/平台，可抵扣）
+    const m = inputs.targetProfitRate; // 目标利润率
     
-    // 分子：C（进货成本）+ F_不可退回/(1-R)
-    // 修复：移除进项税重复抵扣问题。
-    // effectiveCost已经是实际支付成本（不含税进价+开票费用），不应再减去进项税
-    // 进项税抵扣在税费计算环节统一处理，避免在成本计算中重复抵扣
-    const numeratorFinal = purchaseCost.effectiveCost + fixedCosts;
-    // 分母：1 - 平台费 - 税占比 - 目标利润率 - 广告费分摊占比 + 广告费可抵扣进项税占比 + 平台佣金进项税抵扣占比
-    const denominatorFinal = 1 - inputs.platformRate - taxFactorOnFinal - inputs.targetProfitRate - adFactorEffective + adVatCreditFactor + platformVatCreditFactor;
+    // 3. 计算系数A（每一元售价能留下的净贡献）
+    const A = 1 - α - β/E - t/(1+t) + v/(1+v)*(α+β);
     
-    // 3. 计算含税售价、及不含税净价
-    const finalPrice = numeratorFinal / denominatorFinal;
-    const netPrice = finalPrice / (1 + inputs.salesTaxRate);
+    // 4. 计算常数K₀（净成本减去可抵扣的商品进项税额）
+    const K0 = C_goods + C_fix - VAT_in_goods;
     
-    // 4. 计算各项费用
-    const platformFee = finalPrice * inputs.platformRate;
-    const adCost = finalPrice * inputs.adRate;
-    const outputVAT = netPrice * inputs.salesTaxRate;
-
-    // 5. 计算广告费进项税（广告费为可抵扣6%，且为不可退回成本，需按(1-R)分摊）
-    // 修正：进项税抵扣基于不含税金额计算
-    const adCostNet = (adCost / salesCost.effectiveRate) / (1 + VAT_RATE); // 不含税广告费
-    const adVAT = adCostNet * VAT_RATE; // 进项税抵扣 = 不含税金额 × 进项税率
-
-    // 6. 计算实际税负（销项税 - 进项税）
-    // 实缴增值税口径：销项税 - (商品进项税 + 广告费进项税 + 平台佣金进项税)
-    // 修正：平台佣金进项税抵扣基于不含税金额计算
-    const platformFeeNet = platformFee / (1 + VAT_RATE); // 不含税平台佣金
-    const platformVAT = platformFeeNet * VAT_RATE; // 平台佣金进项税抵扣
-    const totalVATDeduction = purchaseCost.purchaseVAT
-        + adVAT
-        + platformVAT;
+    // 5. 验证可行性条件
+    if (A - m <= 0) {
+        throw new Error(`参数组合导致无解：A-m = ${(A-m).toFixed(4)} ≤ 0。请降低目标利润率或调整其他参数。`);
+    }
+    
+    // 6. 计算最终含税售价
+    const finalPrice = K0 / (A - m);
+    
+    // 7. 基于最终售价计算各项费用
+    const netPrice = finalPrice / (1 + t); // 不含税净价
+    const platformFee = finalPrice * α; // 平台佣金
+    const adCost = finalPrice * β; // 广告费
+    const outputVAT = netPrice * t; // 销项税
+    
+    // 8. 计算进项税抵扣明细
+    // 广告费进项税抵扣（基于不含税金额）
+    const adCostEffective = adCost / E; // 分摊后广告费
+    const adCostNet = adCostEffective / (1 + v); // 不含税广告费
+    const adVAT = adCostNet * v; // 广告费进项税抵扣
+    
+    // 平台佣金进项税抵扣（基于不含税金额）
+    const platformFeeNet = platformFee / (1 + v); // 不含税平台佣金
+    const platformVAT = platformFeeNet * v; // 平台佣金进项税抵扣
+    
+    // 总进项税抵扣
+    const totalVATDeduction = VAT_in_goods + adVAT + platformVAT;
+    
+    // 实际缴纳增值税
     const actualVAT = outputVAT - totalVATDeduction;
-
-    // 7. 计算实际利润（收入减去所有成本和费用）
-    const totalCost = purchaseCost.effectiveCost + platformFee + (adCost / salesCost.effectiveRate) + fixedCosts + actualVAT;
+    
+    // 9. 验证利润计算（用于调试）
+    const totalCost = C_goods + C_fix + platformFee + adCostEffective + actualVAT;
     const profit = finalPrice - totalCost;
-    // 8. 计算"有效成本"用于结果展示（不参与联立，便于理解口径）
-    // 有效成本 = C（进货成本） + F_不可退回/(1-R)
-    // 其中 F_不可退回 = 广告费 + 发货物流费 + 运费险 + 其他固定成本
-    const effectiveNonReturnableCost = (inputs.shippingCost + inputs.shippingInsurance + inputs.otherCost) / salesCost.effectiveRate + (adCost / salesCost.effectiveRate);
-    const effectiveCostTotal = purchaseCost.effectiveCost + effectiveNonReturnableCost;
-
+    const actualProfitRate = profit / finalPrice;
+    
+    // 10. 返回结果（保持与原接口兼容）
     return {
         netPrice,
         finalPrice,
@@ -1154,38 +1206,48 @@ function calculatePrices(purchaseCost, salesCost, inputs) {
         outputVAT,
         actualVAT,
         profit,
-        profitRate: (profit / finalPrice * 100).toFixed(2),
+        profitRate: (actualProfitRate * 100).toFixed(2),
         adCost,
-        fixedCosts,
+        fixedCosts: C_fix, // 保持兼容性
         adVAT,
+        platformVAT,
         totalVATDeduction,
-        effectiveNonReturnableCost,
-        effectiveCostTotal,
-        taxFactorOnFinal,
-        adFactorEffective,
-        adVatCreditFactor,
-        profitFactorEffective,
-        platformVatCreditFactor
+        // 新增调试信息
+        A, // 系数A
+        K0, // 常数K₀
+        feasible: true,
+        // 保持原有字段兼容性
+        taxFactorOnFinal: t/(1+t),
+        adFactorEffective: β/E,
+        adVatCreditFactor: v/(1+v)*β/E,
+        profitFactorEffective: m,
+        platformVatCreditFactor: v/(1+v)*α,
+        effectiveNonReturnableCost: (inputs.shippingCost + inputs.shippingInsurance + inputs.otherCost) / E + adCostEffective,
+        effectiveCostTotal: C_goods + (inputs.shippingCost + inputs.shippingInsurance + inputs.otherCost) / E + adCostEffective
     };
 }
 
 /**
  * 计算"保本ROI"阈值（GMV ÷ 广告费），在利润=0时所需的最低ROI。
  *
+ * 基于正确的利润线性函数模型：profit(P) = A×P - K₀
+ * 当profit = 0时，A×P = K₀，即 P = K₀/A
+ * 其中广告费占比 β 在系数A中，通过设置 profit = 0 反解出保本广告占比
+ *
  * 定义与假设（与本项目口径一致）：
  * - ROI 定义：GMV(含税售价) / 广告费（按全店付费占比计提的广告总额）
  * - 广告费在利润模型中视为"不可退回成本"，按有效销售率(1-退货率)分摊；
  * - 广告费可获得 6% 进项税抵扣；平台佣金可获得 6% 进项税抵扣；
  * - 销项税占比 = 销项税率 / (1 + 销项税率)
- * - 利润=0 的联立：
- *   P = (C + 固定成本/(1-R)) ÷ [1 - 平台费 - 销项税占比 - (广告费/(1-R)) + 6%*广告费/(1-R) + 6%*平台费]
- *   反解广告费占比 a（即付费占比）：
- *   a* = (1-R)/0.94 * (D - B/P)
- *   其中：
- *     D = 1 - 平台费 - 销项税占比 + 0.06*平台费
- *     B = 实际进货成本C + 固定成本/(1-R)
- *     P = 含税售价
- *   则保本ROI = 1 / a*
+ * 
+ * 新的数学推导：
+ * 利润函数：profit(P) = A×P - K₀ = 0
+ * 其中：A = 1 - α - β/E - t/(1+t) + v/(1+v)(α+β)
+ *      K₀ = C_goods + C_fix - VAT_in,goods
+ * 
+ * 当profit = 0时：A×P = K₀
+ * 代入A的表达式：[1 - α - β/E - t/(1+t) + v/(1+v)(α+β)]×P = K₀
+ * 解出保本广告占比：β* = E × [1 - α - t/(1+t) + v/(1+v)×α - K₀/P] / [1 - v/(1+v)]
  *
  * 参数：
  * - params: {
@@ -1220,47 +1282,43 @@ function calculateBreakevenROI(params) {
             return { breakevenAdRate: NaN, breakevenROI: NaN, feasible: false, note: '售价无效' };
         }
 
-        // 2) 计算关键中间量
-        const effectiveRate = 1 - returnRate;                   // 有效销售率 E
-        const effectiveCost = costPrice + costPrice * inputTaxRate; // 实际进货成本 C = 进货价 + 开票成本
-        const purchaseVAT = costPrice * outputTaxRate;          // 商品进项税
-        const fixedCosts = (shippingCost + shippingInsurance + otherCost) / effectiveRate; // 不可退回固定成本按(1-R)分摊
-		const taxFactorOnFinal = salesTaxRate / (1 + salesTaxRate); // 销项税占比
-		// 服务业进项税率 v（用于广告与平台佣金的进项抵扣计算；当前取 6%）
-		const v = 0.06;
+        // 2) 计算关键中间量（与calculatePrices保持一致）
+        const E = 1 - returnRate;                                              // 有效销售率
+        const C_goods = costPrice * (1 + inputTaxRate);                        // 进货净成本
+        const C_fix = (shippingCost + shippingInsurance + otherCost) / E;       // 固定成本摊到有效单
+        const VAT_in_goods = costPrice * outputTaxRate;                        // 商品进项税额（可抵扣）
+        const K0 = C_goods + C_fix - VAT_in_goods;                            // 常数K₀
+        
+        const α = platformRate;                                                 // 平台佣金率
+        const t = salesTaxRate;                                                // 销项税率
+        const v = 0.06;                                                        // 服务业税率
 
-		// 修复：移除进项税重复抵扣问题
-		// effectiveCost已是实际进货成本（不含税进价+开票费），不应再减去进项税
-		// 进项税在税费计算环节统一处理，避免在成本计算中重复抵扣
-		const B = effectiveCost + fixedCosts;     // 分子常数项（修正后）
-		// 分母常数项（不含广告）：平台佣金的进项抵扣基于不含税金额计算
-		const platformVatCredit = (platformRate / (1 + v)) * v; // 平台佣金进项税抵扣 = (平台佣金不含税金额) × 进项税率
-		const D = 1 - platformRate - taxFactorOnFinal + platformVatCredit;
-
-        // 3) 反解保本所需的广告付费占比 a*
-		// 修正：广告费进项税抵扣也应基于不含税金额计算
-		// 广告费进项税抵扣 = (广告费不含税金额) × 进项税率 = (广告费占比 / (1 + v)) × v
-		// 保本方程：收入 = 成本
-		// finalPrice = B + 广告费净成本 + 其他费用
-		// finalPrice = B + (finalPrice × a × (1 - v/(1+v))) + 其他费用
-		// 其中 a 是广告费占比，v/(1+v) 是进项税抵扣占比
-        const term = D - (B / finalPrice);
-		const breakevenAdRate = (effectiveRate / (1 - v/(1 + v))) * term; // 修正：使用正确的进项税抵扣比例
+        // 3) 基于保本条件反解广告占比
+        // 当profit = 0时：A×P = K₀
+        // 即：[1 - α - β/E - t/(1+t) + v/(1+v)(α+β)]×P = K₀
+        // 整理得：β* = E × [1 - α - t/(1+t) + v/(1+v)×α - K₀/P] / [1 - v/(1+v)]
+        
+        const baseConstant = 1 - α - t/(1+t) + v/(1+v)*α;                     // 不含广告的基础常数
+        const K0_ratio = K0 / finalPrice;                                      // K₀占售价比例
+        const adTaxFactor = 1 - v/(1+v);                                       // 广告费税务因子
+        
+        const breakevenAdRate = E * (baseConstant - K0_ratio) / adTaxFactor;
 
         // 4) 计算ROI阈值（按有效GMV口径）：
-        //    ROI = 有效GMV / 广告费 = E / a*
+        //    ROI = 有效GMV / 广告费 = E / β*
         let breakevenROI; let feasible = true; let note = '';
         if (breakevenAdRate <= 0) {
-            // a*<=0：无需广告即可保本（或价格已经过高），ROI阈值视为∞
+            // β*<=0：无需广告即可保本（或价格已经过高），ROI阈值视为∞
             breakevenROI = Infinity;
             note = '无需广告也能保本';
         } else if (!isFinite(breakevenAdRate)) {
             breakevenROI = NaN; feasible = false; note = '参数异常';
         } else {
-            breakevenROI = effectiveRate / breakevenAdRate;
+            breakevenROI = E / breakevenAdRate;
             if (breakevenAdRate >= 1) {
                 // 需要广告占比≥100%才保本，基本不可行
                 note = '不现实：需广告占比≥100%';
+                feasible = false;
             }
         }
 
@@ -1510,19 +1568,24 @@ function calculate() {
         // 1. 获取并验证所有输入值
         const inputs = getValidatedInputs();
         
-        // 2. 验证比例费用组合（按最终售价口径）：
-        // 需满足 1 - (平台 + 销项税占比 + 目标利润 + 广告分摊 - 广告进项抵扣) > 0
+        // 2. 验证参数组合可行性（使用正确的公式）：
+        // 需满足 A - m > 0，其中：
+        // A = 1 - α - β/E - t/(1+t) + v/(1+v)(α+β)
+        // m = targetProfitRate
         const returnRate = parseFloat(document.getElementById("returnRate").value) / 100 || 0;
-        const effectiveRate = 1 - returnRate;
-        const VAT_RATE = 0.06; // 现代服务业增值税率6%
-        const taxFactorOnFinal = inputs.salesTaxRate / (1 + inputs.salesTaxRate);
-        const adFactorEffective = inputs.adRate / effectiveRate;
-        // 修正：广告费进项税抵扣基于不含税金额计算
-        const adVatCreditFactor = (adFactorEffective / (1 + VAT_RATE)) * VAT_RATE;
-        const profitFactorEffective = inputs.targetProfitRate; // 利润率按最终售价口径
-        const denominatorFinal = 1 - (inputs.platformRate + taxFactorOnFinal + profitFactorEffective + adFactorEffective - adVatCreditFactor);
-        if (denominatorFinal <= 0) {
-            throw new Error("参数组合过高（平台、税费占比、目标利润、广告费(分摊) - 广告进项抵扣），无法计算有效售价");
+        const E = 1 - returnRate; // 有效率
+        const α = inputs.platformRate; // 平台佣金率
+        const β = inputs.adRate; // 广告费率
+        const t = inputs.salesTaxRate; // 销项税率
+        const v = 0.06; // 服务业税率
+        const m = inputs.targetProfitRate; // 目标利润率
+        
+        // 计算系数A（每一元售价能留下的净贡献）
+        const A = 1 - α - β/E - t/(1+t) + v/(1+v)*(α+β);
+        
+        // 验证可行性条件
+        if (A - m <= 0) {
+            throw new Error(`参数组合导致无解：A-m = ${(A-m).toFixed(4)} ≤ 0。\n请调整参数：\n- 降低目标利润率（当前${(m*100).toFixed(1)}%）\n- 降低广告费占比（当前${(β*100).toFixed(1)}%）\n- 降低平台佣金（当前${(α*100).toFixed(1)}%）\n- 降低退货率（当前${(returnRate*100).toFixed(1)}%）`);
         }
 
         // 3. 计算进货成本和可抵扣进项税
@@ -1539,21 +1602,24 @@ function calculate() {
             inputs,
             purchase: purchaseCost,
             salesCost,
-            priceInfo
+            priceInfo,
+            // 新增算法验证信息
+            algorithm: {
+                E, α, β, t, v, m, A,
+                K0: priceInfo.K0,
+                feasible: A - m > 0,
+                finalPrice: priceInfo.finalPrice
+            }
         });
 
-        // 6. 更新销售成本预览
-        // updateSalesCostSummary(priceInfo.finalPrice); // 已移除销售成本预览模块
-
-        // 7. 显示结果
+        // 6. 显示结果
         document.getElementById("result").innerHTML = generatePriceResultHtml({
             purchaseCost,
             salesCost,
             priceInfo,
             inputs
         });
-        // 启用分享按钮
-        // 分享功能已移除
+        
     } catch (error) {
         // 显示错误信息
         document.getElementById("result").innerHTML = `
@@ -10637,8 +10703,15 @@ function generateCostPriceResults(inputs, adRates, targetProfitRates) {
 
 /**
  * 使用闭式解方法计算成本价（推演专用）
- * 基于数学公式：P = [ C*(1 + i - o) + F ] / [ 1 - p - t - A + v*A + v*p ]
- * 反解：C = (P * D - F_eff) / kC
+ * 基于正确的利润线性函数模型：profit(P) = A · P - K₀
+ * 其中：
+ * A = 1 - α - β/E - t/(1+t) + v/(1+v)(α+β)
+ * K₀ = C_goods + C_fix - VAT_in,goods = C*(1+i-o) + C_fix
+ * 
+ * 当目标利润率为 m 时：m*P = A*P - K₀
+ * 即：P = K₀ / (A - m)
+ * 由 K₀ = C*(1+i-o) + C_fix 可得：C = (P*(A-m) - C_fix) / (1+i-o)
+ * 
  * @param {number} takeHomePrice 到手价
  * @param {number} adRate 付费占比
  * @param {number} targetProfitRate 目标利润率
@@ -10651,46 +10724,51 @@ function calculateCostPriceByClosedForm(takeHomePrice, adRate, targetProfitRate,
         const P = Number(takeHomePrice);
         if (!(P > 0)) return NaN;
 
-        // 2) 公共量计算
-        const E = Math.max(1 - (Number(params.returnRate) || 0), 1e-6); // 有效销售率，避免除0
-        const F = (Number(params.shippingCost) || 0) + (Number(params.shippingInsurance) || 0) + (Number(params.otherCost) || 0);
-        const F_eff = F / E; // 分摊后的固定成本
+        // 2) 公共量计算（与 calculatePrices 保持一致）
+        const returnRate = Math.max(0, Number(params.returnRate) || 0);
+        const E = Math.max(1 - returnRate, 1e-6); // 有效率，避免除0
+        const C_fix = ((Number(params.shippingCost) || 0) + 
+                      (Number(params.shippingInsurance) || 0) + 
+                      (Number(params.otherCost) || 0)) / E; // 固定成本摊到有效单
 
-        const s = Math.max(0, Number(params.salesTaxRate) || 0);
-        const t = s / (1 + s); // 销项税占最终售价比例
+        const α = Math.max(0, Number(params.platformRate) || 0); // 平台佣金率
+        const β = Math.max(0, Number(adRate) || 0);              // 广告费率
+        const t = Math.max(0, Number(params.salesTaxRate) || 0);    // 销项税率
+        const v = 0.06;                                            // 服务业税率
+        const m = Math.max(0, Number(targetProfitRate) || 0);      // 目标利润率
 
-        const a = Math.max(0, Number(adRate) || 0);
-        const A = a / E; // 广告费分摊（不可退回）
+        // 3) 计算系数A（与 calculatePrices 的定义一致）
+        const A = 1 - α - β/E - t/(1+t) + v/(1+v)*(α+β);
 
-        const p = Math.max(0, Number(params.platformRate) || 0);
-        const v = 0.06; // 现代服务业增值税率6%
-
-        // 与 calculatePrices 的分母一致（进项抵扣一律价内剥离）
-        const D = 1 - p - t - targetProfitRate - A + (v / (1 + v)) * A + (v / (1 + v)) * p;
-
-        // 与 calculatePurchaseCost 的线性系数一致
-        const kC = 1 + (Number(params.inputTaxRate) || 0) - (Number(params.outputTaxRate) || 0);
-
-        // 3) 验证参数有效性
-        if (!(D > 0)) {
-            console.warn('闭式解参数组合不可解（分母≤0）：', { D, p, t, targetProfitRate, A, v });
+        // 4) 验证参数有效性
+        if (!(A - m > 0)) {
+            console.warn('闭式解参数组合不可解（A-m≤0）：', { A, m, diff: A-m });
             return NaN;
         }
+
+        // 5) 计算成本系数 kC（与 calculatePurchaseCost 的逻辑一致）
+        const inputTaxRate = Math.max(0, Number(params.inputTaxRate) || 0);
+        const outputTaxRate = Math.max(0, Number(params.outputTaxRate) || 0);
+        const kC = 1 + inputTaxRate - outputTaxRate;
+        
         if (!(kC > 0)) {
-            console.warn('闭式解参数异常：1+i-o ≤ 0', { kC, inputTaxRate: params.inputTaxRate, outputTaxRate: params.outputTaxRate });
+            console.warn('闭式解参数异常：kC ≤0', { kC, inputTaxRate, outputTaxRate });
             return NaN;
         }
 
-        // 4) 闭式解计算
-        const C = (P * D - F_eff) / kC;
+        // 6) 闭式解计算（基于正确的数学推导）
+        // 由 P = K₀ / (A - m) 得：K₀ = P * (A - m)
+        // 由 K₀ = C * kC + C_fix 得：C = (K₀ - C_fix) / kC
+        const K0 = P * (A - m);
+        const C = (K0 - C_fix) / kC;
 
-        // 5) 验证结果
+        // 7) 验证结果
         if (!isFinite(C) || C <= 0) {
-            console.warn('闭式解结果无效：', { C, P, D, F_eff, kC });
+            console.warn('闭式解结果无效：', { C, K0, C_fix, kC, P, A, m });
             return NaN;
         }
 
-        // 6) 精度控制并返回
+        // 8) 精度控制并返回
         return Number(C.toFixed(6));
 
     } catch (error) {
