@@ -1379,7 +1379,8 @@
                 const t = outputTaxRate / 100;
                 const taxFactorOnFinal = t / (1 + t);
 
-                const B = effectiveCost - purchaseVAT + fixedCosts;
+                // 修复：移除进项税重复抵扣问题，effectiveCost已包含实际进货成本
+                const B = effectiveCost + fixedCosts;
                 
                 const platformRateDecimal = platformFee / 100;
                 // 修正：平台佣金进项税抵扣基于不含税金额计算
@@ -1723,7 +1724,8 @@
                 const t = outputTaxRate / 100;
                 const taxFactorOnFinal = t / (1 + t);
 
-                const B = effectiveCost - purchaseVAT + fixedCosts;
+                // 修复：移除进项税重复抵扣问题，effectiveCost已包含实际进货成本（移动端）
+                const B = effectiveCost + fixedCosts;
                 
                 const platformRateDecimal = platformFee / 100;
                 // 修正：平台佣金进项税抵扣基于不含税金额计算

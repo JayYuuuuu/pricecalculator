@@ -2233,8 +2233,9 @@
                 const fixedCosts = (logisticsCost + shippingInsurance + otherCost) / effectiveSalesRate; // 不可退回固定成本按有效销售率分摊
                 // 使用上面已定义的变量 v
 
-                // 分子常数项 B = C - 商品进项税 + 固定成本/E
-                const B = effectiveCost - purchaseVAT + fixedCosts;
+                // 分子常数项 B = C + 固定成本/E
+                // 修复：移除进项税重复抵扣问题，effectiveCost已包含实际进货成本
+                const B = effectiveCost + fixedCosts;
                 
                 // 分母常数项 D = 1 - 平台费率 - 销项税占比 + v/(1+v) × 平台费率
                 // 注意：原系统使用小数形式的平台费率，这里需要转换
@@ -2457,7 +2458,8 @@
             // 保本计算（使用与主函数完全一致的逻辑）
             const effectiveCost = costPrice + actualInvoiceCost;
             const fixedCosts = (logisticsCost + shippingInsurance + otherCost) / effectiveSalesRate;
-            const B = effectiveCost - purchaseVAT + fixedCosts;
+            // 修复：移除进项税重复抵扣问题
+            const B = effectiveCost + fixedCosts;
             const platformRateDecimal = platformFee / 100;
             
             // 根据纳税人类型计算分母常数项D

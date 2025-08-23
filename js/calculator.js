@@ -1051,10 +1051,11 @@ function calculatePrices(purchaseCost, salesCost, inputs) {
     const platformVatCreditFactor = (inputs.platformRate / (1 + VAT_RATE)) * VAT_RATE; // 不含税平台佣金 × 进项税率
     const profitFactorEffective = inputs.targetProfitRate;                   // 目标利润率按最终售价口径，不随退货分摊
     
-    // 分子：C（进货成本）- 商品进项税 + F_不可退回/(1-R)
-    // 说明：商品进项税为与售价无关的固定抵扣，应在联立时作为常数项体现在分子，
-    // 否则会导致解出的建议售价在带入利润页时多出"进货不含税×商品税率"的利润。
-    const numeratorFinal = purchaseCost.effectiveCost - purchaseCost.purchaseVAT + fixedCosts;
+    // 分子：C（进货成本）+ F_不可退回/(1-R)
+    // 修复：移除进项税重复抵扣问题。
+    // effectiveCost已经是实际支付成本（不含税进价+开票费用），不应再减去进项税
+    // 进项税抵扣在税费计算环节统一处理，避免在成本计算中重复抵扣
+    const numeratorFinal = purchaseCost.effectiveCost + fixedCosts;
     // 分母：1 - 平台费 - 税占比 - 目标利润率 - 广告费分摊占比 + 广告费可抵扣进项税占比 + 平台佣金进项税抵扣占比
     const denominatorFinal = 1 - inputs.platformRate - taxFactorOnFinal - inputs.targetProfitRate - adFactorEffective + adVatCreditFactor + platformVatCreditFactor;
     
@@ -1122,12 +1123,12 @@ function calculatePrices(purchaseCost, salesCost, inputs) {
  * - 广告费可获得 6% 进项税抵扣；平台佣金可获得 6% 进项税抵扣；
  * - 销项税占比 = 销项税率 / (1 + 销项税率)
  * - 利润=0 的联立：
- *   P = (C - 进项税 + 固定成本/(1-R)) ÷ [1 - 平台费 - 销项税占比 - (广告费/(1-R)) + 6%*广告费/(1-R) + 6%*平台费]
+ *   P = (C + 固定成本/(1-R)) ÷ [1 - 平台费 - 销项税占比 - (广告费/(1-R)) + 6%*广告费/(1-R) + 6%*平台费]
  *   反解广告费占比 a（即付费占比）：
  *   a* = (1-R)/0.94 * (D - B/P)
  *   其中：
  *     D = 1 - 平台费 - 销项税占比 + 0.06*平台费
- *     B = 实际进货成本C - 商品进项税 + 固定成本/(1-R)
+ *     B = 实际进货成本C + 固定成本/(1-R)
  *     P = 含税售价
  *   则保本ROI = 1 / a*
  *
@@ -1173,7 +1174,10 @@ function calculateBreakevenROI(params) {
 		// 服务业进项税率 v（用于广告与平台佣金的进项抵扣计算；当前取 6%）
 		const v = 0.06;
 
-		const B = effectiveCost - purchaseVAT + fixedCosts;     // 分子常数项
+		// 修复：移除进项税重复抵扣问题
+		// effectiveCost已是实际进货成本（不含税进价+开票费），不应再减去进项税
+		// 进项税在税费计算环节统一处理，避免在成本计算中重复抵扣
+		const B = effectiveCost + fixedCosts;     // 分子常数项（修正后）
 		// 分母常数项（不含广告）：平台佣金的进项抵扣基于不含税金额计算
 		const platformVatCredit = (platformRate / (1 + v)) * v; // 平台佣金进项税抵扣 = (平台佣金不含税金额) × 进项税率
 		const D = 1 - platformRate - taxFactorOnFinal + platformVatCredit;
@@ -2534,10 +2538,11 @@ function initBreakevenROITooltip() {
 			'<div style="margin-bottom:6px; color:#111;">公式与中间量（ROI=有效GMV÷广告费）：</div>'+
             `<div>• 有效率 E = 1 - 退货率 = ${(E*100).toFixed(1)}%</div>`+
             `<div>• 销项税占比 = 税率/(1+税率) = ${(tOnFinal*100).toFixed(2)}%</div>`+
-            `<div>• 分子 B = C - 商品进项税 + 固定成本/E = ${C.toFixed(2)} - ${purchaseVAT.toFixed(2)} + ${fixedCosts.toFixed(2)} = ${(C - purchaseVAT + fixedCosts).toFixed(2)}</div>`+
+            `<div>• 分子 B = C + 固定成本/E = ${C.toFixed(2)} + ${fixedCosts.toFixed(2)} = ${(C + fixedCosts).toFixed(2)}</div>`+
 			`<div>• 常数 D' = 1 - 平台费 - 销项税占比 + 平台费进项税抵扣；当前 v = ${(v*100).toFixed(0)}% → D = ${(1 - platformRate).toFixed(4)} - ${(tOnFinal).toFixed(4)} + ${(platformVatCredit).toFixed(4)} = ${(D).toFixed(4)}</div>`+
 			`<div>• 保本广告占比 a* = E/(1 - v/(1+v)) × (D - B/P)</div>`+
-			`<div style=\"margin-left:12px;\">= ${(E/(1 - v/(1 + v))).toFixed(6)} × ( ${(D).toFixed(6)} - ${(((C - purchaseVAT + fixedCosts) / P) || 0).toFixed(6)} )</div>`+
+			`<div style="margin-left:12px;">修复：移除进项税重复抵扣，使用修正后的公式</div>`+
+			`<div style="margin-left:12px;">= ${(E/(1 - v/(1 + v))).toFixed(6)} × ( ${(D).toFixed(6)} - ${(((C + fixedCosts) / P) || 0).toFixed(6)} )</div>`+
             `<div style=\"margin-left:12px;\">= ${(breakevenAdRate*100).toFixed(2)}%</div>`+
 			`<div>• 保本ROI = E / a* = ${isFinite(breakevenROI)? breakevenROI.toFixed(2): '∞'}</div>`+
 			`<div style=\"margin-top:6px; color:#111;\">因此：ROI* = (1 − v/(1+v)) ÷ ( D − B / P )；当前 v = ${(v*100).toFixed(0)}% → ROI* = ${(1 - v/(1 + v)).toFixed(4)} ÷ ( D − B / P )</div>`+
@@ -3296,7 +3301,8 @@ function initPriceExploration() {
             const otherCostEffective = fixed.otherCost / effectiveRate;
             const fixedCostEffective = shippingCostEffective + insuranceCostEffective + otherCostEffective;
             // 常数项 C0
-            const C0 = (fixed.costPrice + invoiceCost - purchaseVAT) + fixedCostEffective;
+            // 修复：移除进项税重复抵扣问题，进货成本已包含开票费用
+            const C0 = (fixed.costPrice + invoiceCost) + fixedCostEffective;
             // 系数 a = pr*(1-0.06) + st/(1+st)
             // 说明：与现有利润口径一致，平台佣金不按退货率分摊（可退回），但会产生6%进项税抵扣
             // pr 取自固定参数（若免佣开关开启，则 pr 已为 0）
@@ -6262,8 +6268,9 @@ function computeRowWithCost(rowStd, costPrice) {
 	const adCost = P * inputs.adRate;
 	const outputVAT = netPrice * inputs.salesTaxRate;
 	const VAT_RATE = 0.06;
-	const adVAT = (adCost / salesCost.effectiveRate) * VAT_RATE;
-	const totalVATDeduction = purchaseCost.purchaseVAT + adVAT + (platformFee * VAT_RATE);
+	// 修复：使用正确的进项税抵扣计算，从含税金额中剥离税额
+	const adVAT = (adCost / salesCost.effectiveRate) * (VAT_RATE / (1 + VAT_RATE)); // 广告费进项税抵扣
+	const totalVATDeduction = purchaseCost.purchaseVAT + adVAT + (platformFee * (VAT_RATE / (1 + VAT_RATE))); // 平台佣金进项税抵扣
 	const actualVAT = outputVAT - totalVATDeduction;
 	const fixedCosts = (inputs.shippingCost + inputs.shippingInsurance + inputs.otherCost) / salesCost.effectiveRate;
 	const totalCost = purchaseCost.effectiveCost + platformFee + (adCost / salesCost.effectiveRate) + fixedCosts + actualVAT;
@@ -8142,8 +8149,9 @@ function showPriceCheckModal(row) {
 		const outputVAT = netPrice * inputs.salesTaxRate;
 		const platformFee = price * inputs.platformRate;
 		const adCost = price * inputs.adRate;
-		const adVAT = (adCost / salesCost.effectiveRate) * VAT_RATE;
-		const platformVAT = platformFee * VAT_RATE;
+		// 修复：使用正确的进项税抵扣计算，从含税金额中剥离税额
+		const adVAT = (adCost / salesCost.effectiveRate) * (VAT_RATE / (1 + VAT_RATE)); // 广告费进项税抵扣
+		const platformVAT = platformFee * (VAT_RATE / (1 + VAT_RATE)); // 平台佣金进项税抵扣
 		const totalVATDeduction = purchaseCost.purchaseVAT + adVAT + platformVAT;
 		const actualVAT = outputVAT - totalVATDeduction;
 		const shipSplit = inputs.shippingCost / salesCost.effectiveRate;
@@ -11260,7 +11268,8 @@ function calculateTheoreticalPrice(costPrice, targetProfitRate, params) {
         const profitFactorEffective = inputs.targetProfitRate;                   // 目标利润率按最终售价口径
 
         // 分子和分母（与售价计算完全一致）
-        const numeratorFinal = purchaseCost.effectiveCost - purchaseCost.purchaseVAT + fixedCosts;
+        // 修复：移除进项税重复抵扣问题
+        const numeratorFinal = purchaseCost.effectiveCost + fixedCosts;
         const denominatorFinal = 1 - inputs.platformRate - taxFactorOnFinal - inputs.targetProfitRate - adFactorEffective + adVatCreditFactor + platformVatCreditFactor;
 
         // 调试信息
